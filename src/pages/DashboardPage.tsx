@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useLogout } from "../features/auth/hooks/useLogout";
+import { useAuthStore } from "../features/auth/store/auth.store";
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { logout } = useLogout();
-  // const logout = useAuthStore((state) => state.clearAuth); // dostosuj do nazwy funkcji w twoim store
+  const user = useAuthStore((state) => state.user);
 
   const handleLogout = async () => {
     await logout();
@@ -13,7 +14,6 @@ export const DashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header z przyciskiem wylogowania */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
@@ -24,6 +24,16 @@ export const DashboardPage = () => {
             Wyloguj się
           </button>
         </div>
+        <main>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <h2 className="text-xl font-semibold text-gray-800">
+              Witaj, {user?.email}!
+            </h2>
+            <p className="mt-2 text-gray-600">
+              To jest Twoja strona dashboardu. a twoje id = {user?.id}
+            </p>
+          </div>
+        </main>
       </header>
     </div>
   );

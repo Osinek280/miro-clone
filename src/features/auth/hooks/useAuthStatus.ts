@@ -25,7 +25,7 @@ export const useAuthStatus = () => {
     }
 
     setAuth({
-      id: payload.sub,
+      id: payload.userId,
       email: payload.sub,
     });
   }, []);
