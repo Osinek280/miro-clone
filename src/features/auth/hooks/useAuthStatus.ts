@@ -7,7 +7,6 @@ export const useAuthStatus = () => {
   const setAuth = useAuthStore((state) => state.setAuth);
   useEffect(() => {
     const token = tokenStorage.get();
-    console.log("Retrieved token:", token);
     if (!token) {
       return;
     }
