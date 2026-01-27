@@ -1,9 +1,11 @@
 import { createBrowserRouter } from "react-router-dom";
 import { PublicRoute } from "./PublicRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
+import { AppLayout } from "../layouts/AppLayout";
 
 export const router = createBrowserRouter([
   {
+    element: <AppLayout />,
     children: [
       {
         element: <PublicRoute />,
