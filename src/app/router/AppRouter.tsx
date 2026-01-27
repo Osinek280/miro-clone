@@ -4,6 +4,8 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { AppLayout } from "../layouts/AppLayout";
 import { LoginForm } from "../../features/auth/components/LoginForm";
 import { RegisterForm } from "../../features/auth/components/RegisterForm";
+import { HomePage } from "../../pages/HomePage";
+import { DashboardPage } from "../../pages/DashboardPage";
 
 export const router = createBrowserRouter([
   {
@@ -29,7 +31,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: "/dashboard",
-                element: <h1>Dashboard Page</h1>,
+                element: <DashboardPage />,
               },
             ],
           },
@@ -37,11 +39,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "*",
-        element: (
-          <>
-            <ProtectedRoute /> <PublicRoute />
-          </>
-        ),
+        element: <HomePage />,
       },
     ],
   },
