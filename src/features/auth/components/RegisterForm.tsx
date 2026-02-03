@@ -40,8 +40,8 @@ export const RegisterForm = () => {
     }
 
     // Check password strength (optional)
-    if (formData.password.length < 6) {
-      setPasswordError("Hasło musi mieć co najmniej 6 znaków");
+    if (formData.password.length < 5) {
+      setPasswordError("Hasło musi mieć co najmniej 5 znaków");
       return false;
     }
 
