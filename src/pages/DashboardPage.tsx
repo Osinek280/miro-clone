@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLogout } from "../features/auth/hooks/useLogout";
 import { useAuthStore } from "../features/auth/store/auth.store";
 import { useDashboard } from "../features/dashboard/hooks/useDashboard";
@@ -16,7 +16,16 @@ export const DashboardPage = () => {
   const { boards, loading, error } = useDashboard();
 
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const viewMode = (searchParams.get("view") as "grid" | "list") ?? "grid";
+
+  const setViewMode = (mode: "grid" | "list") => {
+    setSearchParams((prev) => {
+      prev.set("view", mode);
+      return prev;
+    });
+  };
 
   const filtered = boards.filter((b) =>
     b.name.toLowerCase().includes(search.toLowerCase()),

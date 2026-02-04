@@ -27,7 +27,7 @@ export const DashboardToolbar = ({
         />
       </div>
 
-      <div className="inline-flex">
+      <div className="inline-flex gap-2">
         <Button
           variant={viewMode === "grid" ? "default" : "outline"}
           size="icon"
