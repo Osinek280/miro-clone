@@ -1,6 +1,7 @@
 export type Whiteboard = {
   id: string;
   name: string;
+  role: "OWNER" | "EDITOR" | "VIEWER";
   cameraPosition: {
     x: number;
     y: number;
