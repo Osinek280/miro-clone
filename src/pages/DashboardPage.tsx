@@ -8,18 +8,17 @@ import { DashboardToolbar } from "../features/dashboard/components/DashboardTool
 import { EmptyState } from "../features/dashboard/components/EmptyState";
 import { BoardsGrid } from "../features/dashboard/components/BoardsGrid";
 import { BoardsList } from "../features/dashboard/components/BoardList";
-import { useCreateBoard } from "../features/dashboard/hooks/useCreateBoard";
+import { useBoardActions } from "../features/dashboard/hooks/useCreateBoard";
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { logout } = useLogout();
   const user = useAuthStore((s) => s.user);
   const { fetchBoards, boards, loading, error } = useDashboard();
-  const [isCreating, setIsCreating] = useState(false);
 
   const [search, setSearch] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const { createBoard } = useCreateBoard();
+  const { createBoard, isCreating } = useBoardActions();
 
   const viewMode = (searchParams.get("view") as "grid" | "list") ?? "grid";
 
@@ -35,13 +34,11 @@ export const DashboardPage = () => {
   );
 
   const handleCreateBoard = async (name: string) => {
-    setIsCreating(true);
-
     try {
       await createBoard({ name });
       await fetchBoards();
-    } finally {
-      setIsCreating(false);
+    } catch {
+      // Handle error if needed
     }
   };
 

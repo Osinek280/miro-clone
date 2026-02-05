@@ -1,23 +1,23 @@
 import { useState } from "react";
 import { dashboardApi } from "../api/dashboard.api";
 
-export const useCreateBoard = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<unknown>(null);
+export const useBoardActions = () => {
+  const [isCreating, setIsCreating] = useState(false);
 
   const createBoard = async (data: { name: string }): Promise<void> => {
     try {
-      setLoading(true);
-      setError(null);
+      setIsCreating(true);
 
       await dashboardApi.createWhiteboard(data);
-    } catch (err) {
-      setError(err);
-      return;
+    } catch (err: any) {
+      throw err;
     } finally {
-      setLoading(false);
+      setIsCreating(false);
     }
   };
 
-  return { createBoard, loading, error };
+  return {
+    createBoard,
+    isCreating,
+  };
 };
