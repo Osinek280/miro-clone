@@ -12,6 +12,7 @@ export const useDashboard = () => {
     setError(null);
     try {
       const { data } = await dashboardApi.getWhiteboards();
+      console.log("Fetched boards:", data);
       setBoards(data);
     } catch (err) {
       console.error("Failed to fetch boards:", err);

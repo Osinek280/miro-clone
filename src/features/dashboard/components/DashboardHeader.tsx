@@ -1,13 +1,19 @@
-import { Plus } from "lucide-react";
 import { Button } from "../../../components/ui/button";
+import { CreateBoardDialog } from "./CreateBoardDialog";
 
 type Props = {
   email?: string;
-  onCreate: () => void;
   onLogout: () => void;
+  onCreateBoard: (name: string) => Promise<void>;
+  isCreating: boolean;
 };
 
-export const DashboardHeader = ({ email, onCreate, onLogout }: Props) => {
+export const DashboardHeader = ({
+  email,
+  onLogout,
+  onCreateBoard,
+  isCreating,
+}: Props) => {
   return (
     <header className="bg-background border-b sticky top-0 z-10">
       <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between">
@@ -17,10 +23,10 @@ export const DashboardHeader = ({ email, onCreate, onLogout }: Props) => {
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={onCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nowy whiteboard
-          </Button>
+          <CreateBoardDialog
+            onCreateBoard={onCreateBoard}
+            isCreating={isCreating}
+          />
           <Button variant="outline" onClick={onLogout}>
             Wyloguj się
           </Button>

@@ -40,6 +40,9 @@ apiClient.interceptors.response.use(
 
         return apiClient(originalRequest);
       } catch {
+        console.log(
+          "[Response Interceptor] Odświeżanie tokena nie powiodło się. Wylogowywanie użytkownika.",
+        );
         tokenStorage.remove();
         useAuthStore.getState().clearAuth();
         return Promise.reject(error);
