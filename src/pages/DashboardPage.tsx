@@ -18,7 +18,7 @@ export const DashboardPage = () => {
 
   const [search, setSearch] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const { createBoard, isCreating } = useBoardActions();
+  const { createBoard, deleteBoard, isCreating } = useBoardActions();
 
   const viewMode = (searchParams.get("view") as "grid" | "list") ?? "grid";
 
@@ -39,6 +39,16 @@ export const DashboardPage = () => {
       await fetchBoards();
     } catch {
       // Handle error if needed
+    }
+  };
+
+  const handleDeleteBoard = async (id: string) => {
+    try {
+      await deleteBoard(id);
+    } catch {
+      // Handle error if needed
+    } finally {
+      await fetchBoards();
     }
   };
 
@@ -78,6 +88,7 @@ export const DashboardPage = () => {
             />
           ) : (
             <BoardsList
+              onRemove={handleDeleteBoard}
               boards={filtered}
               onOpen={(id) => navigate(`/board/${id}`)}
             />

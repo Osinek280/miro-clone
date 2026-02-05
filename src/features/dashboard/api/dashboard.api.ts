@@ -7,4 +7,6 @@ export const dashboardApi = {
 
   createWhiteboard: (data: { name: string }) =>
     apiClient.post<Whiteboard>("/api/boards", data),
+
+  deleteWhiteboard: (id: string) => apiClient.delete(`/api/boards/${id}`),
 };

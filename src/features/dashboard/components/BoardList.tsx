@@ -20,9 +20,10 @@ import {
 type Props = {
   boards: Whiteboard[];
   onOpen: (id: string) => void;
+  onRemove: (id: string) => void;
 };
 
-export const BoardsList = ({ boards, onOpen }: Props) => {
+export const BoardsList = ({ boards, onOpen, onRemove }: Props) => {
   return (
     <Card className="p-0 h-125">
       <ScrollArea className="h-full">
@@ -95,7 +96,7 @@ export const BoardsList = ({ boards, onOpen }: Props) => {
 
                           <DropdownMenuItem
                             className="text-destructive"
-                            onClick={() => console.log("delete", board.id)}
+                            onClick={() => onRemove(board.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Usuń

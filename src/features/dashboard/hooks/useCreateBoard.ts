@@ -16,8 +16,17 @@ export const useBoardActions = () => {
     }
   };
 
+  const deleteBoard = async (id: string): Promise<void> => {
+    try {
+      await dashboardApi.deleteWhiteboard(id);
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   return {
     createBoard,
+    deleteBoard,
     isCreating,
   };
 };
