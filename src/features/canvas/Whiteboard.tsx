@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { WebGLRenderer } from "./WebGLRenderer";
-import type { DrawObject, Point } from "./types/types";
+import { DrawModeEnum, type DrawObject, type Point } from "./types/types";
 import { useCamera } from "./hooks/useCamera";
 import { useMouseHandlers } from "./hooks/useMouseHandlers";
 
@@ -9,7 +9,7 @@ export default function Whiteboard() {
   const rendererRef = useRef<WebGLRenderer | null>(null);
   const [objects, setObjects] = useState<DrawObject[]>([]);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
-  const [mode, setMode] = useState<"draw" | "select">("draw");
+  const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
 
   const objectsRef = useRef(objects);
   const currentPathRef = useRef(currentPath);
@@ -46,7 +46,7 @@ export default function Whiteboard() {
 
   // Deselect all objects when mode changes to draw
   useEffect(() => {
-    if (mode === "draw") {
+    if (mode === DrawModeEnum.Draw) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setObjects((prev) => prev.map((o) => ({ ...o, selected: false })));
       setSelectedObjectId(null);
@@ -135,14 +135,14 @@ export default function Whiteboard() {
     <div className="w-full h-full relative bg-gray-100">
       <div className="absolute top-4 left-4 z-10 flex gap-2 flex-wrap">
         <button
-          onClick={() => setMode("draw")}
-          className={`px-4 py-2 rounded ${mode === "draw" ? "bg-blue-500 text-white" : "bg-white text-gray-700"}`}
+          onClick={() => setMode(DrawModeEnum.Draw)}
+          className={`px-4 py-2 rounded ${mode === DrawModeEnum.Draw ? "bg-blue-500 text-white" : "bg-white text-gray-700"}`}
         >
           Draw
         </button>
         <button
-          onClick={() => setMode("select")}
-          className={`px-4 py-2 rounded ${mode === "select" ? "bg-blue-500 text-white" : "bg-white text-gray-700"}`}
+          onClick={() => setMode(DrawModeEnum.Select)}
+          className={`px-4 py-2 rounded ${mode === DrawModeEnum.Select ? "bg-blue-500 text-white" : "bg-white text-gray-700"}`}
         >
           Select
         </button>

@@ -17,4 +17,7 @@ export interface Camera {
   offsetY: number;
 }
 
-export type DrawMode = "draw" | "select";
+export enum DrawModeEnum {
+  Draw = "draw",
+  Select = "select",
+}

@@ -1,5 +1,10 @@
 import { useRef, useState } from "react";
-import type { Camera, DrawObject, Point } from "../types/types";
+import {
+  DrawModeEnum,
+  type Camera,
+  type DrawObject,
+  type Point,
+} from "../types/types";
 import { findObjectAtPoint, getCanvasPoint } from "../utils/cameraUtils";
 
 export function useMouseHandlers(
@@ -9,7 +14,7 @@ export function useMouseHandlers(
   setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>,
   setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>,
   currentPath: Point[],
-  mode: "select" | "draw",
+  mode: DrawModeEnum,
 ) {
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
   const [isMoving, setIsMoving] = useState(false);
@@ -24,7 +29,7 @@ export function useMouseHandlers(
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCanvasPoint(e, canvasRef, cameraRef.current);
 
-    if (mode === "select") {
+    if (mode === DrawModeEnum.Select) {
       const obj = findObjectAtPoint(point, objects);
       if (obj) {
         // If object is already selected, just start moving without resetting selection
