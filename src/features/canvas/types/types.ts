@@ -9,6 +9,10 @@ export interface DrawObject {
   points: Point[];
   color: string;
   selected: boolean;
+  size: number;
+
+  _cachedPositions?: Float32Array;
+  _cachedAlphas?: Float32Array;
 }
 
 export interface Camera {
@@ -21,3 +25,8 @@ export enum DrawModeEnum {
   Draw = "draw",
   Select = "select",
 }
+
+export type ToolState = {
+  color: string;
+  size: number;
+};

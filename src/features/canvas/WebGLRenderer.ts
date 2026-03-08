@@ -1,161 +1,345 @@
 import type { DrawObject, Point } from "./types/types";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// WebGLRenderer – circle-stamp line renderer
+//
+// Filozofia (jak Miro / Procreate / Excalidraw):
+//   Każdy punkt ścieżki = wypełnione koło rysowane przez gl.POINTS.
+//   Nakładające się koła tworzą idealnie gładką, ciągłą linię.
+//   Zero problemów z miter joints, zero ostrych krawędzi.
+//
+//   gl_PointSize = size * zoom  →  koła skalują się z kamerą
+//   SDF w fragment shaderze     →  antyaliasowana, okrągła krawędź
+//
+// Wydajność (10k+ obiektów):
+//   • Jeden draw call na całą scenę (merged buffer)
+//   • Per-object cache – rebuild tylko przy zmianie punktów/koloru/size
+//   • Interleaved buffer: [x, y, r, g, b, a, pointSize]
+//   • Gęstość punktów kontrolowana przez MIN_DIST (co ~1.5px w world-space)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Minimalna odległość między zapisanymi punktami (world-space).
+// Twój mouseMove już interpoluje co 2px – to zostawiamy jako backup.
+const MIN_DIST = 1.5;
+
+// Floats per vertex w interleaved buforze
+// [x, y, r, g, b, a, pointSize]
+const FPV = 7;
+
+// ── Shaders ───────────────────────────────────────────────────────────────────
+
+const VERT = /* glsl */ `
+  precision highp float;
+
+  attribute vec2  a_pos;
+  attribute vec4  a_color;
+  attribute float a_size;
+
+  uniform vec2  u_resolution;
+  uniform vec2  u_offset;
+  uniform float u_zoom;
+
+  varying vec4 v_color;
+
+  void main() {
+    // world → screen px
+    vec2 screen = a_pos * u_zoom + u_offset;
+
+    // screen → NDC, odwróć Y
+    vec2 ndc = screen / u_resolution * 2.0 - 1.0;
+    gl_Position  = vec4(ndc.x, -ndc.y, 0.0, 1.0);
+
+    // Rozmiar koła skaluje się z zoomem (world-space size)
+    gl_PointSize = a_size * u_zoom;
+
+    v_color = a_color;
+  }
+`;
+
+/**
+ * Fragment shader – SDF circle z antyaliasingiem.
+ *
+ * gl_PointCoord: (0,0) lewy-górny róg, (1,1) prawy-dolny
+ * dist od środka = length(gl_PointCoord - 0.5) * 2  →  0=środek, 1=krawędź
+ * smoothstep daje ~1px miękką krawędź niezależnie od rozmiaru koła.
+ */
+const FRAG = /* glsl */ `
+  precision mediump float;
+
+  varying vec4 v_color;
+
+  void main() {
+    // Odległość od środka punktu: 0 = centrum, 1 = krawędź
+    float dist  = length(gl_PointCoord - 0.5) * 2.0;
+
+    // ~1px antyaliasing na krawędzi koła
+    float alpha = step(dist, 1.0);
+    if (alpha < 0.004) discard;
+
+    gl_FragColor = vec4(v_color.rgb, v_color.a * alpha);
+  }
+`;
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface CachedGeometry {
+  buffer: Float32Array; // interleaved [x,y, r,g,b,a, size] per point
+  pointCount: number;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function hexToRgba(hex: string): [number, number, number, number] {
+  let h = hex.replace("#", "");
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  if (h.length !== 6) return [0, 0, 0, 1];
+  return [
+    parseInt(h.slice(0, 2), 16) / 255,
+    parseInt(h.slice(2, 4), 16) / 255,
+    parseInt(h.slice(4, 6), 16) / 255,
+    1,
+  ];
+}
+
+/**
+ * Buduje interleaved buffer dla jednej polyline.
+ *
+ * Filtruje punkty bliżej niż MIN_DIST od poprzedniego
+ * (defensive – twój mouseMove już interpoluje).
+ * Kolor i size są stałe per-obiekt, wpisane do każdego werteksa.
+ */
+function buildPointBuffer(
+  points: Point[],
+  color: [number, number, number, number],
+  size: number,
+): CachedGeometry | null {
+  if (points.length === 0) return null;
+
+  const [r, g, b, a] = color;
+  const buf: number[] = [];
+
+  let lastX = NaN,
+    lastY = NaN;
+
+  for (const p of points) {
+    const dx = p.x - lastX,
+      dy = p.y - lastY;
+    if (dx * dx + dy * dy < MIN_DIST * MIN_DIST && buf.length > 0) continue;
+
+    buf.push(p.x, p.y, r, g, b, a, size);
+    lastX = p.x;
+    lastY = p.y;
+  }
+
+  // Zawsze dodaj ostatni punkt (żeby ścieżka kończyła się dokładnie)
+  const last = points[points.length - 1];
+  if (last.x !== lastX || last.y !== lastY) {
+    buf.push(last.x, last.y, r, g, b, a, size);
+  }
+
+  const pointCount = buf.length / FPV;
+  return { buffer: new Float32Array(buf), pointCount };
+}
+
+// ── WebGLRenderer ─────────────────────────────────────────────────────────────
+
 export class WebGLRenderer {
   private gl: WebGLRenderingContext | null = null;
   private program: WebGLProgram | null = null;
   private canvas: HTMLCanvasElement | null = null;
-  private positionLocation!: number;
-  private resolutionLocation!: WebGLUniformLocation;
-  private offsetLocation!: WebGLUniformLocation;
-  private colorLocation!: WebGLUniformLocation;
-  private zoomLocation!: WebGLUniformLocation;
-  private pointSizeLocation!: WebGLUniformLocation;
-  private buffer!: WebGLBuffer;
 
-  private vertexShaderSource = `
-  attribute vec2 a_position;
-  uniform vec2 u_resolution;
-  uniform vec2 u_offset;
-  uniform float u_zoom;
-  uniform float u_pointSize;
+  // Attribute / uniform locations
+  private aPos: number = -1;
+  private aColor: number = -1;
+  private aSize: number = -1;
 
-  void main() {
-    vec2 worldPos = a_position;
-    vec2 scaledPos = worldPos * u_zoom;
-    vec2 translatedPos = scaledPos + u_offset;
-    vec2 position = translatedPos / u_resolution * 2.0 - 1.0;
+  private uResolution!: WebGLUniformLocation;
+  private uOffset!: WebGLUniformLocation;
+  private uZoom!: WebGLUniformLocation;
 
-    gl_Position = vec4(position * vec2(1, -1), 0, 1);
-    gl_PointSize = u_pointSize * u_zoom;
-  }
-`;
+  // Jeden GPU vertex buffer (interleaved, cała scena)
+  private bufVertex!: WebGLBuffer;
 
-  private fragmentShaderSource = `
-  precision mediump float;
-  uniform vec4 u_color;
+  // Per-object geometry cache
+  private geoCache = new Map<string, CachedGeometry | null>();
+  private cacheKeys = new Map<string, string>();
 
-  void main() {
-    vec2 coord = gl_PointCoord - vec2(0.5);
-    float dist = length(coord);
+  // ── Private ─────────────────────────────────────────────────────────────────
 
-    if (dist > 0.5) {
-      discard; // wycina piksele poza okręgiem
-    }
-
-    gl_FragColor = u_color;
-  }
-`;
-
-  private createShader(
-    gl: WebGLRenderingContext,
-    type: number,
-    source: string,
-  ): WebGLShader | null {
-    const shader = gl.createShader(type);
-    if (!shader) return null;
-
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error("Shader compilation error:", gl.getShaderInfoLog(shader));
-      gl.deleteShader(shader);
+  private createShader(type: number, src: string): WebGLShader | null {
+    const gl = this.gl!;
+    const s = gl.createShader(type);
+    if (!s) return null;
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.error("[WebGLRenderer] Shader:", gl.getShaderInfoLog(s));
+      gl.deleteShader(s);
       return null;
     }
-
-    return shader;
+    return s;
   }
 
   private createProgram(
-    gl: WebGLRenderingContext,
-    vertexShader: WebGLShader,
-    fragmentShader: WebGLShader,
+    vert: WebGLShader,
+    frag: WebGLShader,
   ): WebGLProgram | null {
-    const program = gl.createProgram();
-    if (!program) return null;
-
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error("Program linking error:", gl.getProgramInfoLog(program));
-      gl.deleteProgram(program);
+    const gl = this.gl!;
+    const p = gl.createProgram();
+    if (!p) return null;
+    gl.attachShader(p, vert);
+    gl.attachShader(p, frag);
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+      console.error("[WebGLRenderer] Link:", gl.getProgramInfoLog(p));
+      gl.deleteProgram(p);
       return null;
     }
-
-    return program;
+    return p;
   }
 
-  private hexToRgba(hex: string): number[] {
-    const r = parseInt(hex.slice(1, 3), 16) / 255;
-    const g = parseInt(hex.slice(3, 5), 16) / 255;
-    const b = parseInt(hex.slice(5, 7), 16) / 255;
-    return [r, g, b, 1];
+  /** Fingerprint do inwalidacji cache */
+  private stateKey(obj: DrawObject): string {
+    const f = obj.points[0],
+      l = obj.points[obj.points.length - 1];
+    return `${obj.color || "#000"}|${obj.size}|${obj.points.length}|${f?.x},${f?.y}|${l?.x},${l?.y}`;
   }
+
+  /**
+   * Scala geometry wszystkich obiektów + currentPath w jeden Float32Array
+   * i wgrywa na GPU jednym gl.bufferData.
+   * Zwraca liczbę punktów do narysowania.
+   */
+  private mergeAndUpload(
+    objects: DrawObject[],
+    currentPath: Point[],
+    currentColor: string,
+    currentSize: number,
+  ): number {
+    const gl = this.gl!;
+
+    // Usuń z cache usunięte obiekty
+    const activeIds = new Set(objects.map((o) => o.id));
+    for (const id of this.geoCache.keys()) {
+      if (!activeIds.has(id)) {
+        this.geoCache.delete(id);
+        this.cacheKeys.delete(id);
+      }
+    }
+
+    // Rebuild tylko zmienionych obiektów
+    for (const obj of objects) {
+      const key = this.stateKey(obj);
+      if (this.cacheKeys.get(obj.id) !== key) {
+        this.geoCache.set(
+          obj.id,
+          buildPointBuffer(
+            obj.points,
+            hexToRgba(obj.color || "#000"),
+            obj.size || 15,
+          ),
+        );
+        this.cacheKeys.set(obj.id, key);
+      }
+    }
+
+    // Live path – nie cache'owana (rysowana w każdej klatce)
+    let liveGeo: CachedGeometry | null = null;
+    if (currentPath.length > 0) {
+      liveGeo = buildPointBuffer(
+        currentPath,
+        hexToRgba(currentColor),
+        currentSize,
+      );
+    }
+
+    // Policz sumaryczny rozmiar
+    let totalPoints = 0;
+    for (const obj of objects) {
+      const g = this.geoCache.get(obj.id);
+      if (g) totalPoints += g.pointCount;
+    }
+    if (liveGeo) totalPoints += liveGeo.pointCount;
+
+    if (totalPoints === 0) return 0;
+
+    // Jednorazowa alokacja merged buffer
+    const all = new Float32Array(totalPoints * FPV);
+    let offset = 0;
+
+    const append = (g: CachedGeometry) => {
+      all.set(g.buffer, offset);
+      offset += g.buffer.length;
+    };
+
+    for (const obj of objects) {
+      const g = this.geoCache.get(obj.id);
+      if (g) append(g);
+    }
+    if (liveGeo) append(liveGeo); // live path na wierzchu
+
+    // Upload – jeden gl.bufferData
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertex);
+    gl.bufferData(gl.ARRAY_BUFFER, all, gl.DYNAMIC_DRAW);
+
+    return totalPoints;
+  }
+
+  // ── Public API ──────────────────────────────────────────────────────────────
 
   initialize(canvas: HTMLCanvasElement): boolean {
     this.canvas = canvas;
-    const gl = canvas.getContext("webgl");
+
+    const gl = canvas.getContext("webgl", {
+      antialias: true,
+      premultipliedAlpha: false,
+      preserveDrawingBuffer: false,
+    }) as WebGLRenderingContext | null;
 
     if (!gl) {
-      console.error("WebGL not supported");
+      console.error("[WebGLRenderer] WebGL not supported");
       return false;
     }
-
     this.gl = gl;
 
-    // Create shaders
-    const vertexShader = this.createShader(
-      gl,
-      gl.VERTEX_SHADER,
-      this.vertexShaderSource,
-    );
-    const fragmentShader = this.createShader(
-      gl,
-      gl.FRAGMENT_SHADER,
-      this.fragmentShaderSource,
-    );
+    // Sprawdź max point size (musi obsługiwać duże pędzle)
+    const maxPtSize = gl.getParameter(
+      gl.ALIASED_POINT_SIZE_RANGE,
+    ) as Float32Array;
+    console.info(`[WebGLRenderer] Max point size: ${maxPtSize[1]}px`);
 
-    if (!vertexShader || !fragmentShader) {
-      return false;
-    }
+    const vert = this.createShader(gl.VERTEX_SHADER, VERT);
+    const frag = this.createShader(gl.FRAGMENT_SHADER, FRAG);
+    if (!vert || !frag) return false;
 
-    // Create program
-    const program = this.createProgram(gl, vertexShader, fragmentShader);
-    if (!program) {
-      return false;
-    }
+    const prog = this.createProgram(vert, frag);
+    if (!prog) return false;
+    this.program = prog;
 
-    this.program = program;
-    this.positionLocation = gl.getAttribLocation(program, "a_position")!;
-    this.resolutionLocation = gl.getUniformLocation(program, "u_resolution")!;
-    this.offsetLocation = gl.getUniformLocation(program, "u_offset")!;
-    this.colorLocation = gl.getUniformLocation(program, "u_color")!;
-    this.zoomLocation = gl.getUniformLocation(program, "u_zoom")!;
-    this.pointSizeLocation = gl.getUniformLocation(program, "u_pointSize")!;
+    this.aPos = gl.getAttribLocation(prog, "a_pos");
+    this.aColor = gl.getAttribLocation(prog, "a_color");
+    this.aSize = gl.getAttribLocation(prog, "a_size");
 
-    this.buffer = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    this.uResolution = gl.getUniformLocation(prog, "u_resolution")!;
+    this.uOffset = gl.getUniformLocation(prog, "u_offset")!;
+    this.uZoom = gl.getUniformLocation(prog, "u_zoom")!;
 
-    // Set up viewport
+    this.bufVertex = gl.createBuffer()!;
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
     this.resizeCanvas();
-
     return true;
   }
 
   resizeCanvas(): void {
     if (!this.canvas || !this.gl) return;
-
-    const displayWidth = this.canvas.clientWidth;
-    const displayHeight = this.canvas.clientHeight;
-
-    if (
-      this.canvas.width !== displayWidth ||
-      this.canvas.height !== displayHeight
-    ) {
-      this.canvas.width = displayWidth;
-      this.canvas.height = displayHeight;
+    const w = this.canvas.clientWidth;
+    const h = this.canvas.clientHeight;
+    if (this.canvas.width !== w || this.canvas.height !== h) {
+      this.canvas.width = w;
+      this.canvas.height = h;
       this.gl.viewport(
         0,
         0,
@@ -171,70 +355,65 @@ export class WebGLRenderer {
     zoom: number = 1.0,
     offsetX: number = 0,
     offsetY: number = 0,
+    currentColor: string = "#F00",
+    currentSize: number = 15,
   ): void {
-    if (!this.gl || !this.program || !this.canvas) return;
-
     const gl = this.gl;
+    if (!gl || !this.program || !this.canvas) return;
+
+    this.resizeCanvas();
+
+    const pointCount = this.mergeAndUpload(
+      objects,
+      currentPath,
+      currentColor,
+      currentSize,
+    );
 
     gl.clearColor(1, 1, 1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
+    if (pointCount === 0) return;
 
     gl.useProgram(this.program);
+    gl.uniform2f(this.uResolution, this.canvas.width, this.canvas.height);
+    gl.uniform1f(this.uZoom, zoom);
+    gl.uniform2f(this.uOffset, offsetX, offsetY);
 
-    gl.uniform2f(
-      this.resolutionLocation,
-      this.canvas.width,
-      this.canvas.height,
-    );
-    gl.uniform1f(this.zoomLocation, zoom);
-    gl.uniform2f(this.offsetLocation, offsetX, offsetY);
-    gl.uniform1f(this.pointSizeLocation, 15); // średnica okręgu
+    // Jeden bind + setup atrybutów przez stride
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertex);
+    const stride = FPV * 4; // 7 floats * 4 bytes
 
-    const objectsToRender = [
-      ...objects,
-      ...(currentPath.length > 0
-        ? [
-            {
-              id: "current",
-              type: "path" as const,
-              points: currentPath,
-              color: "#000000",
-              selected: false,
-            },
-          ]
-        : []),
-    ];
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    gl.enableVertexAttribArray(this.positionLocation);
-    gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-    objectsToRender.forEach((obj) => {
-      if (!obj.points.length) return;
-
-      const color = this.hexToRgba(obj.color);
-      gl.uniform4fv(this.colorLocation, color);
-
-      const positions: number[] = [];
-
-      obj.points.forEach((p) => {
-        positions.push(p.x, p.y);
-      });
-
-      gl.bufferData(
-        gl.ARRAY_BUFFER,
-        new Float32Array(positions),
-        gl.DYNAMIC_DRAW,
+    const attr = (loc: number, size: number, offsetFloats: number) => {
+      if (loc < 0) return;
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(
+        loc,
+        size,
+        gl.FLOAT,
+        false,
+        stride,
+        offsetFloats * 4,
       );
+    };
 
-      gl.drawArrays(gl.POINTS, 0, obj.points.length);
-    });
+    attr(this.aPos, 2, 0); // [x, y]
+    attr(this.aColor, 4, 2); // [r, g, b, a]
+    attr(this.aSize, 1, 6); // [size]
+
+    // Jeden draw call dla całej sceny
+    gl.drawArrays(gl.POINTS, 0, pointCount);
   }
 
   cleanup(): void {
-    // Cleanup if needed
+    const gl = this.gl;
+    if (gl) {
+      gl.deleteBuffer(this.bufVertex);
+      if (this.program) gl.deleteProgram(this.program);
+    }
     this.gl = null;
     this.program = null;
     this.canvas = null;
+    this.geoCache.clear();
+    this.cacheKeys.clear();
   }
 }

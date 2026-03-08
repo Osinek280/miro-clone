@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { WebGLRenderer } from "./WebGLRenderer";
-import { DrawModeEnum, type DrawObject, type Point } from "./types/types";
+import {
+  DrawModeEnum,
+  type DrawObject,
+  type Point,
+  type ToolState,
+} from "./types/types";
 import { useCamera } from "./hooks/useCamera";
 import { useMouseHandlers } from "./hooks/useMouseHandlers";
+import Palette from "./components/Palette";
+import { usePalette } from "./components/usePalette";
 
 export default function Whiteboard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -13,6 +20,14 @@ export default function Whiteboard() {
 
   const objectsRef = useRef(objects);
   const currentPathRef = useRef(currentPath);
+
+  const tsRef = useRef<ToolState>({
+    // ts -> tool settings
+    color: "#000",
+    size: 10,
+  });
+
+  const { color, size, setColor, setSize } = usePalette(tsRef);
 
   const {
     worldToScreen,
@@ -41,8 +56,33 @@ export default function Whiteboard() {
     setObjects,
     setCurrentPath,
     currentPath,
+    color,
+    size,
     mode,
   );
+
+  const generateObjects = () => {
+    const arr: DrawObject[] = [];
+
+    for (let i = 0; i < 10000; i++) {
+      const x = Math.random() * 5000 - 2500;
+      const y = Math.random() * 5000 - 2500;
+
+      arr.push({
+        id: `obj-${i}`,
+        points: [
+          { x, y },
+          { x: x + Math.random() * 50, y: y + Math.random() * 50 },
+        ],
+        type: "path",
+        color: "#0d0d0d",
+        selected: false,
+        size: 15,
+      });
+    }
+
+    setObjects(arr);
+  };
 
   // Deselect all objects when mode changes to draw
   useEffect(() => {
@@ -100,8 +140,10 @@ export default function Whiteboard() {
       camera.zoom,
       camera.offsetX,
       camera.offsetY,
+      color,
+      size,
     );
-  }, [objects, currentPath, cameraRef]);
+  }, [objects, currentPath, cameraRef, color, size]);
 
   // Render on changes
   useEffect(() => {
@@ -145,6 +187,12 @@ export default function Whiteboard() {
           className={`px-4 py-2 rounded ${mode === DrawModeEnum.Select ? "bg-blue-500 text-white" : "bg-white text-gray-700"}`}
         >
           Select
+        </button>
+        <button
+          onClick={generateObjects}
+          className="px-4 py-2 rounded bg-green-500 text-white"
+        >
+          Generate 10k objects
         </button>
         {selectedObjectId && (
           <button
@@ -212,6 +260,14 @@ export default function Whiteboard() {
           }}
         />
       )}
+
+      <Palette
+        color={color}
+        size={size}
+        setColor={setColor}
+        setSize={setSize}
+      />
+
       <canvas
         ref={canvasRef}
         className="w-full h-full"

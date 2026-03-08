@@ -14,6 +14,8 @@ export function useMouseHandlers(
   setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>,
   setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>,
   currentPath: Point[],
+  currentColor: string,
+  currentSize: number,
   mode: DrawModeEnum,
 ) {
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
@@ -144,7 +146,8 @@ export function useMouseHandlers(
           id: Date.now().toString(),
           type: "path",
           points: currentPath,
-          color: "#000000",
+          color: currentColor,
+          size: currentSize,
           selected: false,
         },
       ]);
