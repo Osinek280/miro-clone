@@ -20,6 +20,7 @@ export interface Camera {
 export enum DrawModeEnum {
   Draw = "draw",
   Select = "select",
+  Grab = "grab",
 }
 
 export type ToolState = {

@@ -10,14 +10,14 @@ import { useCamera } from "./hooks/useCamera";
 import { useMouseHandlers } from "./hooks/useMouseHandlers";
 import Palette from "./components/Palette";
 import { usePalette } from "./components/usePalette";
+import { getCursor } from "./utils/cursorUtils";
 
 export default function Whiteboard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
   const [objects, setObjects] = useState<DrawObject[]>([]);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
-  const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
-
+  // const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
   const objectsRef = useRef(objects);
   const currentPathRef = useRef(currentPath);
 
@@ -50,16 +50,19 @@ export default function Whiteboard() {
     selectedIds,
     setSelectedIds,
     selectedBoundingBox,
+    mode,
+    setMode,
   } = useMouseHandlers(
     canvasRef,
     cameraRef,
+    targetCameraRef,
+    rendererRef,
     objects,
     setObjects,
     setCurrentPath,
     currentPath,
     color,
     size,
-    mode,
   );
 
   const generateObjects = () => {
@@ -83,13 +86,6 @@ export default function Whiteboard() {
 
     setObjects(arr);
   };
-
-  // Deselect all objects when mode changes to draw
-  useEffect(() => {
-    if (mode === DrawModeEnum.Draw) {
-      setSelectedIds([]);
-    }
-  }, [mode, setSelectedIds]);
 
   // Initialize WebGL
   useEffect(() => {
@@ -322,26 +318,22 @@ export default function Whiteboard() {
         ref={canvasRef}
         className="w-full h-full"
         style={{
-          cursor: `url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAARCAQAAACRZI9xAAAA1ElEQVR4Xq3NPQ4BURQF4FMgUfjZAi16jdYiKEWYQoRZAEOhkRGS1yhIRJjMLEEjmUb0ViER9SRy5GUiPPN07inPd+8FtMMEi0zruxBkaJ1EYDP3C6RodRyw7AczLWKave0SlCn7gR15Jy/Yq5uoHkJ0Fix8g2HXAfOXEHUcDphQwaC3D7cl2i5pKW8+gcx0zX4EmLs3MFyOmPkrANgYbt6grQGxxzx1VUAW6rBwEi/Q8jiOAIA1w5V18m7utADgpHJser54LGhoAUCTE9ZZYlxbA3gCk6KrqV6OZIIAAAAASUVORK5CYII=") 1 16, auto`,
+          cursor: getCursor(mode),
           touchAction: "none",
         }}
-        onPointerDown={(e) => {
-          e.preventDefault();
-          handleMouseDown(e as unknown as React.MouseEvent<HTMLCanvasElement>);
-        }}
-        onPointerMove={(e) => {
-          e.preventDefault();
-          handleMouseMove(e as unknown as React.MouseEvent<HTMLCanvasElement>);
-        }}
-        onPointerUp={(e) => {
-          e.preventDefault();
-          handleMouseUp();
-        }}
-        onPointerLeave={(e) => {
-          e.preventDefault();
-          handleMouseUp();
-        }}
-        onMouseLeave={handleMouseUp}
+        onPointerDown={(e) =>
+          handleMouseDown(e as unknown as React.MouseEvent<HTMLCanvasElement>)
+        }
+        onPointerMove={(e) =>
+          handleMouseMove(e as unknown as React.MouseEvent<HTMLCanvasElement>)
+        }
+        onPointerUp={(e) =>
+          handleMouseUp(e as unknown as React.MouseEvent<HTMLCanvasElement>)
+        }
+        onPointerLeave={(e) =>
+          handleMouseUp(e as unknown as React.MouseEvent<HTMLCanvasElement>)
+        }
+        // onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
       />
     </div>

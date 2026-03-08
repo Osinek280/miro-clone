@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DrawModeEnum,
   type Camera,
@@ -7,26 +7,32 @@ import {
 } from "../types/types";
 import { getCanvasPoint } from "../utils/cameraUtils";
 import { calcBoundingBox, findObjectAtPoint } from "../utils/objectUtils";
+import type { WebGLRenderer } from "../WebGLRenderer";
 
 export function useMouseHandlers(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   cameraRef: React.RefObject<Camera>,
+  targetCameraRef: React.RefObject<Camera>, // <-- dodaj
+  rendererRef: React.RefObject<WebGLRenderer | null>, // <-- dodaj
   objects: DrawObject[],
   setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>,
   setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>,
   currentPath: Point[],
   currentColor: string,
   currentSize: number,
-  mode: DrawModeEnum,
 ) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isMoving, setIsMoving] = useState(false);
   const lastMousePosRef = useRef<Point>({ x: 0, y: 0 });
   const [isDrawing, setIsDrawing] = useState(false);
+  const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
   const [selectedBoundingBox, setSelectedBoundingBox] = useState<{
     start: Point;
     end: Point;
   } | null>(null);
+
+  const prevModeRef = useRef<DrawModeEnum>(DrawModeEnum.Draw);
+  const isGrabbingRef = useRef(false);
 
   const [selectionBox, setSelectionBox] = useState<{
     start: Point;
@@ -35,6 +41,13 @@ export function useMouseHandlers(
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCanvasPoint(e, canvasRef, cameraRef.current);
+
+    if (e.button === 1) {
+      prevModeRef.current = mode;
+      setMode(DrawModeEnum.Grab);
+      isGrabbingRef.current = true;
+      return;
+    }
 
     if (mode === DrawModeEnum.Select) {
       const obj = findObjectAtPoint(point, objects, cameraRef.current.zoom);
@@ -65,6 +78,25 @@ export function useMouseHandlers(
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCanvasPoint(e, canvasRef, cameraRef.current);
+
+    if (isGrabbingRef.current) {
+      const dx = e.movementX;
+      const dy = e.movementY;
+      cameraRef.current.offsetX += dx;
+      cameraRef.current.offsetY += dy;
+      targetCameraRef.current.offsetX += dx;
+      targetCameraRef.current.offsetY += dy;
+      rendererRef.current?.render(
+        objects,
+        currentPath,
+        cameraRef.current.zoom,
+        cameraRef.current.offsetX,
+        cameraRef.current.offsetY,
+        currentColor,
+        currentSize,
+      );
+      return;
+    }
 
     if (selectionBox) {
       // Update selection box as we drag
@@ -123,7 +155,12 @@ export function useMouseHandlers(
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (e?.button === 1 || isGrabbingRef.current) {
+      setMode(prevModeRef.current);
+      isGrabbingRef.current = false;
+      return;
+    }
     if (selectionBox) {
       // Finalize box selection
       const box = selectionBox;
@@ -169,6 +206,15 @@ export function useMouseHandlers(
     setIsMoving(false);
   };
 
+  // Deselect all objects when mode changes to draw
+  useEffect(() => {
+    if (mode === DrawModeEnum.Draw) {
+      // Odłóż reset na koniec kolejki zadań
+      const id = setTimeout(() => setSelectedIds([]), 0);
+      return () => clearTimeout(id);
+    }
+  }, [mode]);
+
   return {
     handleMouseDown,
     handleMouseMove,
@@ -177,5 +223,7 @@ export function useMouseHandlers(
     setSelectedIds,
     selectedBoundingBox,
     selectionBox,
+    mode,
+    setMode,
   };
 }
