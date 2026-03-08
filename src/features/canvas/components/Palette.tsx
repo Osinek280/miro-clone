@@ -1,12 +1,4 @@
-const COLORS = [
-  "#0d0d0d",
-  "#e63946",
-  "#2176ff",
-  "#06d6a0",
-  "#f4a261",
-  "#a855f7",
-  "#f9f6f0",
-];
+import { PALETTE_COLORS } from "../constants/paletteColors";
 
 export default function Palette({
   color,
@@ -21,7 +13,7 @@ export default function Palette({
 }) {
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[#f9f6f0]/95 border border-black/10 rounded-full px-4 py-2 shadow-[0_8px_30px_rgba(13,13,13,0.09)] backdrop-blur-xl z-40">
-      {COLORS.map((hex) => (
+      {PALETTE_COLORS.map((hex) => (
         <div
           key={hex}
           title={hex}

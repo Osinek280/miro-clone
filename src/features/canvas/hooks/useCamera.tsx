@@ -2,6 +2,17 @@ import { useCallback, useRef, useState } from "react";
 import type { Camera, DrawObject, Point, ToolState } from "../types/types";
 import type { WebGLRenderer } from "../WebGLRenderer";
 import { screenToWorld as utilScreenToWorld } from "../utils/cameraUtils";
+import {
+  CAMERA_LERP_SPEED,
+  CAMERA_THRESHOLD,
+  ZOOM_MIN,
+  ZOOM_MAX,
+  ZOOM_BUTTON_FACTOR,
+  TRACKPAD_ZOOM_FACTOR,
+  MOUSE_ZOOM_FACTOR,
+  ZOOM_CHANGE_EPSILON,
+  ZOOM_DISPLAY_PRECISION,
+} from "../constants/cameraConstants";
 
 export function useCamera(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -19,19 +30,20 @@ export function useCamera(
   const animateCameraRef = useRef<() => void>(() => {
     const camera = cameraRef.current;
     const target = targetCameraRef.current;
-    const LERP_SPEED = 0.25;
     const zoomDiff = Math.abs(camera.zoom - target.zoom);
     const offsetDiff =
       Math.abs(camera.offsetX - target.offsetX) +
       Math.abs(camera.offsetY - target.offsetY);
-    const threshold = 0.001;
 
-    if (zoomDiff > threshold || offsetDiff > threshold) {
-      camera.zoom += (target.zoom - camera.zoom) * LERP_SPEED;
-      camera.offsetX += (target.offsetX - camera.offsetX) * LERP_SPEED;
-      camera.offsetY += (target.offsetY - camera.offsetY) * LERP_SPEED;
+    if (zoomDiff > CAMERA_LERP_SPEED || offsetDiff > CAMERA_THRESHOLD) {
+      camera.zoom += (target.zoom - camera.zoom) * CAMERA_LERP_SPEED;
+      camera.offsetX += (target.offsetX - camera.offsetX) * CAMERA_LERP_SPEED;
+      camera.offsetY += (target.offsetY - camera.offsetY) * CAMERA_LERP_SPEED;
 
-      setDisplayZoom(Math.round(camera.zoom * 100) / 100);
+      setDisplayZoom(
+        Math.round(camera.zoom * ZOOM_DISPLAY_PRECISION) /
+          ZOOM_DISPLAY_PRECISION,
+      );
 
       // render
       if (rendererRef.current) {
@@ -54,7 +66,10 @@ export function useCamera(
       camera.zoom = target.zoom;
       camera.offsetX = target.offsetX;
       camera.offsetY = target.offsetY;
-      setDisplayZoom(Math.round(camera.zoom * 100) / 100);
+      setDisplayZoom(
+        Math.round(camera.zoom * ZOOM_DISPLAY_PRECISION) /
+          ZOOM_DISPLAY_PRECISION,
+      );
 
       if (rendererRef.current) {
         rendererRef.current.render(
@@ -130,13 +145,13 @@ export function useCamera(
 
       const delta = e.deltaY;
       const isTrackpad = Math.abs(delta) < 50;
-      const zoomFactor = isTrackpad ? 1.02 : 1.15;
+      const zoomFactor = isTrackpad ? TRACKPAD_ZOOM_FACTOR : MOUSE_ZOOM_FACTOR;
       const zoomMultiplier = delta > 0 ? 1 / zoomFactor : zoomFactor;
 
       let newZoom = currentZoom * zoomMultiplier;
-      newZoom = Math.max(0.01, Math.min(4.0, newZoom));
+      newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
 
-      if (Math.abs(newZoom - currentZoom) > 0.0001) {
+      if (Math.abs(newZoom - currentZoom) > ZOOM_CHANGE_EPSILON) {
         zoomTowardPoint(e.clientX, e.clientY, newZoom);
       }
     },
@@ -152,7 +167,7 @@ export function useCamera(
     const centerY = rect.top + rect.height / 2;
 
     const camera = cameraRef.current;
-    const newZoom = Math.min(4.0, camera.zoom * 1.2);
+    const newZoom = Math.min(ZOOM_MAX, camera.zoom * ZOOM_BUTTON_FACTOR);
     zoomTowardPoint(centerX, centerY, newZoom); // Smooth zoom for buttons too
   };
 
@@ -165,7 +180,7 @@ export function useCamera(
     const centerY = rect.top + rect.height / 2;
 
     const camera = cameraRef.current;
-    const newZoom = Math.max(0.01, camera.zoom / 1.2);
+    const newZoom = Math.max(ZOOM_MIN, camera.zoom / ZOOM_BUTTON_FACTOR);
     zoomTowardPoint(centerX, centerY, newZoom);
   };
 
