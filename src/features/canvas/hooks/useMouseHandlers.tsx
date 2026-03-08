@@ -18,10 +18,14 @@ export function useMouseHandlers(
   currentSize: number,
   mode: DrawModeEnum,
 ) {
-  const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isMoving, setIsMoving] = useState(false);
   const lastMousePosRef = useRef<Point>({ x: 0, y: 0 });
   const [isDrawing, setIsDrawing] = useState(false);
+  const [selectedBoundingBox, setSelectedBoundingBox] = useState<{
+    start: Point;
+    end: Point;
+  } | null>(null);
 
   const [selectionBox, setSelectionBox] = useState<{
     start: Point;
@@ -35,9 +39,9 @@ export function useMouseHandlers(
       const obj = findObjectAtPoint(point, objects);
       if (obj) {
         // If object is already selected, just start moving without resetting selection
-        if (!obj.selected) {
+        if (!selectedIds.includes(obj.id)) {
           // If object is not selected, select it (and deselect others)
-          setSelectedObjectId(obj.id);
+          setSelectedIds((prev) => [...prev, obj.id]);
           setObjects((prev) =>
             prev.map((o) => ({ ...o, selected: o.id === obj.id })),
           );
@@ -49,7 +53,7 @@ export function useMouseHandlers(
       } else {
         // Start box selection
         setSelectionBox({ start: point, end: point });
-        setSelectedObjectId(null);
+        setSelectedIds([]);
         setObjects((prev) => prev.map((o) => ({ ...o, selected: false })));
       }
     } else {
@@ -72,7 +76,7 @@ export function useMouseHandlers(
       // Move all selected objects by delta
       setObjects((prev) =>
         prev.map((o) =>
-          o.selected
+          selectedIds.includes(o.id)
             ? {
                 ...o,
                 points: o.points.map((p: Point) => ({
@@ -82,6 +86,14 @@ export function useMouseHandlers(
               }
             : o,
         ),
+      );
+      setSelectedBoundingBox((prev) =>
+        prev
+          ? {
+              start: { x: prev.start.x + dx, y: prev.start.y + dy },
+              end: { x: prev.end.x + dx, y: prev.end.y + dy },
+            }
+          : null,
       );
 
       // Update last mouse position for next frame
@@ -126,16 +138,24 @@ export function useMouseHandlers(
         ),
       );
 
-      // Update objects with selection state
-      setObjects((prev) =>
-        prev.map((o) => ({
-          ...o,
-          selected: selectedObjects.some((s) => s.id === o.id),
-        })),
+      setSelectedIds(selectedObjects.map((o) => o.id));
+      const allSelected = objects.filter((o) =>
+        selectedObjects.map((s) => s.id).includes(o.id),
       );
-
-      if (selectedObjects.length > 0) {
-        setSelectedObjectId(selectedObjects[0].id);
+      if (allSelected.length > 0) {
+        const allPoints = allSelected.flatMap((o) => o.points);
+        setSelectedBoundingBox({
+          start: {
+            x: Math.min(...allPoints.map((p) => p.x)),
+            y: Math.min(...allPoints.map((p) => p.y)),
+          },
+          end: {
+            x: Math.max(...allPoints.map((p) => p.x)),
+            y: Math.max(...allPoints.map((p) => p.y)),
+          },
+        });
+      } else {
+        setSelectedBoundingBox(null);
       }
 
       setSelectionBox(null);
@@ -161,8 +181,9 @@ export function useMouseHandlers(
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
-    selectedObjectId,
-    setSelectedObjectId,
+    selectedIds,
+    setSelectedIds,
+    selectedBoundingBox,
     selectionBox,
   };
 }

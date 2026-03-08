@@ -47,8 +47,9 @@ export default function Whiteboard() {
     handleMouseMove,
     handleMouseUp,
     selectionBox,
-    selectedObjectId,
-    setSelectedObjectId,
+    selectedIds,
+    setSelectedIds,
+    selectedBoundingBox,
   } = useMouseHandlers(
     canvasRef,
     cameraRef,
@@ -76,7 +77,6 @@ export default function Whiteboard() {
         ],
         type: "path",
         color: "#0d0d0d",
-        selected: false,
         size: 15,
       });
     }
@@ -87,11 +87,9 @@ export default function Whiteboard() {
   // Deselect all objects when mode changes to draw
   useEffect(() => {
     if (mode === DrawModeEnum.Draw) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setObjects((prev) => prev.map((o) => ({ ...o, selected: false })));
-      setSelectedObjectId(null);
+      setSelectedIds([]);
     }
-  }, [mode, setSelectedObjectId]);
+  }, [mode, setSelectedIds]);
 
   // Initialize WebGL
   useEffect(() => {
@@ -194,13 +192,13 @@ export default function Whiteboard() {
         >
           Generate 10k objects
         </button>
-        {selectedObjectId && (
+        {selectedIds.length > 0 && (
           <button
             onClick={() => {
               setObjects((prev) =>
-                prev.filter((o) => o.id !== selectedObjectId),
+                prev.filter((o) => !selectedIds.includes(o.id)),
               );
-              setSelectedObjectId(null);
+              setSelectedIds([]);
             }}
             className="px-4 py-2 rounded bg-red-500 text-white"
           >
@@ -255,6 +253,62 @@ export default function Whiteboard() {
             ),
             border: "2px solid #3b82f6",
             backgroundColor: "rgba(59, 130, 246, 0.1)",
+            pointerEvents: "none",
+            zIndex: 5,
+          }}
+        />
+      )}
+
+      {selectedBoundingBox && selectedIds.length > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            left:
+              Math.min(
+                worldToScreen(
+                  selectedBoundingBox.start.x,
+                  selectedBoundingBox.start.y,
+                ).x,
+                worldToScreen(
+                  selectedBoundingBox.end.x,
+                  selectedBoundingBox.end.y,
+                ).x,
+              ) - 6,
+            top:
+              Math.min(
+                worldToScreen(
+                  selectedBoundingBox.start.x,
+                  selectedBoundingBox.start.y,
+                ).y,
+                worldToScreen(
+                  selectedBoundingBox.end.x,
+                  selectedBoundingBox.end.y,
+                ).y,
+              ) - 6,
+            width:
+              Math.abs(
+                worldToScreen(
+                  selectedBoundingBox.end.x,
+                  selectedBoundingBox.end.y,
+                ).x -
+                  worldToScreen(
+                    selectedBoundingBox.start.x,
+                    selectedBoundingBox.start.y,
+                  ).x,
+              ) + 12,
+            height:
+              Math.abs(
+                worldToScreen(
+                  selectedBoundingBox.end.x,
+                  selectedBoundingBox.end.y,
+                ).y -
+                  worldToScreen(
+                    selectedBoundingBox.start.x,
+                    selectedBoundingBox.start.y,
+                  ).y,
+              ) + 12,
+            border: "2px dashed #3b82f6",
+            borderRadius: "4px",
             pointerEvents: "none",
             zIndex: 5,
           }}

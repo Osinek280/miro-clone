@@ -8,11 +8,7 @@ export interface DrawObject {
   type: "path";
   points: Point[];
   color: string;
-  selected: boolean;
   size: number;
-
-  _cachedPositions?: Float32Array;
-  _cachedAlphas?: Float32Array;
 }
 
 export interface Camera {
