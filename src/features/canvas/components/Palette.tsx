@@ -55,7 +55,7 @@ export default function Palette({
           }}
           className="w-16 h-1 accent-black"
         />
-        <span className="text-gray-500 min-w-[22px] text-center">{size}</span>
+        <span className="text-gray-500 min-w-5.5 text-center">{size}</span>
       </div>
     </div>
   );
