@@ -355,8 +355,8 @@ export class WebGLRenderer {
     zoom: number = 1.0,
     offsetX: number = 0,
     offsetY: number = 0,
-    currentColor: string = "#F00",
-    currentSize: number = 15,
+    currentColor: string,
+    currentSize: number,
   ): void {
     const gl = this.gl;
     if (!gl || !this.program || !this.canvas) return;

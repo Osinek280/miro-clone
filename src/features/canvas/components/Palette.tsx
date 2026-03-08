@@ -47,7 +47,7 @@ export default function Palette({
         <input
           type="range"
           min={1}
-          max={60}
+          max={150}
           value={size}
           onChange={(e) => {
             const v = +e.target.value;

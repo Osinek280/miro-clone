@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import type { Camera, DrawObject, Point } from "../types/types";
+import type { Camera, DrawObject, Point, ToolState } from "../types/types";
 import type { WebGLRenderer } from "../WebGLRenderer";
 import { screenToWorld as utilScreenToWorld } from "../utils/cameraUtils";
 
@@ -8,6 +8,7 @@ export function useCamera(
   rendererRef: React.RefObject<WebGLRenderer | null>,
   objectsRef: React.RefObject<DrawObject[]>,
   currentPathRef: React.RefObject<Point[]>,
+  toolStateRef: React.RefObject<ToolState>,
 ) {
   const cameraRef = useRef<Camera>({ zoom: 1, offsetX: 0, offsetY: 0 });
   const targetCameraRef = useRef<Camera>({ zoom: 1, offsetX: 0, offsetY: 0 });
@@ -40,6 +41,8 @@ export function useCamera(
           camera.zoom,
           camera.offsetX,
           camera.offsetY,
+          toolStateRef.current.color,
+          toolStateRef.current.size,
         );
       }
 
@@ -60,6 +63,8 @@ export function useCamera(
           camera.zoom,
           camera.offsetX,
           camera.offsetY,
+          toolStateRef.current.color,
+          toolStateRef.current.size,
         );
       }
 

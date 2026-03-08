@@ -96,7 +96,7 @@ export function useMouseHandlers(
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         const newPoints = [];
-        const steps = Math.floor(distance / 2); // 1 punkt co 2px
+        const steps = Math.floor(distance / 0.25); // 1 punkt co 2px
         for (let i = 1; i <= steps; i++) {
           newPoints.push({
             x: last.x + (dx * i) / steps,
