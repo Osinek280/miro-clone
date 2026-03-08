@@ -5,7 +5,8 @@ import {
   type DrawObject,
   type Point,
 } from "../types/types";
-import { findObjectAtPoint, getCanvasPoint } from "../utils/cameraUtils";
+import { getCanvasPoint } from "../utils/cameraUtils";
+import { calcBoundingBox, findObjectAtPoint } from "../utils/objectUtils";
 
 export function useMouseHandlers(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -36,7 +37,7 @@ export function useMouseHandlers(
     const point = getCanvasPoint(e, canvasRef, cameraRef.current);
 
     if (mode === DrawModeEnum.Select) {
-      const obj = findObjectAtPoint(point, objects);
+      const obj = findObjectAtPoint(point, objects, cameraRef.current.zoom);
       if (obj) {
         // If object is already selected, just start moving without resetting selection
         if (!selectedIds.includes(obj.id)) {
@@ -87,6 +88,7 @@ export function useMouseHandlers(
             : o,
         ),
       );
+
       setSelectedBoundingBox((prev) =>
         prev
           ? {
@@ -143,17 +145,7 @@ export function useMouseHandlers(
         selectedObjects.map((s) => s.id).includes(o.id),
       );
       if (allSelected.length > 0) {
-        const allPoints = allSelected.flatMap((o) => o.points);
-        setSelectedBoundingBox({
-          start: {
-            x: Math.min(...allPoints.map((p) => p.x)),
-            y: Math.min(...allPoints.map((p) => p.y)),
-          },
-          end: {
-            x: Math.max(...allPoints.map((p) => p.x)),
-            y: Math.max(...allPoints.map((p) => p.y)),
-          },
-        });
+        setSelectedBoundingBox(calcBoundingBox(allSelected));
       } else {
         setSelectedBoundingBox(null);
       }

@@ -263,50 +263,46 @@ export default function Whiteboard() {
         <div
           style={{
             position: "fixed",
-            left:
-              Math.min(
+            left: Math.min(
+              worldToScreen(
+                selectedBoundingBox.start.x,
+                selectedBoundingBox.start.y,
+              ).x,
+              worldToScreen(
+                selectedBoundingBox.end.x,
+                selectedBoundingBox.end.y,
+              ).x,
+            ),
+            top: Math.min(
+              worldToScreen(
+                selectedBoundingBox.start.x,
+                selectedBoundingBox.start.y,
+              ).y,
+              worldToScreen(
+                selectedBoundingBox.end.x,
+                selectedBoundingBox.end.y,
+              ).y,
+            ),
+            width: Math.abs(
+              worldToScreen(
+                selectedBoundingBox.end.x,
+                selectedBoundingBox.end.y,
+              ).x -
                 worldToScreen(
                   selectedBoundingBox.start.x,
                   selectedBoundingBox.start.y,
                 ).x,
-                worldToScreen(
-                  selectedBoundingBox.end.x,
-                  selectedBoundingBox.end.y,
-                ).x,
-              ) - 6,
-            top:
-              Math.min(
+            ),
+            height: Math.abs(
+              worldToScreen(
+                selectedBoundingBox.end.x,
+                selectedBoundingBox.end.y,
+              ).y -
                 worldToScreen(
                   selectedBoundingBox.start.x,
                   selectedBoundingBox.start.y,
                 ).y,
-                worldToScreen(
-                  selectedBoundingBox.end.x,
-                  selectedBoundingBox.end.y,
-                ).y,
-              ) - 6,
-            width:
-              Math.abs(
-                worldToScreen(
-                  selectedBoundingBox.end.x,
-                  selectedBoundingBox.end.y,
-                ).x -
-                  worldToScreen(
-                    selectedBoundingBox.start.x,
-                    selectedBoundingBox.start.y,
-                  ).x,
-              ) + 12,
-            height:
-              Math.abs(
-                worldToScreen(
-                  selectedBoundingBox.end.x,
-                  selectedBoundingBox.end.y,
-                ).y -
-                  worldToScreen(
-                    selectedBoundingBox.start.x,
-                    selectedBoundingBox.start.y,
-                  ).y,
-              ) + 12,
+            ),
             border: "2px dashed #3b82f6",
             borderRadius: "4px",
             pointerEvents: "none",
