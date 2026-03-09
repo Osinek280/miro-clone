@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Camera, DrawObject, Point, ToolState } from "../types/types";
 import type { WebGLRenderer } from "../WebGLRenderer";
 import { screenToWorld as utilScreenToWorld } from "../utils/cameraUtils";
@@ -135,28 +135,28 @@ export function useCamera(
     [canvasRef, cameraRef],
   );
 
-  const handleWheel = useCallback(
-    (e: React.WheelEvent<HTMLCanvasElement>) => {
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-
-      const camera = cameraRef.current;
-      const currentZoom = camera.zoom;
-
+      // przenieś tutaj logikę z handleWheel
       const delta = e.deltaY;
       const isTrackpad = Math.abs(delta) < 50;
       const zoomFactor = isTrackpad ? TRACKPAD_ZOOM_FACTOR : MOUSE_ZOOM_FACTOR;
       const zoomMultiplier = delta > 0 ? 1 / zoomFactor : zoomFactor;
-
+      const currentZoom = cameraRef.current.zoom;
       let newZoom = currentZoom * zoomMultiplier;
       newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
-
       if (Math.abs(newZoom - currentZoom) > ZOOM_CHANGE_EPSILON) {
         zoomTowardPoint(e.clientX, e.clientY, newZoom);
       }
-    },
-    [zoomTowardPoint],
-  );
+    };
+
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+  }, [canvasRef, zoomTowardPoint]);
 
   const handleZoomIn = () => {
     const canvas = canvasRef.current;
@@ -204,7 +204,6 @@ export function useCamera(
   return {
     worldToScreen,
     screenToWorld,
-    handleWheel,
     cameraRef,
     targetCameraRef,
     displayZoom,

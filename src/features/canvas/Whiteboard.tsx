@@ -30,7 +30,6 @@ export default function Whiteboard() {
     cameraRef,
     targetCameraRef,
     animationFrameRef,
-    handleWheel,
     handleZoomIn,
     handleZoomOut,
     handleZoomReset,
@@ -288,8 +287,6 @@ export default function Whiteboard() {
         onPointerLeave={(e) =>
           handleMouseUp(e as unknown as React.MouseEvent<HTMLCanvasElement>)
         }
-        // onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
       />
     </div>
   );
