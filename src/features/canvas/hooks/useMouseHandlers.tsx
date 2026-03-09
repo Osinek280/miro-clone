@@ -48,7 +48,7 @@ export function useMouseHandlers(
   );
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (e.button === 1) {
+    if (e.button === 1 || mode === DrawModeEnum.Grab) {
       prevModeRef.current = mode;
       setMode(DrawModeEnum.Grab);
       isGrabbingRef.current = true;
@@ -91,7 +91,7 @@ export function useMouseHandlers(
   };
 
   useEffect(() => {
-    if (mode === DrawModeEnum.Draw) {
+    if (mode === DrawModeEnum.Draw && select.selectedIds.length !== 0) {
       select.setSelectedIds([]);
     }
   }, [mode, select]);
