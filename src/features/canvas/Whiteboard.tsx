@@ -8,11 +8,20 @@ import { usePalette } from "./components/usePalette";
 import { getCursor } from "./utils/cursorUtils";
 import Toolbar from "./components/Toolbar";
 import { Zoom } from "./components/Zoom";
+import { Grid } from "./grid/Grid";
 
 export default function Whiteboard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
-  const [objects, setObjects] = useState<DrawObject[]>([]);
+  const [objects, setObjects] = useState<DrawObject[]>([
+    {
+      id: "",
+      type: "path",
+      points: [{ x: 0, y: 0 }],
+      color: "#000",
+      size: 15,
+    },
+  ]);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
   const objectsRef = useRef(objects);
   const currentPathRef = useRef(currentPath);
@@ -105,6 +114,24 @@ export default function Whiteboard() {
       window.removeEventListener("resize", resizeCanvas);
       renderer.cleanup();
     };
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !rendererRef.current) return;
+
+    // Pobierz wymiary canvasa
+    const rect = canvas.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    // Ustaw początkowy offset kamery, aby (0,0) było na środku
+    cameraRef.current.offsetX = centerX;
+    cameraRef.current.offsetY = centerY;
+
+    // Zaktualizuj targetCameraRef, żeby animacja nie przesunęła kamery
+    targetCameraRef.current.offsetX = centerX;
+    targetCameraRef.current.offsetY = centerY;
   }, []);
 
   useEffect(() => {
@@ -268,10 +295,14 @@ export default function Whiteboard() {
         setSize={setSize}
       />
 
+      <Grid cameraRef={cameraRef} style="grid"></Grid>
       <canvas
         ref={canvasRef}
         className="w-full h-full"
         style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 1,
           cursor: getCursor(mode),
           touchAction: "none",
         }}

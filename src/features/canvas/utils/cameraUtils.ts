@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import type { Camera, DrawObject, Point } from "../types/types";
+import type { Camera, Point } from "../types/types";
 
 export function screenToWorld(
   screenX: number,

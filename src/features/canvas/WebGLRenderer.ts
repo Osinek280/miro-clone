@@ -294,6 +294,7 @@ export class WebGLRenderer {
       antialias: true,
       premultipliedAlpha: false,
       preserveDrawingBuffer: false,
+      alpa: true,
     }) as WebGLRenderingContext | null;
 
     if (!gl) {
@@ -370,7 +371,7 @@ export class WebGLRenderer {
       currentSize,
     );
 
-    gl.clearColor(1, 1, 1, 1);
+    gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     if (pointCount === 0) return;
 
