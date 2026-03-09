@@ -11,13 +11,13 @@ import { useMouseHandlers } from "./hooks/useMouseHandlers";
 import Palette from "./components/Palette";
 import { usePalette } from "./components/usePalette";
 import { getCursor } from "./utils/cursorUtils";
+import Toolbar from "./components/Toolbar";
 
 export default function Whiteboard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
   const [objects, setObjects] = useState<DrawObject[]>([]);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
-  // const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
   const objectsRef = useRef(objects);
   const currentPathRef = useRef(currentPath);
 
@@ -306,6 +306,8 @@ export default function Whiteboard() {
           }}
         />
       )}
+
+      <Toolbar mode={mode} setMode={setMode} />
 
       <Palette
         color={color}
