@@ -12,6 +12,7 @@ import Palette from "./components/Palette";
 import { usePalette } from "./components/usePalette";
 import { getCursor } from "./utils/cursorUtils";
 import Toolbar from "./components/Toolbar";
+import { Zoom } from "./components/Zoom";
 
 export default function Whiteboard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -202,31 +203,14 @@ export default function Whiteboard() {
           </button>
         )}
       </div>
-      <div className="absolute top-4 right-4 z-10 flex gap-2 items-center bg-white rounded shadow-lg px-3 py-2">
-        <button
-          onClick={handleZoomOut}
-          disabled={displayZoom <= 0.05}
-          className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
-        >
-          −
-        </button>
-        <span className="px-3 py-1 text-sm font-medium text-gray-700 min-w-15 text-center">
-          {Math.round(displayZoom * 100)}%
-        </span>
-        <button
-          onClick={handleZoomIn}
-          disabled={displayZoom >= 4.0}
-          className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
-        >
-          +
-        </button>
-        <button
-          onClick={handleZoomReset}
-          className="px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-xs"
-        >
-          Reset
-        </button>
-      </div>
+
+      <Zoom
+        handleZoomIn={handleZoomIn}
+        handleZoomOut={handleZoomOut}
+        handleZoomReset={handleZoomReset}
+        displayZoom={displayZoom}
+      />
+
       {selectionBox && (
         <div
           style={{
