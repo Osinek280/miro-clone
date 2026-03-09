@@ -1,11 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { WebGLRenderer } from "./WebGLRenderer";
-import {
-  DrawModeEnum,
-  type DrawObject,
-  type Point,
-  type ToolState,
-} from "./types/types";
+import { type DrawObject, type Point, type ToolState } from "./types/types";
 import { useCamera } from "./hooks/useCamera";
 import { useMouseHandlers } from "./hooks/useMouseHandlers";
 import Palette from "./components/Palette";
@@ -49,7 +44,6 @@ export default function Whiteboard() {
     handleMouseUp,
     selectionBox,
     selectedIds,
-    setSelectedIds,
     selectedBoundingBox,
     mode,
     setMode,
@@ -172,36 +166,11 @@ export default function Whiteboard() {
     <div className="w-full h-full relative bg-gray-100">
       <div className="absolute top-4 left-4 z-10 flex gap-2 flex-wrap">
         <button
-          onClick={() => setMode(DrawModeEnum.Draw)}
-          className={`px-4 py-2 rounded ${mode === DrawModeEnum.Draw ? "bg-blue-500 text-white" : "bg-white text-gray-700"}`}
-        >
-          Draw
-        </button>
-        <button
-          onClick={() => setMode(DrawModeEnum.Select)}
-          className={`px-4 py-2 rounded ${mode === DrawModeEnum.Select ? "bg-blue-500 text-white" : "bg-white text-gray-700"}`}
-        >
-          Select
-        </button>
-        <button
           onClick={generateObjects}
-          className="px-4 py-2 rounded bg-green-500 text-white"
+          className="px-4 py-2 rounded bg-amber-500 text-white"
         >
           Generate 10k objects
         </button>
-        {selectedIds.length > 0 && (
-          <button
-            onClick={() => {
-              setObjects((prev) =>
-                prev.filter((o) => !selectedIds.includes(o.id)),
-              );
-              setSelectedIds([]);
-            }}
-            className="px-4 py-2 rounded bg-red-500 text-white"
-          >
-            Delete
-          </button>
-        )}
       </div>
 
       <Zoom
