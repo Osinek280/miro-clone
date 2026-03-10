@@ -25,9 +25,6 @@ export default function Palette({
           `}
           style={{
             background: hex,
-            ...(hex === "#f9f6f0"
-              ? { boxShadow: "inset 0 0 0 1px rgba(13,13,13,0.2)" }
-              : {}),
           }}
         />
       ))}

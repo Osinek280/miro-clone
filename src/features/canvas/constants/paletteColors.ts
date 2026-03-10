@@ -5,5 +5,4 @@ export const PALETTE_COLORS = [
   "#06d6a0",
   "#f4a261",
   "#a855f7",
-  "#f9f6f0",
 ] as const;

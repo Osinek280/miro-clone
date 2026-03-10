@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { WebGLRenderer } from "./WebGLRenderer";
-import { type DrawObject, type Point, type ToolState } from "./types/types";
+import {
+  DrawModeEnum,
+  type DrawObject,
+  type Point,
+  type ToolState,
+} from "./types/types";
 import { useCamera } from "./hooks/useCamera";
 import { useMouseHandlers } from "./hooks/useMouseHandlers";
 import Palette from "./components/Palette";
@@ -13,15 +18,8 @@ import { Grid } from "./grid/Grid";
 export default function Whiteboard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
-  const [objects, setObjects] = useState<DrawObject[]>([
-    {
-      id: "",
-      type: "path",
-      points: [{ x: 0, y: 0 }],
-      color: "#000",
-      size: 15,
-    },
-  ]);
+  const [objects, setObjects] = useState<DrawObject[]>([]);
+  const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
   const objectsRef = useRef(objects);
   const currentPathRef = useRef(currentPath);
@@ -32,7 +30,7 @@ export default function Whiteboard() {
     size: 10,
   });
 
-  const { color, size, setColor, setSize } = usePalette(tsRef);
+  const { color, size, setColor, setSize } = usePalette(tsRef, mode, setMode);
 
   const {
     worldToScreen,
@@ -53,8 +51,6 @@ export default function Whiteboard() {
     selectionBox,
     selectedIds,
     selectedBoundingBox,
-    mode,
-    setMode,
   } = useMouseHandlers(
     canvasRef,
     cameraRef,
@@ -66,6 +62,8 @@ export default function Whiteboard() {
     currentPath,
     color,
     size,
+    mode,
+    setMode,
   );
 
   const generateObjects = () => {

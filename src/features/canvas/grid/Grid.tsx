@@ -13,7 +13,6 @@ export function Grid({ cameraRef, style = "grid" }: GridProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { drawGrid } = useGrid(canvasRef, cameraRef, style);
 
-  // Resize
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;

@@ -294,7 +294,6 @@ export class WebGLRenderer {
       antialias: true,
       premultipliedAlpha: false,
       preserveDrawingBuffer: false,
-      alpa: true,
     }) as WebGLRenderingContext | null;
 
     if (!gl) {

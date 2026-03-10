@@ -23,8 +23,9 @@ export function useMouseHandlers(
   currentPath: Point[],
   currentColor: string,
   currentSize: number,
+  mode: DrawModeEnum,
+  setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>,
 ) {
-  const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
   const [isDrawing, setIsDrawing] = useState(false);
   const prevModeRef = useRef<DrawModeEnum>(DrawModeEnum.Draw);
   const isGrabbingRef = useRef(false);
