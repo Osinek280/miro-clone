@@ -12,7 +12,10 @@ export default function Palette({
   setSize: (size: number) => void;
 }) {
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[#f9f6f0]/95 border border-black/10 rounded-full px-4 py-2 shadow-[0_8px_30px_rgba(13,13,13,0.09)] backdrop-blur-xl z-40">
+    <div
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[#f9f6f0]/95 border border-black/10 rounded-full px-4 py-2 shadow-[0_8px_30px_rgba(13,13,13,0.09)] backdrop-blur-xl z-40"
+      style={{ pointerEvents: 'none' }}
+    >
       {PALETTE_COLORS.map((hex) => (
         <div
           key={hex}
@@ -25,13 +28,14 @@ export default function Palette({
           `}
           style={{
             background: hex,
+            pointerEvents: 'auto',
           }}
         />
       ))}
 
       <div className="w-px h-5 bg-black/10" />
 
-      <div className="flex items-center gap-2 text-[0.6rem] uppercase tracking-wider text-gray-400">
+      <div className="flex items-center gap-2 text-[0.6rem] uppercase tracking-wider text-gray-400" style={{ pointerEvents: 'auto' }}>
         <span>Size</span>
         <input
           type="range"

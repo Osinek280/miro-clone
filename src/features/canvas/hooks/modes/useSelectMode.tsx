@@ -100,6 +100,7 @@ export function useSelectMode(
     clearSelection,
     selectionBox,
     selectedBoundingBox,
+    isMoving,
     onMouseDown,
     onMouseMove,
     onMouseUp,

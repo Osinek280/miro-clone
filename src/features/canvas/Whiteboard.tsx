@@ -61,6 +61,7 @@ export default function Whiteboard() {
     handleMouseUp,
     selectionBox,
     selectedBoundingBox,
+    isMoving,
   } = useMouseHandlers(
     canvasRef,
     cameraRef,
@@ -247,6 +248,7 @@ export default function Whiteboard() {
           selectedBoundingBox={selectedBoundingBox}
           cameraRef={cameraRef}
           canvasRef={canvasRef}
+          isMoving={isMoving}
         />
       )}
 
@@ -256,13 +258,14 @@ export default function Whiteboard() {
         style={{
           position: 'absolute',
           inset: 0,
-          zIndex: 1,
+          zIndex: 10,
           cursor: getCursor(mode),
           touchAction: 'none',
         }}
-        onPointerDown={(e) =>
-          handleMouseDown(e as unknown as React.MouseEvent<HTMLCanvasElement>)
-        }
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          handleMouseDown(e as unknown as React.MouseEvent<HTMLCanvasElement>);
+        }}
         onPointerMove={(e) =>
           handleMouseMove(e as unknown as React.MouseEvent<HTMLCanvasElement>)
         }

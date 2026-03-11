@@ -12,3 +12,8 @@ export const MOUSE_ZOOM_FACTOR = 1.15;
 export const ZOOM_CHANGE_EPSILON = 0.0001;
 
 export const ZOOM_DISPLAY_PRECISION = 100;
+
+/** When dragging selection, pan camera if cursor is within this distance from viewport edge (px) */
+export const EDGE_PAN_MARGIN = 80;
+/** Pan speed in world units per frame when cursor is at the edge */
+export const EDGE_PAN_SPEED = 12;
