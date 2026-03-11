@@ -1,12 +1,12 @@
-import { Badge } from "lucide-react";
-import { Card, CardContent } from "../../../components/ui/card";
-import type { Whiteboard } from "../api/dashboard.types";
+import { Badge } from 'lucide-react';
+import { Card, CardContent } from '../../../components/ui/card';
+import type { Whiteboard } from '../api/dashboard.types';
 import {
   getGradient,
   getRoleIcon,
   getRoleLabel,
   formatDate,
-} from "../utils/board.utils";
+} from '../utils/board.utils';
 
 type Props = {
   board: Whiteboard;

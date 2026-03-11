@@ -1,12 +1,12 @@
-import { useRef, useState } from "react";
-import type { Camera, DrawObject, Point } from "../../types/types";
-import { findObjectAtPoint } from "../../utils/objectUtils";
-import { calcBoundingBox } from "../../utils/objectUtils";
+import { useRef, useState } from 'react';
+import type { Camera, DrawObject, Point } from '../../types/types';
+import { findObjectAtPoint } from '../../utils/objectUtils';
+import { calcBoundingBox } from '../../utils/objectUtils';
 
 export function useSelectMode(
   cameraRef: React.RefObject<Camera>,
   objects: DrawObject[],
-  setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>,
+  setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>
 ) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isMoving, setIsMoving] = useState(false);
@@ -33,7 +33,7 @@ export function useSelectMode(
       if (!selectedIds.includes(obj.id)) {
         setSelectedIds((prev) => [...prev, obj.id]);
         setObjects((prev) =>
-          prev.map((o) => ({ ...o, selected: o.id === obj.id })),
+          prev.map((o) => ({ ...o, selected: o.id === obj.id }))
         );
       }
       setIsMoving(true);
@@ -55,19 +55,19 @@ export function useSelectMode(
         prev.map((o) =>
           selectedIds.includes(o.id)
             ? {
-              ...o,
-              points: o.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
-            }
-            : o,
-        ),
+                ...o,
+                points: o.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
+              }
+            : o
+        )
       );
       setSelectedBoundingBox((prev) =>
         prev
           ? {
-            start: { x: prev.start.x + dx, y: prev.start.y + dy },
-            end: { x: prev.end.x + dx, y: prev.end.y + dy },
-          }
-          : null,
+              start: { x: prev.start.x + dx, y: prev.start.y + dy },
+              end: { x: prev.end.x + dx, y: prev.end.y + dy },
+            }
+          : null
       );
       lastMousePosRef.current = point;
     }
@@ -82,12 +82,12 @@ export function useSelectMode(
       const maxY = Math.max(start.y, end.y);
       const selected = objects.filter((obj) =>
         obj.points.some(
-          (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY,
-        ),
+          (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY
+        )
       );
       setSelectedIds(selected.map((o) => o.id));
       setSelectedBoundingBox(
-        selected.length > 0 ? calcBoundingBox(selected) : null,
+        selected.length > 0 ? calcBoundingBox(selected) : null
       );
       setSelectionBox(null);
     }

@@ -1,4 +1,4 @@
-import type { DrawObject, Point } from "../types/types";
+import type { DrawObject, Point } from '../types/types';
 
 export const calcBoundingBox = (objs: DrawObject[]) => {
   let minX = Infinity,
@@ -25,7 +25,7 @@ export const calcBoundingBox = (objs: DrawObject[]) => {
 export function isPointOnPath(
   point: Point,
   path: Point[],
-  threshold: number,
+  threshold: number
 ): boolean {
   for (let i = 0; i < path.length - 1; i++) {
     const p1 = path[i];
@@ -44,7 +44,7 @@ export function isPointOnPath(
 
     const t = Math.max(
       0,
-      Math.min(1, ((point.x - p1.x) * dx + (point.y - p1.y) * dy) / lenSq),
+      Math.min(1, ((point.x - p1.x) * dx + (point.y - p1.y) * dy) / lenSq)
     );
     const projX = p1.x + t * dx;
     const projY = p1.y + t * dy;
@@ -58,7 +58,7 @@ export function isPointOnPath(
 export function findObjectAtPoint(
   point: Point,
   objects: DrawObject[],
-  zoom: number = 1, // <-- receive zoom from camera
+  zoom: number = 1 // <-- receive zoom from camera
 ): DrawObject | null {
   // BASE_HIT_PX is the desired hit margin in *screen* pixels.
   // Dividing by zoom converts it to world-space units, matching

@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { Camera, DrawObject, Point, SelectionBox, ToolState } from "../types/types";
-import type { WebGLRenderer } from "../WebGLRenderer";
-import { screenToWorld as utilScreenToWorld } from "../utils/cameraUtils";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type {
+  Camera,
+  DrawObject,
+  Point,
+  SelectionBox,
+  ToolState,
+} from '../types/types';
+import type { WebGLRenderer } from '../WebGLRenderer';
+import { screenToWorld as utilScreenToWorld } from '../utils/cameraUtils';
 import {
   CAMERA_LERP_SPEED,
   CAMERA_THRESHOLD,
@@ -12,7 +18,7 @@ import {
   MOUSE_ZOOM_FACTOR,
   ZOOM_CHANGE_EPSILON,
   ZOOM_DISPLAY_PRECISION,
-} from "../constants/cameraConstants";
+} from '../constants/cameraConstants';
 
 export function useCamera(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -21,7 +27,7 @@ export function useCamera(
   currentPathRef: React.RefObject<Point[]>,
   toolStateRef: React.RefObject<ToolState>,
   selectionBoxRef: React.RefObject<SelectionBox>,
-  selectedBoundingBoxRef: React.RefObject<SelectionBox>,
+  selectedBoundingBoxRef: React.RefObject<SelectionBox>
 ) {
   const cameraRef = useRef<Camera>({ zoom: 1, offsetX: 0, offsetY: 0 });
   const targetCameraRef = useRef<Camera>({ zoom: 1, offsetX: 0, offsetY: 0 });
@@ -44,7 +50,7 @@ export function useCamera(
 
       setDisplayZoom(
         Math.round(camera.zoom * ZOOM_DISPLAY_PRECISION) /
-        ZOOM_DISPLAY_PRECISION,
+          ZOOM_DISPLAY_PRECISION
       );
 
       // render
@@ -58,12 +64,12 @@ export function useCamera(
           toolStateRef.current.color,
           toolStateRef.current.size,
           selectionBoxRef.current,
-          selectedBoundingBoxRef.current,
+          selectedBoundingBoxRef.current
         );
       }
 
       animationFrameRef.current = requestAnimationFrame(
-        animateCameraRef.current,
+        animateCameraRef.current
       );
     } else {
       // snap
@@ -72,7 +78,7 @@ export function useCamera(
       camera.offsetY = target.offsetY;
       setDisplayZoom(
         Math.round(camera.zoom * ZOOM_DISPLAY_PRECISION) /
-        ZOOM_DISPLAY_PRECISION,
+          ZOOM_DISPLAY_PRECISION
       );
 
       if (rendererRef.current) {
@@ -85,7 +91,7 @@ export function useCamera(
           toolStateRef.current.color,
           toolStateRef.current.size,
           selectionBoxRef.current,
-          selectedBoundingBoxRef.current,
+          selectedBoundingBoxRef.current
         );
       }
 
@@ -124,7 +130,7 @@ export function useCamera(
         animationFrameRef.current = requestAnimationFrame(animateCamera);
       }
     },
-    [animateCamera, canvasRef],
+    [animateCamera, canvasRef]
   );
 
   const worldToScreen = useCallback(
@@ -138,7 +144,7 @@ export function useCamera(
         y: worldY * camera.zoom + camera.offsetY + rect.top,
       };
     },
-    [canvasRef, cameraRef],
+    [canvasRef, cameraRef]
   );
 
   useEffect(() => {
@@ -160,8 +166,8 @@ export function useCamera(
       }
     };
 
-    canvas.addEventListener("wheel", onWheel, { passive: false });
-    return () => canvas.removeEventListener("wheel", onWheel);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', onWheel);
   }, [canvasRef, zoomTowardPoint]);
 
   const handleZoomIn = () => {
@@ -204,7 +210,7 @@ export function useCamera(
   const screenToWorld = useCallback(
     (x: number, y: number) =>
       utilScreenToWorld(x, y, canvasRef, cameraRef.current),
-    [canvasRef, cameraRef],
+    [canvasRef, cameraRef]
   );
 
   return {

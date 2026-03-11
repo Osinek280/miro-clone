@@ -1,15 +1,15 @@
-import { Icon } from "../constants/icons";
-import { DrawModeEnum } from "../types/types";
+import { Icon } from '../constants/icons';
+import { DrawModeEnum } from '../types/types';
 
 type Tool =
-  | "draw"
-  | "select"
-  | "line"
-  | "rect"
-  | "ellipse"
-  | "arrow"
-  | "eraser"
-  | "grab";
+  | 'draw'
+  | 'select'
+  | 'line'
+  | 'rect'
+  | 'ellipse'
+  | 'arrow'
+  | 'eraser'
+  | 'grab';
 
 const TOOL_LIST: Array<{
   id: Tool;
@@ -17,16 +17,16 @@ const TOOL_LIST: Array<{
   key: string;
   mode?: DrawModeEnum;
 } | null> = [
-  { id: "draw", label: "Pen", key: "P", mode: DrawModeEnum.Draw },
-  { id: "select", label: "Marker", key: "M", mode: DrawModeEnum.Select },
+  { id: 'draw', label: 'Pen', key: 'P', mode: DrawModeEnum.Draw },
+  { id: 'select', label: 'Marker', key: 'M', mode: DrawModeEnum.Select },
   null,
-  { id: "line", label: "Line", key: "L" },
-  { id: "rect", label: "Rectangle", key: "R" },
-  { id: "ellipse", label: "Ellipse", key: "E" },
-  { id: "arrow", label: "Arrow", key: "A" },
+  { id: 'line', label: 'Line', key: 'L' },
+  { id: 'rect', label: 'Rectangle', key: 'R' },
+  { id: 'ellipse', label: 'Ellipse', key: 'E' },
+  { id: 'arrow', label: 'Arrow', key: 'A' },
   null,
-  { id: "eraser", label: "Eraser", key: "X" },
-  { id: "grab", label: "Pan", key: "V", mode: DrawModeEnum.Grab },
+  { id: 'eraser', label: 'Eraser', key: 'X' },
+  { id: 'grab', label: 'Pan', key: 'V', mode: DrawModeEnum.Grab },
 ];
 
 type ToolbarProps = {
@@ -46,7 +46,7 @@ export default function Toolbar({ mode, setMode }: ToolbarProps) {
             title={`${t.label} (${t.key})`}
             onClick={() => {
               if (t.mode) {
-                console.log("ju");
+                console.log('ju');
                 console.log(mode);
                 setMode(t.mode);
               }
@@ -54,13 +54,13 @@ export default function Toolbar({ mode, setMode }: ToolbarProps) {
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all
                       ${
                         t.id === mode
-                          ? "bg-black text-[#f9f6f0]"
-                          : "text-gray-400 hover:bg-black/5 hover:text-black"
+                          ? 'bg-black text-[#f9f6f0]'
+                          : 'text-gray-400 hover:bg-black/5 hover:text-black'
                       }`}
           >
             {Icon[t.id]}
           </button>
-        ),
+        )
       )}
       <div className="h-px bg-black/10 my-1" />
       <button

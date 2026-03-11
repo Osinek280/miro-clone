@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef } from "react";
-import type { Camera } from "../types/types";
+import { useCallback, useEffect, useRef } from 'react';
+import type { Camera } from '../types/types';
 
-export type GridStyle = "grid" | "dots" | "axes";
+export type GridStyle = 'grid' | 'dots' | 'axes';
 
 const GRID_BASE = 100;
 const SUBDIVISIONS = 5;
@@ -10,7 +10,7 @@ const MIN_PX_SPACING = 20;
 export function useGrid(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   cameraRef: React.RefObject<Camera>,
-  style: GridStyle = "dots",
+  style: GridStyle = 'dots'
 ) {
   const prevCameraRef = useRef({ zoom: -1, offsetX: -1, offsetY: -1 });
   const rafRef = useRef<number | null>(null);
@@ -18,7 +18,7 @@ export function useGrid(
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const { zoom, offsetX, offsetY } = cameraRef.current;
@@ -61,14 +61,14 @@ export function useGrid(
       ctx.stroke();
     };
 
-    if (style === "grid") {
+    if (style === 'grid') {
       if (subSpacingPx >= MIN_PX_SPACING) {
-        drawLines(subSpacing, "#e5e7eb", 0.5);
+        drawLines(subSpacing, '#e5e7eb', 0.5);
       }
-      drawLines(spacing, "#d1d5db", 1);
+      drawLines(spacing, '#d1d5db', 1);
 
       ctx.beginPath();
-      ctx.strokeStyle = "#9ca3af";
+      ctx.strokeStyle = '#9ca3af';
       ctx.lineWidth = 1.5;
       ctx.moveTo(offsetX, 0);
       ctx.lineTo(offsetX, height);
@@ -77,8 +77,8 @@ export function useGrid(
       ctx.stroke();
     }
 
-    if (style === "dots") {
-      ctx.fillStyle = "#9ca3af";
+    if (style === 'dots') {
+      ctx.fillStyle = '#9ca3af';
       const step = subSpacingPx >= MIN_PX_SPACING ? subSpacing : spacing;
       const startX = Math.floor(worldLeft / step) * step;
       const startY = Math.floor(worldTop / step) * step;

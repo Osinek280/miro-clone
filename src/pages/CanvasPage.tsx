@@ -1,4 +1,4 @@
-import Whiteboard from "../features/canvas/Whiteboard";
+import Whiteboard from '../features/canvas/Whiteboard';
 
 export default function CanvasPage() {
   return (

@@ -1,5 +1,5 @@
-import { Outlet } from "react-router-dom";
-import { useAuthStatus } from "../../features/auth/hooks/useAuthStatus";
+import { Outlet } from 'react-router-dom';
+import { useAuthStatus } from '../../features/auth/hooks/useAuthStatus';
 
 export const AppLayout = () => {
   useAuthStatus();

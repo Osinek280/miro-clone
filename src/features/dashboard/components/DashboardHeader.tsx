@@ -1,5 +1,5 @@
-import { Button } from "../../../components/ui/button";
-import { CreateBoardDialog } from "./CreateBoardDialog";
+import { Button } from '../../../components/ui/button';
+import { CreateBoardDialog } from './CreateBoardDialog';
 
 type Props = {
   email?: string;

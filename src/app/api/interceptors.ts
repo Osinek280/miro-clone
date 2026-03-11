@@ -1,14 +1,14 @@
 // app/api/interceptors.ts
-import { authApi } from "../../features/auth/api/auth.api";
-import { useAuthStore } from "../../features/auth/store/auth.store";
-import { tokenStorage } from "../../features/auth/utils/TokenStorage";
-import { apiClient } from "./apiClient";
+import { authApi } from '../../features/auth/api/auth.api';
+import { useAuthStore } from '../../features/auth/store/auth.store';
+import { tokenStorage } from '../../features/auth/utils/TokenStorage';
+import { apiClient } from './apiClient';
 
 let isRefreshing = false;
 let queue: ((value?: unknown) => void)[] = [];
 
 apiClient.interceptors.request.use((config) => {
-  console.log("[Request Interceptor] Wywołany dla URL:", config.url);
+  console.log('[Request Interceptor] Wywołany dla URL:', config.url);
 
   const token = tokenStorage.get();
   if (token) {
@@ -41,7 +41,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch {
         console.log(
-          "[Response Interceptor] Odświeżanie tokena nie powiodło się. Wylogowywanie użytkownika.",
+          '[Response Interceptor] Odświeżanie tokena nie powiodło się. Wylogowywanie użytkownika.'
         );
         tokenStorage.remove();
         useAuthStore.getState().clearAuth();
@@ -52,5 +52,5 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );

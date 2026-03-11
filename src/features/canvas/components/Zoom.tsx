@@ -1,5 +1,5 @@
-import { ZOOM_MAX, ZOOM_MIN } from "../constants/cameraConstants";
-import { Icon } from "../constants/icons";
+import { ZOOM_MAX, ZOOM_MIN } from '../constants/cameraConstants';
+import { Icon } from '../constants/icons';
 
 export function Zoom({
   handleZoomOut,

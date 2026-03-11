@@ -1,20 +1,21 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { WebGLRenderer } from "./WebGLRenderer";
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { WebGLRenderer } from './WebGLRenderer';
 import {
   DrawModeEnum,
   type DrawObject,
   type Point,
   type SelectionBox,
   type ToolState,
-} from "./types/types";
-import { useCamera } from "./hooks/useCamera";
-import { useMouseHandlers } from "./hooks/useMouseHandlers";
-import Palette from "./components/Palette";
-import { usePalette } from "./components/usePalette";
-import { getCursor } from "./utils/cursorUtils";
-import Toolbar from "./components/Toolbar";
-import { Zoom } from "./components/Zoom";
-import { Grid } from "./grid/Grid";
+} from './types/types';
+import { useCamera } from './hooks/useCamera';
+import { useMouseHandlers } from './hooks/useMouseHandlers';
+import Palette from './components/Palette';
+import { usePalette } from './components/usePalette';
+import { getCursor } from './utils/cursorUtils';
+import Toolbar from './components/Toolbar';
+import { Zoom } from './components/Zoom';
+import { Grid } from './grid/Grid';
+import SelectionToolbar from './components/SelectionToolbar';
 
 export default function Whiteboard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -29,7 +30,7 @@ export default function Whiteboard() {
 
   const tsRef = useRef<ToolState>({
     // ts -> tool settings
-    color: "#000",
+    color: '#000',
     size: 10,
   });
 
@@ -51,7 +52,7 @@ export default function Whiteboard() {
     currentPathRef,
     tsRef,
     selectionBoxRef,
-    selectedBoundingBoxRef,
+    selectedBoundingBoxRef
   );
 
   const {
@@ -74,7 +75,7 @@ export default function Whiteboard() {
     mode,
     setMode,
     selectionBoxRef,
-    selectedBoundingBoxRef,
+    selectedBoundingBoxRef
   );
 
   const generateObjects = () => {
@@ -90,8 +91,8 @@ export default function Whiteboard() {
           { x, y },
           { x: x + Math.random() * 50, y: y + Math.random() * 50 },
         ],
-        type: "path",
-        color: "#0d0d0d",
+        type: 'path',
+        color: '#0d0d0d',
         size: 15,
       });
     }
@@ -117,10 +118,10 @@ export default function Whiteboard() {
     };
 
     resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
+    window.addEventListener('resize', resizeCanvas);
 
     return () => {
-      window.removeEventListener("resize", resizeCanvas);
+      window.removeEventListener('resize', resizeCanvas);
       renderer.cleanup();
     };
   }, []);
@@ -172,7 +173,7 @@ export default function Whiteboard() {
       color,
       size,
       selectionBox,
-      selectedBoundingBox,
+      selectedBoundingBox
     );
   }, [
     objects,
@@ -240,15 +241,24 @@ export default function Whiteboard() {
       />
 
       <Grid cameraRef={cameraRef} style="grid"></Grid>
+
+      {selectedBoundingBox && (
+        <SelectionToolbar
+          selectedBoundingBox={selectedBoundingBox}
+          cameraRef={cameraRef}
+          canvasRef={canvasRef}
+        />
+      )}
+
       <canvas
         ref={canvasRef}
         className="w-full h-full"
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
           zIndex: 1,
           cursor: getCursor(mode),
-          touchAction: "none",
+          touchAction: 'none',
         }}
         onPointerDown={(e) =>
           handleMouseDown(e as unknown as React.MouseEvent<HTMLCanvasElement>)

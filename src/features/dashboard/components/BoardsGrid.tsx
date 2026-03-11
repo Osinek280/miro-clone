@@ -1,5 +1,5 @@
-import type { Whiteboard } from "../api/dashboard.types";
-import { BoardCard } from "./BoardCard";
+import type { Whiteboard } from '../api/dashboard.types';
+import { BoardCard } from './BoardCard';
 
 type Props = {
   boards: Whiteboard[];

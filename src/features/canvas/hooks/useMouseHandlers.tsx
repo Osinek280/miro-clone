@@ -1,17 +1,17 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 import {
   DrawModeEnum,
   type Camera,
   type DrawObject,
   type Point,
   type SelectionBox,
-} from "../types/types";
-import { useState } from "react";
-import { getCanvasPoint } from "../utils/cameraUtils";
-import { useDrawMode } from "./modes/useDrawMode";
-import { useSelectMode } from "./modes/useSelectMode";
-import { useGrabMode } from "./modes/useGrabMode";
-import type { WebGLRenderer } from "../WebGLRenderer";
+} from '../types/types';
+import { useState } from 'react';
+import { getCanvasPoint } from '../utils/cameraUtils';
+import { useDrawMode } from './modes/useDrawMode';
+import { useSelectMode } from './modes/useSelectMode';
+import { useGrabMode } from './modes/useGrabMode';
+import type { WebGLRenderer } from '../WebGLRenderer';
 
 export function useMouseHandlers(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -27,7 +27,7 @@ export function useMouseHandlers(
   mode: DrawModeEnum,
   setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>,
   selectionBoxRef: React.RefObject<SelectionBox>,
-  selectedBoundingBoxRef: React.RefObject<SelectionBox>,
+  selectedBoundingBoxRef: React.RefObject<SelectionBox>
 ) {
   const [isDrawing, setIsDrawing] = useState(false);
   const prevModeRef = useRef<DrawModeEnum>(DrawModeEnum.Draw);
@@ -37,7 +37,7 @@ export function useMouseHandlers(
     setCurrentPath,
     setObjects,
     currentColor,
-    currentSize,
+    currentSize
   );
   const select = useSelectMode(cameraRef, objects, setObjects);
 
@@ -50,7 +50,7 @@ export function useMouseHandlers(
     currentColor,
     currentSize,
     selectionBoxRef,
-    selectedBoundingBoxRef,
+    selectedBoundingBoxRef
   );
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {

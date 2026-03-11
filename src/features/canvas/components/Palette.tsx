@@ -1,4 +1,4 @@
-import { PALETTE_COLORS } from "../constants/paletteColors";
+import { PALETTE_COLORS } from '../constants/paletteColors';
 
 export default function Palette({
   color,
@@ -21,7 +21,7 @@ export default function Palette({
             setColor(hex);
           }}
           className={`w-5 h-5 rounded-full cursor-pointer transition-transform duration-150
-            ${color === hex ? "ring-2 ring-black scale-110" : "hover:scale-125"}
+            ${color === hex ? 'ring-2 ring-black scale-110' : 'hover:scale-125'}
           `}
           style={{
             background: hex,

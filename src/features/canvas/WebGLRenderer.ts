@@ -1,4 +1,4 @@
-import type { DrawObject, Point, SelectionBox } from "./types/types";
+import type { DrawObject, Point, SelectionBox } from './types/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WebGLRenderer – circle-stamp line renderer
@@ -113,7 +113,7 @@ interface CachedGeometry {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function hexToRgba(hex: string): [number, number, number, number] {
-  let h = hex.replace("#", "");
+  let h = hex.replace('#', '');
   if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
   if (h.length !== 6) return [0, 0, 0, 1];
   return [
@@ -134,7 +134,7 @@ function hexToRgba(hex: string): [number, number, number, number] {
 function buildPointBuffer(
   points: Point[],
   color: [number, number, number, number],
-  size: number,
+  size: number
 ): CachedGeometry | null {
   if (points.length === 0) return null;
 
@@ -204,7 +204,7 @@ export class WebGLRenderer {
     gl.shaderSource(s, src);
     gl.compileShader(s);
     if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-      console.error("[WebGLRenderer] Shader:", gl.getShaderInfoLog(s));
+      console.error('[WebGLRenderer] Shader:', gl.getShaderInfoLog(s));
       gl.deleteShader(s);
       return null;
     }
@@ -213,7 +213,7 @@ export class WebGLRenderer {
 
   private createProgram(
     vert: WebGLShader,
-    frag: WebGLShader,
+    frag: WebGLShader
   ): WebGLProgram | null {
     const gl = this.gl!;
     const p = gl.createProgram();
@@ -222,7 +222,7 @@ export class WebGLRenderer {
     gl.attachShader(p, frag);
     gl.linkProgram(p);
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
-      console.error("[WebGLRenderer] Link:", gl.getProgramInfoLog(p));
+      console.error('[WebGLRenderer] Link:', gl.getProgramInfoLog(p));
       gl.deleteProgram(p);
       return null;
     }
@@ -233,7 +233,7 @@ export class WebGLRenderer {
   private stateKey(obj: DrawObject): string {
     const f = obj.points[0],
       l = obj.points[obj.points.length - 1];
-    return `${obj.color || "#000"}|${obj.size}|${obj.points.length}|${f?.x},${f?.y}|${l?.x},${l?.y}`;
+    return `${obj.color || '#000'}|${obj.size}|${obj.points.length}|${f?.x},${f?.y}|${l?.x},${l?.y}`;
   }
 
   /**
@@ -245,7 +245,7 @@ export class WebGLRenderer {
     objects: DrawObject[],
     currentPath: Point[],
     currentColor: string,
-    currentSize: number,
+    currentSize: number
   ): number {
     const gl = this.gl!;
 
@@ -266,9 +266,9 @@ export class WebGLRenderer {
           obj.id,
           buildPointBuffer(
             obj.points,
-            hexToRgba(obj.color || "#000"),
-            obj.size || 15,
-          ),
+            hexToRgba(obj.color || '#000'),
+            obj.size || 15
+          )
         );
         this.cacheKeys.set(obj.id, key);
       }
@@ -280,7 +280,7 @@ export class WebGLRenderer {
       liveGeo = buildPointBuffer(
         currentPath,
         hexToRgba(currentColor),
-        currentSize,
+        currentSize
       );
     }
 
@@ -321,21 +321,21 @@ export class WebGLRenderer {
   initialize(canvas: HTMLCanvasElement): boolean {
     this.canvas = canvas;
 
-    const gl = canvas.getContext("webgl", {
+    const gl = canvas.getContext('webgl', {
       antialias: true,
       premultipliedAlpha: false,
       preserveDrawingBuffer: false,
     }) as WebGLRenderingContext | null;
 
     if (!gl) {
-      console.error("[WebGLRenderer] WebGL not supported");
+      console.error('[WebGLRenderer] WebGL not supported');
       return false;
     }
     this.gl = gl;
 
     // Sprawdź max point size (musi obsługiwać duże pędzle)
     const maxPtSize = gl.getParameter(
-      gl.ALIASED_POINT_SIZE_RANGE,
+      gl.ALIASED_POINT_SIZE_RANGE
     ) as Float32Array;
     console.info(`[WebGLRenderer] Max point size: ${maxPtSize[1]}px`);
 
@@ -347,11 +347,11 @@ export class WebGLRenderer {
       const rp = this.createProgram(vertR, fragR);
       if (rp) {
         this.rectProgram = rp;
-        this.rectAPos = gl.getAttribLocation(rp, "a_pos");
-        this.uRectResolution = gl.getUniformLocation(rp, "u_resolution")!;
-        this.uRectOffset = gl.getUniformLocation(rp, "u_offset")!;
-        this.uRectZoom = gl.getUniformLocation(rp, "u_zoom")!;
-        this.uRectColor = gl.getUniformLocation(rp, "u_rectColor")!;
+        this.rectAPos = gl.getAttribLocation(rp, 'a_pos');
+        this.uRectResolution = gl.getUniformLocation(rp, 'u_resolution')!;
+        this.uRectOffset = gl.getUniformLocation(rp, 'u_offset')!;
+        this.uRectZoom = gl.getUniformLocation(rp, 'u_zoom')!;
+        this.uRectColor = gl.getUniformLocation(rp, 'u_rectColor')!;
       }
     }
     if (!vert || !frag) return false;
@@ -360,13 +360,13 @@ export class WebGLRenderer {
     if (!prog) return false;
     this.program = prog;
 
-    this.aPos = gl.getAttribLocation(prog, "a_pos");
-    this.aColor = gl.getAttribLocation(prog, "a_color");
-    this.aSize = gl.getAttribLocation(prog, "a_size");
+    this.aPos = gl.getAttribLocation(prog, 'a_pos');
+    this.aColor = gl.getAttribLocation(prog, 'a_color');
+    this.aSize = gl.getAttribLocation(prog, 'a_size');
 
-    this.uResolution = gl.getUniformLocation(prog, "u_resolution")!;
-    this.uOffset = gl.getUniformLocation(prog, "u_offset")!;
-    this.uZoom = gl.getUniformLocation(prog, "u_zoom")!;
+    this.uResolution = gl.getUniformLocation(prog, 'u_resolution')!;
+    this.uOffset = gl.getUniformLocation(prog, 'u_offset')!;
+    this.uZoom = gl.getUniformLocation(prog, 'u_zoom')!;
 
     this.bufVertex = gl.createBuffer()!;
     this.rectBuf = gl.createBuffer()!;
@@ -389,7 +389,7 @@ export class WebGLRenderer {
         0,
         0,
         this.gl.drawingBufferWidth,
-        this.gl.drawingBufferHeight,
+        this.gl.drawingBufferHeight
       );
     }
   }
@@ -399,7 +399,7 @@ export class WebGLRenderer {
     color: [number, number, number, number],
     zoom: number,
     offsetX: number,
-    offsetY: number,
+    offsetY: number
   ): void {
     const gl = this.gl!;
     if (!this.rectProgram || !this.canvas) return;
@@ -431,7 +431,7 @@ export class WebGLRenderer {
     currentColor: string,
     currentSize: number,
     selectionBox: SelectionBox,
-    selectedBoundingBox: SelectionBox,
+    selectedBoundingBox: SelectionBox
   ): void {
     const gl = this.gl;
     if (!gl || !this.program || !this.canvas) return;
@@ -442,7 +442,7 @@ export class WebGLRenderer {
       objects,
       currentPath,
       currentColor,
-      currentSize,
+      currentSize
     );
 
     gl.clearColor(0, 0, 0, 0);
@@ -467,7 +467,7 @@ export class WebGLRenderer {
         gl.FLOAT,
         false,
         stride,
-        offsetFloats * 4,
+        offsetFloats * 4
       );
     };
 
@@ -485,7 +485,7 @@ export class WebGLRenderer {
         [0.23, 0.51, 0.96, 0.6],
         zoom,
         offsetX,
-        offsetY,
+        offsetY
       );
     }
     if (selectedBoundingBox) {
@@ -494,7 +494,7 @@ export class WebGLRenderer {
         [0.23, 0.51, 0.96, 1.0],
         zoom,
         offsetX,
-        offsetY,
+        offsetY
       );
     }
   }

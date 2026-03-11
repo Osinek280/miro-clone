@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Plus } from "lucide-react";
-import { Button } from "../../../components/ui/button";
-import { Input } from "../../../components/ui/input";
+import { useState } from 'react';
+import { Plus } from 'lucide-react';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../../components/ui/dialog";
-import { Label } from "../../../components/ui/label";
+} from '../../../components/ui/dialog';
+import { Label } from '../../../components/ui/label';
 
 interface CreateBoardDialogProps {
   onCreateBoard: (name: string) => Promise<void>;
@@ -23,7 +23,7 @@ export const CreateBoardDialog = ({
   isCreating = false,
 }: CreateBoardDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [boardName, setBoardName] = useState("");
+  const [boardName, setBoardName] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,17 +32,17 @@ export const CreateBoardDialog = ({
 
     try {
       await onCreateBoard(boardName.trim());
-      setBoardName("");
+      setBoardName('');
       setOpen(false);
     } catch (error) {
-      console.error("Failed to create board:", error);
+      console.error('Failed to create board:', error);
     }
   };
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     if (!newOpen) {
-      setBoardName("");
+      setBoardName('');
     }
   };
 
@@ -85,7 +85,7 @@ export const CreateBoardDialog = ({
               Anuluj
             </Button>
             <Button type="submit" disabled={!boardName.trim() || isCreating}>
-              {isCreating ? "Tworzenie..." : "Utwórz"}
+              {isCreating ? 'Tworzenie...' : 'Utwórz'}
             </Button>
           </DialogFooter>
         </form>

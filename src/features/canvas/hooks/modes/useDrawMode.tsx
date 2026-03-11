@@ -1,10 +1,10 @@
-import { type DrawObject, type Point } from "../../types/types";
+import { type DrawObject, type Point } from '../../types/types';
 
 export function useDrawMode(
   setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>,
   setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>,
   currentColor: string,
-  currentSize: number,
+  currentSize: number
 ) {
   const onMouseDown = (point: Point) => {
     return [point]; // initial path
@@ -33,7 +33,7 @@ export function useDrawMode(
       ...prev,
       {
         id: Date.now().toString(),
-        type: "path",
+        type: 'path',
         points: path,
         color: currentColor,
         size: currentSize,

@@ -1,12 +1,12 @@
-import { Search, Grid3x3, List } from "lucide-react";
-import { Input } from "../../../components/ui/input";
-import { Button } from "../../../components/ui/button";
+import { Search, Grid3x3, List } from 'lucide-react';
+import { Input } from '../../../components/ui/input';
+import { Button } from '../../../components/ui/button';
 
 type Props = {
   search: string;
   onSearch: (v: string) => void;
-  viewMode: "grid" | "list";
-  setViewMode: (m: "grid" | "list") => void;
+  viewMode: 'grid' | 'list';
+  setViewMode: (m: 'grid' | 'list') => void;
 };
 
 export const DashboardToolbar = ({
@@ -29,17 +29,17 @@ export const DashboardToolbar = ({
 
       <div className="inline-flex gap-2">
         <Button
-          variant={viewMode === "grid" ? "default" : "outline"}
+          variant={viewMode === 'grid' ? 'default' : 'outline'}
           size="icon"
-          onClick={() => setViewMode("grid")}
+          onClick={() => setViewMode('grid')}
         >
           <Grid3x3 />
         </Button>
 
         <Button
-          variant={viewMode === "list" ? "default" : "outline"}
+          variant={viewMode === 'list' ? 'default' : 'outline'}
           size="icon"
-          onClick={() => setViewMode("list")}
+          onClick={() => setViewMode('list')}
         >
           <List />
         </Button>

@@ -5,7 +5,7 @@ export interface Point {
 
 export interface DrawObject {
   id: string;
-  type: "path";
+  type: 'path';
   points: Point[];
   color: string;
   size: number;
@@ -18,9 +18,9 @@ export interface Camera {
 }
 
 export enum DrawModeEnum {
-  Draw = "draw",
-  Select = "select",
-  Grab = "grab",
+  Draw = 'draw',
+  Select = 'select',
+  Grab = 'grab',
 }
 
 export type ToolState = {

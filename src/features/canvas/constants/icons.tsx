@@ -214,4 +214,38 @@ export const Icon: Record<string, React.ReactNode> = {
       <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
   ),
+  flipH: (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="6" width="8" height="12" rx="1" />
+      <rect x="14" y="6" width="8" height="12" rx="1" />
+      <path d="M10 12h4" />
+      <path d="M8 10l2 2-2 2M16 10l-2 2 2 2" />
+    </svg>
+  ),
+  flipV: (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="6" y="2" width="12" height="8" rx="1" />
+      <rect x="6" y="14" width="12" height="8" rx="1" />
+      <path d="M12 10v4" />
+      <path d="M10 8l2 2 2-2M10 16l2-2 2 2" />
+    </svg>
+  ),
 };

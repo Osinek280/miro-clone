@@ -1,6 +1,6 @@
-import type { Camera, SelectionBox } from "../../types/types";
-import type { WebGLRenderer } from "../../WebGLRenderer";
-import type { DrawObject, Point } from "../../types/types";
+import type { Camera, SelectionBox } from '../../types/types';
+import type { WebGLRenderer } from '../../WebGLRenderer';
+import type { DrawObject, Point } from '../../types/types';
 
 export function useGrabMode(
   cameraRef: React.RefObject<Camera>,
@@ -11,7 +11,7 @@ export function useGrabMode(
   currentColor: string,
   currentSize: number,
   selectionBoxRef: React.RefObject<SelectionBox>,
-  selectedBoundingBoxRef: React.RefObject<SelectionBox>,
+  selectedBoundingBoxRef: React.RefObject<SelectionBox>
 ) {
   const onMouseMove = (e: React.MouseEvent) => {
     const dx = e.movementX;
@@ -29,7 +29,7 @@ export function useGrabMode(
       currentColor,
       currentSize,
       selectionBoxRef.current,
-      selectedBoundingBoxRef.current,
+      selectedBoundingBoxRef.current
     );
   };
 

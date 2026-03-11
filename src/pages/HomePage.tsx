@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { useAuthStore } from "../features/auth/store/auth.store";
+import { Link } from 'react-router-dom';
+import { useAuthStore } from '../features/auth/store/auth.store';
 
 export const HomePage = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);

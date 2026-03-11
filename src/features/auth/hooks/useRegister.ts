@@ -1,6 +1,6 @@
-import { authApi } from "../api/auth.api";
-import { useAuthStore } from "../store/auth.store";
-import { tokenStorage } from "../utils/TokenStorage";
+import { authApi } from '../api/auth.api';
+import { useAuthStore } from '../store/auth.store';
+import { tokenStorage } from '../utils/TokenStorage';
 
 export const useRegister = () => {
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -9,7 +9,7 @@ export const useRegister = () => {
     firstname: string,
     lastname: string,
     email: string,
-    password: string,
+    password: string
   ) => {
     const { data } = await authApi.register({
       firstname,

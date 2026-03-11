@@ -1,5 +1,5 @@
 // features/auth/store/auth.store.ts
-import { create } from "zustand";
+import { create } from 'zustand';
 
 type User = {
   id: string;
