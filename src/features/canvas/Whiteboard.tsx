@@ -61,7 +61,6 @@ export default function Whiteboard() {
     handleMouseUp,
     selectionBox,
     selectedBoundingBox,
-    isMoving,
   } = useMouseHandlers(
     canvasRef,
     cameraRef,
@@ -248,7 +247,6 @@ export default function Whiteboard() {
           selectedBoundingBox={selectedBoundingBox}
           cameraRef={cameraRef}
           canvasRef={canvasRef}
-          isMoving={isMoving}
         />
       )}
 

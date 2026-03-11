@@ -37,7 +37,6 @@ export function useDrawMode(
         points: path,
         color: currentColor,
         size: currentSize,
-        selected: false,
       },
     ]);
     setCurrentPath([]);

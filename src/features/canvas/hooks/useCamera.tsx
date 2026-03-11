@@ -7,7 +7,6 @@ import type {
   ToolState,
 } from '../types/types';
 import type { WebGLRenderer } from '../WebGLRenderer';
-import { screenToWorld as utilScreenToWorld } from '../utils/cameraUtils';
 import {
   CAMERA_LERP_SPEED,
   CAMERA_THRESHOLD,
@@ -50,7 +49,7 @@ export function useCamera(
 
       setDisplayZoom(
         Math.round(camera.zoom * ZOOM_DISPLAY_PRECISION) /
-          ZOOM_DISPLAY_PRECISION
+        ZOOM_DISPLAY_PRECISION
       );
 
       // render
@@ -78,7 +77,7 @@ export function useCamera(
       camera.offsetY = target.offsetY;
       setDisplayZoom(
         Math.round(camera.zoom * ZOOM_DISPLAY_PRECISION) /
-          ZOOM_DISPLAY_PRECISION
+        ZOOM_DISPLAY_PRECISION
       );
 
       if (rendererRef.current) {
@@ -131,20 +130,6 @@ export function useCamera(
       }
     },
     [animateCamera, canvasRef]
-  );
-
-  const worldToScreen = useCallback(
-    (worldX: number, worldY: number) => {
-      const canvas = canvasRef.current;
-      const camera = cameraRef.current;
-      if (!canvas || !camera) return { x: 0, y: 0 };
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: worldX * camera.zoom + camera.offsetX + rect.left,
-        y: worldY * camera.zoom + camera.offsetY + rect.top,
-      };
-    },
-    [canvasRef, cameraRef]
   );
 
   useEffect(() => {
@@ -207,23 +192,14 @@ export function useCamera(
     zoomTowardPoint(centerX, centerY, 1.0);
   };
 
-  const screenToWorld = useCallback(
-    (x: number, y: number) =>
-      utilScreenToWorld(x, y, canvasRef, cameraRef.current),
-    [canvasRef, cameraRef]
-  );
-
   return {
-    worldToScreen,
-    screenToWorld,
     cameraRef,
     targetCameraRef,
-    displayZoom,
-    setDisplayZoom,
+    animationFrameRef,
     handleZoomIn,
     handleZoomOut,
     handleZoomReset,
-    animationFrameRef,
     animateCameraRef,
+    displayZoom,
   };
 }

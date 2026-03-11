@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 import type { Camera, Point } from '../types/types';
 
-export function screenToWorld(
+function screenToWorld(
   screenX: number,
   screenY: number,
   canvasRef: RefObject<HTMLCanvasElement | null>,

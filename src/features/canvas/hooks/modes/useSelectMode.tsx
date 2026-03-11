@@ -24,7 +24,6 @@ export function useSelectMode(
     setSelectedIds([]);
     setSelectionBox(null);
     setSelectedBoundingBox(null);
-    setObjects((prev) => prev.map((o) => ({ ...o, selected: false })));
   };
 
   const onMouseDown = (point: Point) => {
@@ -32,16 +31,12 @@ export function useSelectMode(
     if (obj) {
       if (!selectedIds.includes(obj.id)) {
         setSelectedIds((prev) => [...prev, obj.id]);
-        setObjects((prev) =>
-          prev.map((o) => ({ ...o, selected: o.id === obj.id }))
-        );
       }
       setIsMoving(true);
       lastMousePosRef.current = point;
     } else {
       setSelectionBox({ start: point, end: point });
       setSelectedIds([]);
-      setObjects((prev) => prev.map((o) => ({ ...o, selected: false })));
     }
   };
 

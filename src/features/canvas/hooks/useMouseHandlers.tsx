@@ -8,7 +8,6 @@ import {
 } from '../types/types';
 import { useState } from 'react';
 import { getCanvasPoint } from '../utils/cameraUtils';
-import { EDGE_PAN_MARGIN, EDGE_PAN_SPEED } from '../constants/cameraConstants';
 import { useDrawMode } from './modes/useDrawMode';
 import { useSelectMode } from './modes/useSelectMode';
 import { useGrabMode } from './modes/useGrabMode';
@@ -75,26 +74,6 @@ export function useMouseHandlers(
       grab.onMouseMove(e);
       return;
     }
-    if (
-      mode === DrawModeEnum.Select &&
-      select.isMoving &&
-      canvasRef.current
-    ) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const { clientX, clientY } = e;
-      let dx = 0;
-      let dy = 0;
-      if (clientX < rect.left + EDGE_PAN_MARGIN) dx = EDGE_PAN_SPEED;
-      else if (clientX > rect.right - EDGE_PAN_MARGIN) dx = -EDGE_PAN_SPEED;
-      if (clientY < rect.top + EDGE_PAN_MARGIN) dy = EDGE_PAN_SPEED;
-      else if (clientY > rect.bottom - EDGE_PAN_MARGIN) dy = -EDGE_PAN_SPEED;
-      if (dx !== 0 || dy !== 0) {
-        cameraRef.current.offsetX += dx;
-        cameraRef.current.offsetY += dy;
-        targetCameraRef.current.offsetX += dx;
-        targetCameraRef.current.offsetY += dy;
-      }
-    }
     const point = getCanvasPoint(e, canvasRef, cameraRef.current);
     if (mode === DrawModeEnum.Select) {
       select.onMouseMove(point);
@@ -132,12 +111,7 @@ export function useMouseHandlers(
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
-    mode,
-    setMode,
-    selectedIds: select.selectedIds,
-    setSelectedIds: select.setSelectedIds,
     selectionBox: select.selectionBox,
     selectedBoundingBox: select.selectedBoundingBox,
-    isMoving: select.isMoving,
   };
 }
