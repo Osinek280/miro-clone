@@ -20,6 +20,13 @@ export function useSelectMode(
   } | null>(null);
   const lastMousePosRef = useRef<Point>({ x: 0, y: 0 });
 
+  const clearSelection = () => {
+    setSelectedIds([]);
+    setSelectionBox(null);
+    setSelectedBoundingBox(null);
+    setObjects((prev) => prev.map((o) => ({ ...o, selected: false })));
+  };
+
   const onMouseDown = (point: Point) => {
     const obj = findObjectAtPoint(point, objects, cameraRef.current.zoom);
     if (obj) {
@@ -48,18 +55,18 @@ export function useSelectMode(
         prev.map((o) =>
           selectedIds.includes(o.id)
             ? {
-                ...o,
-                points: o.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
-              }
+              ...o,
+              points: o.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
+            }
             : o,
         ),
       );
       setSelectedBoundingBox((prev) =>
         prev
           ? {
-              start: { x: prev.start.x + dx, y: prev.start.y + dy },
-              end: { x: prev.end.x + dx, y: prev.end.y + dy },
-            }
+            start: { x: prev.start.x + dx, y: prev.start.y + dy },
+            end: { x: prev.end.x + dx, y: prev.end.y + dy },
+          }
           : null,
       );
       lastMousePosRef.current = point;
@@ -90,6 +97,7 @@ export function useSelectMode(
   return {
     selectedIds,
     setSelectedIds,
+    clearSelection,
     selectionBox,
     selectedBoundingBox,
     onMouseDown,

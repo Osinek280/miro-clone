@@ -14,12 +14,16 @@ import {
   ZOOM_DISPLAY_PRECISION,
 } from "../constants/cameraConstants";
 
+type SelectionBox = { start: Point; end: Point } | null;
+
 export function useCamera(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   rendererRef: React.RefObject<WebGLRenderer | null>,
   objectsRef: React.RefObject<DrawObject[]>,
   currentPathRef: React.RefObject<Point[]>,
   toolStateRef: React.RefObject<ToolState>,
+  selectionBoxRef: React.RefObject<SelectionBox>,
+  selectedBoundingBoxRef: React.RefObject<SelectionBox>,
 ) {
   const cameraRef = useRef<Camera>({ zoom: 1, offsetX: 0, offsetY: 0 });
   const targetCameraRef = useRef<Camera>({ zoom: 1, offsetX: 0, offsetY: 0 });
@@ -42,7 +46,7 @@ export function useCamera(
 
       setDisplayZoom(
         Math.round(camera.zoom * ZOOM_DISPLAY_PRECISION) /
-          ZOOM_DISPLAY_PRECISION,
+        ZOOM_DISPLAY_PRECISION,
       );
 
       // render
@@ -55,6 +59,8 @@ export function useCamera(
           camera.offsetY,
           toolStateRef.current.color,
           toolStateRef.current.size,
+          selectionBoxRef.current,
+          selectedBoundingBoxRef.current,
         );
       }
 
@@ -68,7 +74,7 @@ export function useCamera(
       camera.offsetY = target.offsetY;
       setDisplayZoom(
         Math.round(camera.zoom * ZOOM_DISPLAY_PRECISION) /
-          ZOOM_DISPLAY_PRECISION,
+        ZOOM_DISPLAY_PRECISION,
       );
 
       if (rendererRef.current) {
@@ -80,6 +86,8 @@ export function useCamera(
           camera.offsetY,
           toolStateRef.current.color,
           toolStateRef.current.size,
+          selectionBoxRef.current,
+          selectedBoundingBoxRef.current,
         );
       }
 

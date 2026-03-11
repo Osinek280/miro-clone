@@ -12,6 +12,8 @@ import { useSelectMode } from "./modes/useSelectMode";
 import { useGrabMode } from "./modes/useGrabMode";
 import type { WebGLRenderer } from "../WebGLRenderer";
 
+type SelectionBox = { start: Point; end: Point } | null;
+
 export function useMouseHandlers(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   cameraRef: React.RefObject<Camera>,
@@ -25,6 +27,8 @@ export function useMouseHandlers(
   currentSize: number,
   mode: DrawModeEnum,
   setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>,
+  selectionBoxRef: React.RefObject<SelectionBox>,
+  selectedBoundingBoxRef: React.RefObject<SelectionBox>,
 ) {
   const [isDrawing, setIsDrawing] = useState(false);
   const prevModeRef = useRef<DrawModeEnum>(DrawModeEnum.Draw);
@@ -46,6 +50,8 @@ export function useMouseHandlers(
     currentPath,
     currentColor,
     currentSize,
+    selectionBoxRef,
+    selectedBoundingBoxRef,
   );
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -92,8 +98,13 @@ export function useMouseHandlers(
   };
 
   useEffect(() => {
-    if (mode === DrawModeEnum.Draw && select.selectedIds.length !== 0) {
-      select.setSelectedIds([]);
+    if (
+      mode === DrawModeEnum.Draw &&
+      (select.selectedIds.length > 0 ||
+        select.selectionBox !== null ||
+        select.selectedBoundingBox !== null)
+    ) {
+      select.clearSelection();
     }
   }, [mode, select]);
 

@@ -23,6 +23,8 @@ export default function Whiteboard() {
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
   const objectsRef = useRef(objects);
   const currentPathRef = useRef(currentPath);
+  const selectionBoxRef = useRef<{ start: Point; end: Point } | null>(null);
+  const selectedBoundingBoxRef = useRef<{ start: Point; end: Point } | null>(null);
 
   const tsRef = useRef<ToolState>({
     // ts -> tool settings
@@ -33,7 +35,6 @@ export default function Whiteboard() {
   const { color, size, setColor, setSize } = usePalette(tsRef, mode, setMode);
 
   const {
-    worldToScreen,
     cameraRef,
     targetCameraRef,
     animationFrameRef,
@@ -42,14 +43,21 @@ export default function Whiteboard() {
     handleZoomReset,
     animateCameraRef,
     displayZoom,
-  } = useCamera(canvasRef, rendererRef, objectsRef, currentPathRef, tsRef);
+  } = useCamera(
+    canvasRef,
+    rendererRef,
+    objectsRef,
+    currentPathRef,
+    tsRef,
+    selectionBoxRef,
+    selectedBoundingBoxRef,
+  );
 
   const {
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
     selectionBox,
-    selectedIds,
     selectedBoundingBox,
   } = useMouseHandlers(
     canvasRef,
@@ -64,6 +72,8 @@ export default function Whiteboard() {
     size,
     mode,
     setMode,
+    selectionBoxRef,
+    selectedBoundingBoxRef,
   );
 
   const generateObjects = () => {
@@ -137,6 +147,11 @@ export default function Whiteboard() {
     currentPathRef.current = currentPath;
   }, [objects, currentPath]);
 
+  useEffect(() => {
+    selectionBoxRef.current = selectionBox;
+    selectedBoundingBoxRef.current = selectedBoundingBox;
+  }, [selectionBox, selectedBoundingBox]);
+
   const animateCamera = useCallback(() => {
     if (animateCameraRef.current) {
       animateCameraRef.current();
@@ -155,8 +170,18 @@ export default function Whiteboard() {
       camera.offsetY,
       color,
       size,
+      selectionBox,
+      selectedBoundingBox,
     );
-  }, [objects, currentPath, cameraRef, color, size]);
+  }, [
+    objects,
+    currentPath,
+    cameraRef,
+    color,
+    size,
+    selectionBox,
+    selectedBoundingBox,
+  ]);
 
   // Render on changes
   useEffect(() => {
@@ -203,86 +228,6 @@ export default function Whiteboard() {
         handleZoomReset={handleZoomReset}
         displayZoom={displayZoom}
       />
-
-      {selectionBox && (
-        <div
-          style={{
-            position: "fixed",
-            left: Math.min(
-              worldToScreen(selectionBox.start.x, selectionBox.start.y).x,
-              worldToScreen(selectionBox.end.x, selectionBox.end.y).x,
-            ),
-            top: Math.min(
-              worldToScreen(selectionBox.start.x, selectionBox.start.y).y,
-              worldToScreen(selectionBox.end.x, selectionBox.end.y).y,
-            ),
-            width: Math.abs(
-              worldToScreen(selectionBox.end.x, selectionBox.end.y).x -
-                worldToScreen(selectionBox.start.x, selectionBox.start.y).x,
-            ),
-            height: Math.abs(
-              worldToScreen(selectionBox.end.x, selectionBox.end.y).y -
-                worldToScreen(selectionBox.start.x, selectionBox.start.y).y,
-            ),
-            border: "2px solid #3b82f6",
-            backgroundColor: "rgba(59, 130, 246, 0.1)",
-            pointerEvents: "none",
-            zIndex: 5,
-          }}
-        />
-      )}
-
-      {selectedBoundingBox && selectedIds.length > 0 && (
-        <div
-          style={{
-            position: "fixed",
-            left: Math.min(
-              worldToScreen(
-                selectedBoundingBox.start.x,
-                selectedBoundingBox.start.y,
-              ).x,
-              worldToScreen(
-                selectedBoundingBox.end.x,
-                selectedBoundingBox.end.y,
-              ).x,
-            ),
-            top: Math.min(
-              worldToScreen(
-                selectedBoundingBox.start.x,
-                selectedBoundingBox.start.y,
-              ).y,
-              worldToScreen(
-                selectedBoundingBox.end.x,
-                selectedBoundingBox.end.y,
-              ).y,
-            ),
-            width: Math.abs(
-              worldToScreen(
-                selectedBoundingBox.end.x,
-                selectedBoundingBox.end.y,
-              ).x -
-                worldToScreen(
-                  selectedBoundingBox.start.x,
-                  selectedBoundingBox.start.y,
-                ).x,
-            ),
-            height: Math.abs(
-              worldToScreen(
-                selectedBoundingBox.end.x,
-                selectedBoundingBox.end.y,
-              ).y -
-                worldToScreen(
-                  selectedBoundingBox.start.x,
-                  selectedBoundingBox.start.y,
-                ).y,
-            ),
-            border: "2px dashed #3b82f6",
-            borderRadius: "4px",
-            pointerEvents: "none",
-            zIndex: 5,
-          }}
-        />
-      )}
 
       <Toolbar mode={mode} setMode={setMode} />
 

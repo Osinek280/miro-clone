@@ -28,6 +28,29 @@ const FPV = 7;
 
 // ── Shaders ───────────────────────────────────────────────────────────────────
 
+const VERT_RECT = `
+// VERT_RECT
+attribute vec2 a_pos;
+uniform vec2 u_resolution;
+uniform vec2 u_offset;
+uniform float u_zoom;
+
+void main() {
+  vec2 screen = a_pos * u_zoom + u_offset;
+  vec2 ndc = screen / u_resolution * 2.0 - 1.0;
+  gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
+}
+`;
+
+const FRAG_RECT = `
+// FRAG_RECT
+precision mediump float;
+uniform vec4 u_rectColor;
+
+void main() {
+  gl_FragColor = u_rectColor;
+}`;
+
 const VERT = /* glsl */ `
   precision highp float;
 
@@ -147,6 +170,14 @@ export class WebGLRenderer {
   private gl: WebGLRenderingContext | null = null;
   private program: WebGLProgram | null = null;
   private canvas: HTMLCanvasElement | null = null;
+
+  private rectProgram: WebGLProgram | null = null;
+  private rectBuf!: WebGLBuffer;
+  private rectAPos: number = -1;
+  private uRectResolution!: WebGLUniformLocation;
+  private uRectOffset!: WebGLUniformLocation;
+  private uRectZoom!: WebGLUniformLocation;
+  private uRectColor!: WebGLUniformLocation;
 
   // Attribute / uniform locations
   private aPos: number = -1;
@@ -310,6 +341,19 @@ export class WebGLRenderer {
 
     const vert = this.createShader(gl.VERTEX_SHADER, VERT);
     const frag = this.createShader(gl.FRAGMENT_SHADER, FRAG);
+    const vertR = this.createShader(gl.VERTEX_SHADER, VERT_RECT);
+    const fragR = this.createShader(gl.FRAGMENT_SHADER, FRAG_RECT);
+    if (vertR && fragR) {
+      const rp = this.createProgram(vertR, fragR);
+      if (rp) {
+        this.rectProgram = rp;
+        this.rectAPos = gl.getAttribLocation(rp, "a_pos");
+        this.uRectResolution = gl.getUniformLocation(rp, "u_resolution")!;
+        this.uRectOffset = gl.getUniformLocation(rp, "u_offset")!;
+        this.uRectZoom = gl.getUniformLocation(rp, "u_zoom")!;
+        this.uRectColor = gl.getUniformLocation(rp, "u_rectColor")!;
+      }
+    }
     if (!vert || !frag) return false;
 
     const prog = this.createProgram(vert, frag);
@@ -325,6 +369,7 @@ export class WebGLRenderer {
     this.uZoom = gl.getUniformLocation(prog, "u_zoom")!;
 
     this.bufVertex = gl.createBuffer()!;
+    this.rectBuf = gl.createBuffer()!;
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -349,6 +394,34 @@ export class WebGLRenderer {
     }
   }
 
+  private drawRect(
+    box: { start: Point; end: Point },
+    color: [number, number, number, number],
+    zoom: number,
+    offsetX: number,
+    offsetY: number,
+  ): void {
+    const gl = this.gl!;
+    if (!this.rectProgram || !this.canvas) return;
+
+    const { start: s, end: e } = box;
+    // 4 wierzchołki prostokąta (LINE_LOOP)
+    const verts = new Float32Array([s.x, s.y, e.x, s.y, e.x, e.y, s.x, e.y]);
+
+    gl.useProgram(this.rectProgram);
+    gl.uniform2f(this.uRectResolution, this.canvas.width, this.canvas.height);
+    gl.uniform1f(this.uRectZoom, zoom);
+    gl.uniform2f(this.uRectOffset, offsetX, offsetY);
+    gl.uniform4fv(this.uRectColor, color);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.rectBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, verts, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(this.rectAPos);
+    gl.vertexAttribPointer(this.rectAPos, 2, gl.FLOAT, false, 0, 0);
+
+    gl.drawArrays(gl.LINE_LOOP, 0, 4);
+  }
+
   render(
     objects: DrawObject[],
     currentPath: Point[],
@@ -357,6 +430,8 @@ export class WebGLRenderer {
     offsetY: number = 0,
     currentColor: string,
     currentSize: number,
+    selectionBox: { start: Point; end: Point } | null,
+    selectedBoundingBox: { start: Point; end: Point } | null,
   ): void {
     const gl = this.gl;
     if (!gl || !this.program || !this.canvas) return;
@@ -402,13 +477,35 @@ export class WebGLRenderer {
 
     // Jeden draw call dla całej sceny
     gl.drawArrays(gl.POINTS, 0, pointCount);
+
+    // Rysuj prostokąty po punktach (zmieniają program i buffer)
+    if (selectionBox) {
+      this.drawRect(
+        selectionBox,
+        [0.23, 0.51, 0.96, 0.6],
+        zoom,
+        offsetX,
+        offsetY,
+      );
+    }
+    if (selectedBoundingBox) {
+      this.drawRect(
+        selectedBoundingBox,
+        [0.23, 0.51, 0.96, 1.0],
+        zoom,
+        offsetX,
+        offsetY,
+      );
+    }
   }
 
   cleanup(): void {
     const gl = this.gl;
     if (gl) {
       gl.deleteBuffer(this.bufVertex);
+      gl.deleteBuffer(this.rectBuf);
       if (this.program) gl.deleteProgram(this.program);
+      if (this.rectProgram) gl.deleteProgram(this.rectProgram);
     }
     this.gl = null;
     this.program = null;
