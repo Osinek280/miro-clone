@@ -55,18 +55,18 @@ export function useSelectMode(
         prev.map((o) =>
           selectedIds.includes(o.id)
             ? {
-                ...o,
-                points: o.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
-              }
+              ...o,
+              points: o.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
+            }
             : o
         )
       );
       setSelectedBoundingBox((prev) =>
         prev
           ? {
-              start: { x: prev.start.x + dx, y: prev.start.y + dy },
-              end: { x: prev.end.x + dx, y: prev.end.y + dy },
-            }
+            start: { x: prev.start.x + dx, y: prev.start.y + dy },
+            end: { x: prev.end.x + dx, y: prev.end.y + dy },
+          }
           : null
       );
       lastMousePosRef.current = point;
