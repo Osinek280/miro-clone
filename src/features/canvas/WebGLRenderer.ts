@@ -1,4 +1,4 @@
-import type { DrawObject, Point } from "./types/types";
+import type { DrawObject, Point, SelectionBox } from "./types/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WebGLRenderer – circle-stamp line renderer
@@ -430,8 +430,8 @@ export class WebGLRenderer {
     offsetY: number = 0,
     currentColor: string,
     currentSize: number,
-    selectionBox: { start: Point; end: Point } | null,
-    selectedBoundingBox: { start: Point; end: Point } | null,
+    selectionBox: SelectionBox,
+    selectedBoundingBox: SelectionBox,
   ): void {
     const gl = this.gl;
     if (!gl || !this.program || !this.canvas) return;

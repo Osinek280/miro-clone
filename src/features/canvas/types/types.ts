@@ -27,3 +27,5 @@ export type ToolState = {
   color: string;
   size: number;
 };
+
+export type SelectionBox = { start: Point; end: Point } | null;

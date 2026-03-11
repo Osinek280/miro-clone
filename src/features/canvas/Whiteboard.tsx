@@ -4,6 +4,7 @@ import {
   DrawModeEnum,
   type DrawObject,
   type Point,
+  type SelectionBox,
   type ToolState,
 } from "./types/types";
 import { useCamera } from "./hooks/useCamera";
@@ -23,8 +24,8 @@ export default function Whiteboard() {
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
   const objectsRef = useRef(objects);
   const currentPathRef = useRef(currentPath);
-  const selectionBoxRef = useRef<{ start: Point; end: Point } | null>(null);
-  const selectedBoundingBoxRef = useRef<{ start: Point; end: Point } | null>(null);
+  const selectionBoxRef = useRef<SelectionBox>(null);
+  const selectedBoundingBoxRef = useRef<SelectionBox>(null);
 
   const tsRef = useRef<ToolState>({
     // ts -> tool settings

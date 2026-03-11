@@ -1,8 +1,6 @@
-import type { Camera } from "../../types/types";
+import type { Camera, SelectionBox } from "../../types/types";
 import type { WebGLRenderer } from "../../WebGLRenderer";
 import type { DrawObject, Point } from "../../types/types";
-
-type SelectionBox = { start: Point; end: Point } | null;
 
 export function useGrabMode(
   cameraRef: React.RefObject<Camera>,

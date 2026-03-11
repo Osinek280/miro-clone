@@ -4,6 +4,7 @@ import {
   type Camera,
   type DrawObject,
   type Point,
+  type SelectionBox,
 } from "../types/types";
 import { useState } from "react";
 import { getCanvasPoint } from "../utils/cameraUtils";
@@ -11,8 +12,6 @@ import { useDrawMode } from "./modes/useDrawMode";
 import { useSelectMode } from "./modes/useSelectMode";
 import { useGrabMode } from "./modes/useGrabMode";
 import type { WebGLRenderer } from "../WebGLRenderer";
-
-type SelectionBox = { start: Point; end: Point } | null;
 
 export function useMouseHandlers(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,

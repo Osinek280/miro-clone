@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Camera, DrawObject, Point, ToolState } from "../types/types";
+import type { Camera, DrawObject, Point, SelectionBox, ToolState } from "../types/types";
 import type { WebGLRenderer } from "../WebGLRenderer";
 import { screenToWorld as utilScreenToWorld } from "../utils/cameraUtils";
 import {
@@ -13,8 +13,6 @@ import {
   ZOOM_CHANGE_EPSILON,
   ZOOM_DISPLAY_PRECISION,
 } from "../constants/cameraConstants";
-
-type SelectionBox = { start: Point; end: Point } | null;
 
 export function useCamera(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
