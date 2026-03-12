@@ -8,7 +8,7 @@ let isRefreshing = false;
 let queue: ((value?: unknown) => void)[] = [];
 
 apiClient.interceptors.request.use((config) => {
-  console.log('[Request Interceptor] Wywołany dla URL:', config.url);
+  console.log('[Request Interceptor] Called for URL:', config.url);
 
   const token = tokenStorage.get();
   if (token) {
@@ -41,7 +41,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch {
         console.log(
-          '[Response Interceptor] Odświeżanie tokena nie powiodło się. Wylogowywanie użytkownika.'
+          '[Response Interceptor] Token refresh failed. Logging out user.'
         );
         tokenStorage.remove();
         useAuthStore.getState().clearAuth();

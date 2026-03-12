@@ -135,11 +135,11 @@ export default function Whiteboard() {
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
-    // Ustaw początkowy offset kamery, aby (0,0) było na środku
+    // Set initial camera offset so (0,0) is at center
     cameraRef.current.offsetX = centerX;
     cameraRef.current.offsetY = centerY;
 
-    // Zaktualizuj targetCameraRef, żeby animacja nie przesunęła kamery
+    // Update targetCameraRef so animation doesn't move the camera
     targetCameraRef.current.offsetX = centerX;
     targetCameraRef.current.offsetY = centerY;
   }, []);

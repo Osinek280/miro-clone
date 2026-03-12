@@ -32,11 +32,11 @@ export const getRoleIcon = (role: Whiteboard['role']) => {
 export const getRoleLabel = (role: Whiteboard['role']) => {
   switch (role) {
     case 'OWNER':
-      return 'Właściciel';
+      return 'Owner';
     case 'EDITOR':
-      return 'Edytor';
+      return 'Editor';
     case 'VIEWER':
-      return 'Obserwator';
+      return 'Viewer';
   }
 };
 
@@ -47,9 +47,9 @@ export const formatDate = (dateString: string) => {
   const diffTime = Math.abs(today.getTime() - date.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return 'Dzisiaj';
-  if (diffDays === 1) return 'Wczoraj';
-  if (diffDays < 7) return `${diffDays} dni temu`;
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
 
-  return date.toLocaleDateString('pl-PL');
+  return date.toLocaleDateString();
 };

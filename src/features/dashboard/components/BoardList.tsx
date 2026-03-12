@@ -80,14 +80,14 @@ export const BoardsList = ({ boards, onOpen, onRemove }: Props) => {
                         onClick={() => console.log('rename', board.id)}
                       >
                         <Pencil className="mr-2 h-4 w-4" />
-                        Zmień nazwę
+                        Rename
                       </DropdownMenuItem>
 
                       <DropdownMenuItem
                         onClick={() => console.log('share', board.id)}
                       >
                         <Share2 className="mr-2 h-4 w-4" />
-                        Udostępnij dostęp
+                        Share
                       </DropdownMenuItem>
 
                       {board.role === 'OWNER' && (
@@ -99,7 +99,7 @@ export const BoardsList = ({ boards, onOpen, onRemove }: Props) => {
                             onClick={() => onRemove(board.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Usuń
+                            Remove
                           </DropdownMenuItem>
                         </>
                       )}

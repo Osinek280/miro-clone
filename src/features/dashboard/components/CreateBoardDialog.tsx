@@ -51,15 +51,15 @@ export const CreateBoardDialog = ({
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
-          Nowy whiteboard
+          New whiteboard
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-106.25">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Utwórz nowy whiteboard</DialogTitle>
+            <DialogTitle>Create new whiteboard</DialogTitle>
             <DialogDescription>
-              Podaj nazwę dla nowej tablicy. Możesz ją zmienić później.
+              Enter a name for the new board. You can change it later.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -67,7 +67,7 @@ export const CreateBoardDialog = ({
               <Label htmlFor="board-name">Nazwa tablicy</Label>
               <Input
                 id="board-name"
-                placeholder="np. Projekt marketingowy"
+                placeholder="e.g. Marketing project"
                 value={boardName}
                 onChange={(e) => setBoardName(e.target.value)}
                 autoFocus
@@ -85,7 +85,7 @@ export const CreateBoardDialog = ({
               Anuluj
             </Button>
             <Button type="submit" disabled={!boardName.trim() || isCreating}>
-              {isCreating ? 'Tworzenie...' : 'Utwórz'}
+              {isCreating ? 'Creating...' : 'Create'}
             </Button>
           </DialogFooter>
         </form>

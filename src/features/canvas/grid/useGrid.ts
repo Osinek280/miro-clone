@@ -94,7 +94,7 @@ export function useGrid(
     }
   }, [canvasRef, cameraRef, style]);
 
-  // Własna pętla RAF — przerysowuje tylko gdy kamera faktycznie się zmieniła
+  // Custom RAF loop — redraws only when camera actually changed
   useEffect(() => {
     const loop = () => {
       const cam = cameraRef.current;

@@ -10,10 +10,10 @@ export function useDrawMode(
     return [point]; // initial path
   };
 
-  /** Próg w radianach – przyciągamy tylko gdy kąt jest naprawdę blisko wartości (ok. 10°) */
+  /** Threshold in radians – snap only when the angle is very close to a target value (~10°) */
   const SNAP_THRESHOLD_RAD = (2 * Math.PI) / 180;
 
-  /** Odległość kątowa w [-π, π] */
+  /** Angular distance in the range [-π, π] */
   const angleDist = (a: number, b: number): number => {
     let d = a - b;
     while (d > Math.PI) d -= 2 * Math.PI;
@@ -21,7 +21,7 @@ export function useDrawMode(
     return Math.abs(d);
   };
 
-  /** Przyciąga do 0°/45°/90°/… tylko gdy kąt jest w progu SNAP_THRESHOLD od danej wartości */
+  /** Snaps to 0° / 45° / 90° / … only when the angle is within SNAP_THRESHOLD of that value */
   const snapAngleOnlyWhenClose = (angleRad: number): number => {
     const targets = [
       0,

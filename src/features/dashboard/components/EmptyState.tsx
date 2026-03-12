@@ -12,13 +12,13 @@ export const EmptyState = ({ searching, onCreate }: Props) => {
       <Grid3x3 size={48} className="mx-auto mb-4 text-muted-foreground" />
 
       <h3 className="text-lg font-medium mb-2">
-        {searching ? 'Nie znaleziono' : 'Brak whiteboardów'}
+        {searching ? 'No results' : 'No whiteboards'}
       </h3>
 
       {!searching && (
         <Button onClick={onCreate}>
           <Plus className="mr-2 h-4 w-4" />
-          Utwórz
+          Create
         </Button>
       )}
     </div>

@@ -102,7 +102,7 @@ export function useCamera(
     if (animateCameraRef.current) animateCameraRef.current();
   }, []);
 
-  // Zoom w stronę punktu
+  // Zoom toward point
   const zoomTowardPoint = useCallback(
     (screenX: number, screenY: number, newZoom: number) => {
       const canvas = canvasRef.current;
@@ -138,7 +138,7 @@ export function useCamera(
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      // przenieś tutaj logikę z handleWheel
+      // move handleWheel logic here if needed
       const delta = e.deltaY;
       const isTrackpad = Math.abs(delta) < 50;
       const zoomFactor = isTrackpad ? TRACKPAD_ZOOM_FACTOR : MOUSE_ZOOM_FACTOR;

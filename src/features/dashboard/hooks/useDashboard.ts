@@ -16,7 +16,7 @@ export const useDashboard = () => {
       setBoards(data);
     } catch (err) {
       console.error('Failed to fetch boards:', err);
-      setError('Nie udało się pobrać tablic');
+      setError('Failed to load boards');
     } finally {
       setLoading(false);
     }

@@ -72,7 +72,7 @@ export const DashboardPage = () => {
           setViewMode={setViewMode}
         />
 
-        {loading && <p>Ładowanie...</p>}
+        {loading && <p>Loading...</p>}
         {error && <p>{error}</p>}
 
         {!loading && filtered.length === 0 && (

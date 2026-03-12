@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Camera } from '../types/types';
 import { useGrid } from './useGrid';
 
-export type GridStyle = 'grid' | 'dots' | 'axes'; // przyszłościowe
+export type GridStyle = 'grid' | 'dots' | 'axes'; // for future use
 
 interface GridProps {
   cameraRef: React.RefObject<Camera>;

@@ -18,7 +18,7 @@ export const DashboardHeader = ({
     <header className="bg-background border-b sticky top-0 z-10">
       <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Moje Whiteboardy</h1>
+          <h1 className="text-2xl font-bold">My Whiteboards</h1>
           <p className="text-sm text-muted-foreground">{email}</p>
         </div>
 
@@ -28,7 +28,7 @@ export const DashboardHeader = ({
             isCreating={isCreating}
           />
           <Button variant="outline" onClick={onLogout}>
-            Wyloguj się
+            Log out
           </Button>
         </div>
       </div>

@@ -23,7 +23,7 @@ export const LoginForm = () => {
     } catch (err: any) {
       setError(
         err?.response?.data?.message ??
-          'Nie udało się zalogować. Spróbuj ponownie.'
+          'Login failed. Please try again.'
       );
     } finally {
       setIsLoading(false);
@@ -36,7 +36,7 @@ export const LoginForm = () => {
       className="mx-auto mt-24 w-full max-w-md rounded-2xl bg-white p-8 shadow-lg"
     >
       <h2 className="mb-6 text-center text-2xl font-semibold text-gray-800">
-        Zaloguj się
+        Log in
       </h2>
 
       {error && (
@@ -61,7 +61,7 @@ export const LoginForm = () => {
 
       <div className="mb-6">
         <label className="mb-1 block text-sm font-medium text-gray-700">
-          Hasło
+          Password
         </label>
         <input
           type="password"
@@ -78,7 +78,7 @@ export const LoginForm = () => {
         disabled={isLoading}
         className="w-full rounded-lg bg-blue-600 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isLoading ? 'Logowanie...' : 'Zaloguj się'}
+        {isLoading ? 'Logging in...' : 'Log in'}
       </button>
     </form>
   );

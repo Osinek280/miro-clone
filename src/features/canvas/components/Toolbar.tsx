@@ -49,13 +49,11 @@ export default function Toolbar({ mode, setMode }: ToolbarProps) {
             key={t.id}
             title={
               t.id === 'draw'
-                ? `${t.label} (${t.key}) • Shift = proste linie`
+                ? `${t.label} (${t.key}) • Shift = straight lines`
                 : `${t.label} (${t.key})`
             }
             onClick={() => {
               if (t.mode) {
-                console.log('ju');
-                console.log(mode);
                 setMode(t.mode);
               }
             }}

@@ -3,26 +3,26 @@ import type { DrawObject, Point, SelectionBox } from './types/types';
 // ─────────────────────────────────────────────────────────────────────────────
 // WebGLRenderer – circle-stamp line renderer
 //
-// Filozofia (jak Miro / Procreate / Excalidraw):
-//   Każdy punkt ścieżki = wypełnione koło rysowane przez gl.POINTS.
-//   Nakładające się koła tworzą idealnie gładką, ciągłą linię.
-//   Zero problemów z miter joints, zero ostrych krawędzi.
+// Philosophy (like Miro / Procreate / Excalidraw):
+//   Each path point = a filled circle rendered with gl.POINTS.
+//   Overlapping circles create a perfectly smooth, continuous line.
+//   No miter joint issues, no sharp edges.
 //
-//   gl_PointSize = size * zoom  →  koła skalują się z kamerą
-//   SDF w fragment shaderze     →  antyaliasowana, okrągła krawędź
+//   gl_PointSize = size * zoom  →  circles scale with the camera
+//   SDF in the fragment shader  →  antialiased circular edge
 //
-// Wydajność (10k+ obiektów):
-//   • Jeden draw call na całą scenę (merged buffer)
-//   • Per-object cache – rebuild tylko przy zmianie punktów/koloru/size
+// Performance (10k+ objects):
+//   • Single draw call for the entire scene (merged buffer)
+//   • Per-object cache – rebuild only when points/color/size change
 //   • Interleaved buffer: [x, y, r, g, b, a, pointSize]
-//   • Gęstość punktów kontrolowana przez MIN_DIST (co ~1.5px w world-space)
+//   • Point density controlled by MIN_DIST (~1.5px in world space)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Minimalna odległość między zapisanymi punktami (world-space).
-// Twój mouseMove już interpoluje co 2px – to zostawiamy jako backup.
+// Minimum distance between stored points (world space).
+// mouseMove already interpolates every ~2px – this remains as a fallback.
 const MIN_DIST = 1.5;
 
-// Floats per vertex w interleaved buforze
+// Floats per vertex in interleaved buffer
 // [x, y, r, g, b, a, pointSize]
 const FPV = 7;
 
@@ -68,11 +68,11 @@ const VERT = /* glsl */ `
     // world → screen px
     vec2 screen = a_pos * u_zoom + u_offset;
 
-    // screen → NDC, odwróć Y
+    // screen → NDC, flip Y
     vec2 ndc = screen / u_resolution * 2.0 - 1.0;
     gl_Position  = vec4(ndc.x, -ndc.y, 0.0, 1.0);
 
-    // Rozmiar koła skaluje się z zoomem (world-space size)
+    // Circle size scales with zoom (world-space size)
     gl_PointSize = a_size * u_zoom;
 
     v_color = a_color;
@@ -80,11 +80,11 @@ const VERT = /* glsl */ `
 `;
 
 /**
- * Fragment shader – SDF circle z antyaliasingiem.
+ * Fragment shader – SDF circle with antialiasing.
  *
- * gl_PointCoord: (0,0) lewy-górny róg, (1,1) prawy-dolny
- * dist od środka = length(gl_PointCoord - 0.5) * 2  →  0=środek, 1=krawędź
- * smoothstep daje ~1px miękką krawędź niezależnie od rozmiaru koła.
+ * gl_PointCoord: (0,0) top-left, (1,1) bottom-right
+ * dist from center = length(gl_PointCoord - 0.5) * 2  →  0=center, 1=edge
+ * smoothstep gives ~1px soft edge independent of circle size.
  */
 const FRAG = /* glsl */ `
   precision mediump float;
@@ -92,10 +92,10 @@ const FRAG = /* glsl */ `
   varying vec4 v_color;
 
   void main() {
-    // Odległość od środka punktu: 0 = centrum, 1 = krawędź
+    // Distance from point center: 0 = center, 1 = edge
     float dist  = length(gl_PointCoord - 0.5) * 2.0;
 
-    // ~1px antyaliasing na krawędzi koła
+    // ~1px antialiasing on circle edge
     float alpha = step(dist, 1.0);
     if (alpha < 0.004) discard;
 
@@ -125,11 +125,11 @@ function hexToRgba(hex: string): [number, number, number, number] {
 }
 
 /**
- * Buduje interleaved buffer dla jednej polyline.
+ * Fragment shader – SDF circle with antialiasing.
  *
- * Filtruje punkty bliżej niż MIN_DIST od poprzedniego
- * (defensive – twój mouseMove już interpoluje).
- * Kolor i size są stałe per-obiekt, wpisane do każdego werteksa.
+ * gl_PointCoord: (0,0) top-left corner, (1,1) bottom-right
+ * Distance from the center = length(gl_PointCoord - 0.5) * 2  →  0 = center, 1 = edge
+ * smoothstep produces a ~1px soft edge independent of the circle size.
  */
 function buildPointBuffer(
   points: Point[],
@@ -154,7 +154,7 @@ function buildPointBuffer(
     lastY = p.y;
   }
 
-  // Zawsze dodaj ostatni punkt (żeby ścieżka kończyła się dokładnie)
+  // Always add the last point so the path ends exactly there
   const last = points[points.length - 1];
   if (last.x !== lastX || last.y !== lastY) {
     buf.push(last.x, last.y, r, g, b, a, size);
@@ -188,7 +188,7 @@ export class WebGLRenderer {
   private uOffset!: WebGLUniformLocation;
   private uZoom!: WebGLUniformLocation;
 
-  // Jeden GPU vertex buffer (interleaved, cała scena)
+  // Single GPU vertex buffer (interleaved, entire scene)
   private bufVertex!: WebGLBuffer;
 
   // Per-object geometry cache
@@ -229,7 +229,7 @@ export class WebGLRenderer {
     return p;
   }
 
-  /** Fingerprint do inwalidacji cache */
+  /** Fingerprint for cache invalidation */
   private stateKey(obj: DrawObject): string {
     const f = obj.points[0],
       l = obj.points[obj.points.length - 1];
@@ -237,9 +237,9 @@ export class WebGLRenderer {
   }
 
   /**
-   * Scala geometry wszystkich obiektów + currentPath w jeden Float32Array
-   * i wgrywa na GPU jednym gl.bufferData.
-   * Zwraca liczbę punktów do narysowania.
+   * Merges geometry of all objects + currentPath into one Float32Array
+   * and uploads to GPU with a single gl.bufferData.
+   * Returns the number of points to draw.
    */
   private mergeAndUpload(
     objects: DrawObject[],
@@ -249,7 +249,7 @@ export class WebGLRenderer {
   ): number {
     const gl = this.gl!;
 
-    // Usuń z cache usunięte obiekty
+    // Remove deleted objects from cache
     const activeIds = new Set(objects.map((o) => o.id));
     for (const id of this.geoCache.keys()) {
       if (!activeIds.has(id)) {
@@ -258,7 +258,7 @@ export class WebGLRenderer {
       }
     }
 
-    // Rebuild tylko zmienionych obiektów
+    // Rebuild only changed objects
     for (const obj of objects) {
       const key = this.stateKey(obj);
       if (this.cacheKeys.get(obj.id) !== key) {
@@ -274,7 +274,7 @@ export class WebGLRenderer {
       }
     }
 
-    // Live path – nie cache'owana (rysowana w każdej klatce)
+    // Live path – not cached (drawn every frame)
     let liveGeo: CachedGeometry | null = null;
     if (currentPath.length > 0) {
       liveGeo = buildPointBuffer(
@@ -284,7 +284,7 @@ export class WebGLRenderer {
       );
     }
 
-    // Policz sumaryczny rozmiar
+    // Count total size
     let totalPoints = 0;
     for (const obj of objects) {
       const g = this.geoCache.get(obj.id);
@@ -294,7 +294,7 @@ export class WebGLRenderer {
 
     if (totalPoints === 0) return 0;
 
-    // Jednorazowa alokacja merged buffer
+    // Single allocation for merged buffer
     const all = new Float32Array(totalPoints * FPV);
     let offset = 0;
 
@@ -307,9 +307,9 @@ export class WebGLRenderer {
       const g = this.geoCache.get(obj.id);
       if (g) append(g);
     }
-    if (liveGeo) append(liveGeo); // live path na wierzchu
+    if (liveGeo) append(liveGeo); // live path on top
 
-    // Upload – jeden gl.bufferData
+    // Upload – single gl.bufferData
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertex);
     gl.bufferData(gl.ARRAY_BUFFER, all, gl.DYNAMIC_DRAW);
 
@@ -333,7 +333,7 @@ export class WebGLRenderer {
     }
     this.gl = gl;
 
-    // Sprawdź max point size (musi obsługiwać duże pędzle)
+    // Check max point size (must support large brushes)
     const maxPtSize = gl.getParameter(
       gl.ALIASED_POINT_SIZE_RANGE
     ) as Float32Array;
@@ -405,7 +405,7 @@ export class WebGLRenderer {
     if (!this.rectProgram || !this.canvas) return;
 
     const { start: s, end: e } = box;
-    // 4 wierzchołki prostokąta (LINE_LOOP)
+    // 4 rectangle vertices (LINE_LOOP)
     const verts = new Float32Array([s.x, s.y, e.x, s.y, e.x, e.y, s.x, e.y]);
 
     gl.useProgram(this.rectProgram);
@@ -454,7 +454,7 @@ export class WebGLRenderer {
     gl.uniform1f(this.uZoom, zoom);
     gl.uniform2f(this.uOffset, offsetX, offsetY);
 
-    // Jeden bind + setup atrybutów przez stride
+    // Single bind + attribute setup via stride
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertex);
     const stride = FPV * 4; // 7 floats * 4 bytes
 
@@ -475,10 +475,10 @@ export class WebGLRenderer {
     attr(this.aColor, 4, 2); // [r, g, b, a]
     attr(this.aSize, 1, 6); // [size]
 
-    // Jeden draw call dla całej sceny
+    // Single draw call for the entire scene
     gl.drawArrays(gl.POINTS, 0, pointCount);
 
-    // Rysuj prostokąty po punktach (zmieniają program i buffer)
+    // Draw rectangles after points (they switch program and buffer)
     if (selectionBox) {
       this.drawRect(
         selectionBox,
