@@ -10,12 +10,73 @@ export function useDrawMode(
     return [point]; // initial path
   };
 
-  const onMouseMove = (point: Point, prev: Point[]): Point[] => {
+  /** Próg w radianach – przyciągamy tylko gdy kąt jest naprawdę blisko wartości (ok. 10°) */
+  const SNAP_THRESHOLD_RAD = (2 * Math.PI) / 180;
+
+  /** Odległość kątowa w [-π, π] */
+  const angleDist = (a: number, b: number): number => {
+    let d = a - b;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    return Math.abs(d);
+  };
+
+  /** Przyciąga do 0°/45°/90°/… tylko gdy kąt jest w progu SNAP_THRESHOLD od danej wartości */
+  const snapAngleOnlyWhenClose = (angleRad: number): number => {
+    const targets = [
+      0,
+      Math.PI / 4,
+      Math.PI / 2,
+      (3 * Math.PI) / 4,
+      Math.PI,
+      -Math.PI / 4,
+      -Math.PI / 2,
+      (-3 * Math.PI) / 4,
+    ];
+    let bestTarget = angleRad;
+    let bestDist = Infinity;
+    for (const t of targets) {
+      const d = angleDist(angleRad, t);
+      if (d < bestDist) {
+        bestDist = d;
+        bestTarget = t;
+      }
+    }
+    return bestDist <= SNAP_THRESHOLD_RAD ? bestTarget : angleRad;
+  };
+
+  const onMouseMove = (point: Point, prev: Point[], shiftKey = false): Point[] => {
     if (prev.length === 0) return [point];
     const last = prev[prev.length - 1];
     const dx = point.x - last.x;
     const dy = point.y - last.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (shiftKey) {
+      const start = prev[0];
+      const totalDx = point.x - start.x;
+      const totalDy = point.y - start.y;
+      const totalDist = Math.sqrt(totalDx * totalDx + totalDy * totalDy);
+
+      if (totalDist === 0) return [start];
+
+      const angle = Math.atan2(totalDy, totalDx);
+      const snappedAngle = snapAngleOnlyWhenClose(angle);
+      const endX = start.x + totalDist * Math.cos(snappedAngle);
+      const endY = start.y + totalDist * Math.sin(snappedAngle);
+      const snapDx = endX - start.x;
+      const snapDy = endY - start.y;
+
+      const step = 0.25;
+      const steps = Math.max(1, Math.floor(totalDist / step));
+      const linePoints: Point[] = [start];
+      for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        linePoints.push({ x: start.x + snapDx * t, y: start.y + snapDy * t });
+      }
+      return linePoints;
+    }
+
     const steps = Math.floor(distance / 0.25);
     const newPoints: Point[] = [];
     for (let i = 1; i <= steps; i++) {

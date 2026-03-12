@@ -47,7 +47,11 @@ export default function Toolbar({ mode, setMode }: ToolbarProps) {
           <button
             style={{ pointerEvents: 'auto' }}
             key={t.id}
-            title={`${t.label} (${t.key})`}
+            title={
+              t.id === 'draw'
+                ? `${t.label} (${t.key}) • Shift = proste linie`
+                : `${t.label} (${t.key})`
+            }
             onClick={() => {
               if (t.mode) {
                 console.log('ju');

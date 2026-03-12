@@ -78,7 +78,7 @@ export function useMouseHandlers(
     if (mode === DrawModeEnum.Select) {
       select.onMouseMove(point);
     } else if (mode === DrawModeEnum.Draw && isDrawing) {
-      setCurrentPath((prev) => draw.onMouseMove(point, prev));
+      setCurrentPath((prev) => draw.onMouseMove(point, prev, e.shiftKey));
     }
   };
 
