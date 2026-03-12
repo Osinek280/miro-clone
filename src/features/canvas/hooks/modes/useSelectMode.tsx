@@ -29,14 +29,18 @@ export function useSelectMode(
   const onMouseDown = (point: Point) => {
     const obj = findObjectAtPoint(point, objects, cameraRef.current.zoom);
     if (obj) {
-      if (!selectedIds.includes(obj.id)) {
-        setSelectedIds((prev) => [...prev, obj.id]);
+      if (selectedIds.includes(obj.id)) {
+        setIsMoving(true);
+      } else {
+        setSelectedIds([obj.id]);
+        setSelectedBoundingBox(calcBoundingBox([obj]));
+        setIsMoving(true);
       }
-      setIsMoving(true);
       lastMousePosRef.current = point;
     } else {
       setSelectionBox({ start: point, end: point });
       setSelectedIds([]);
+      setSelectedBoundingBox(null);
     }
   };
 
