@@ -2,33 +2,36 @@ import { useEffect, useRef } from 'react';
 import {
   DrawModeEnum,
   type Camera,
-  type DrawObject,
-  type Point,
-  type SelectionBox,
+  type RenderStateAPI,
 } from '../types/types';
 import { useState } from 'react';
 import { getCanvasPoint } from '../utils/cameraUtils';
 import { useDrawMode } from './modes/useDrawMode';
 import { useSelectMode } from './modes/useSelectMode';
 import { useGrabMode } from './modes/useGrabMode';
-import type { WebGLRenderer } from '../WebGLRenderer';
 
 export function useMouseHandlers(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   cameraRef: React.RefObject<Camera>,
   targetCameraRef: React.RefObject<Camera>,
-  rendererRef: React.RefObject<WebGLRenderer | null>,
-  objects: DrawObject[],
-  setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>,
-  setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>,
-  currentPath: Point[],
-  currentColor: string,
-  currentSize: number,
+  renderFrame: () => void,
+  state: RenderStateAPI,
   mode: DrawModeEnum,
-  setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>,
-  selectionBoxRef: React.RefObject<SelectionBox>,
-  selectedBoundingBoxRef: React.RefObject<SelectionBox>
+  setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>
 ) {
+  const {
+    objects,
+    setObjects,
+    setCurrentPath,
+    currentPath,
+    color: currentColor,
+    size: currentSize,
+    selectionBox,
+    setSelectionBox,
+    selectedBoundingBox,
+    setSelectedBoundingBox,
+  } = state;
+
   const [isDrawing, setIsDrawing] = useState(false);
   const prevModeRef = useRef<DrawModeEnum>(DrawModeEnum.Draw);
   const isGrabbingRef = useRef(false);
@@ -39,19 +42,17 @@ export function useMouseHandlers(
     currentColor,
     currentSize
   );
-  const select = useSelectMode(cameraRef, objects, setObjects);
-
-  const grab = useGrabMode(
+  const select = useSelectMode(
     cameraRef,
-    targetCameraRef,
-    rendererRef,
     objects,
-    currentPath,
-    currentColor,
-    currentSize,
-    selectionBoxRef,
-    selectedBoundingBoxRef
+    setObjects,
+    selectionBox,
+    setSelectionBox,
+    selectedBoundingBox,
+    setSelectedBoundingBox
   );
+
+  const grab = useGrabMode(cameraRef, targetCameraRef, renderFrame);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (e.button === 1 || mode === DrawModeEnum.Grab) {

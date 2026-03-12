@@ -1,23 +1,19 @@
 import { useRef, useState } from 'react';
-import type { Camera, DrawObject, Point } from '../../types/types';
+import type { Camera, DrawObject, Point, SelectionBox } from '../../types/types';
 import { findObjectAtPoint } from '../../utils/objectUtils';
 import { calcBoundingBox } from '../../utils/objectUtils';
 
 export function useSelectMode(
   cameraRef: React.RefObject<Camera>,
   objects: DrawObject[],
-  setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>
+  setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>,
+  selectionBox: SelectionBox,
+  setSelectionBox: React.Dispatch<React.SetStateAction<SelectionBox>>,
+  selectedBoundingBox: SelectionBox,
+  setSelectedBoundingBox: React.Dispatch<React.SetStateAction<SelectionBox>>
 ) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isMoving, setIsMoving] = useState(false);
-  const [selectionBox, setSelectionBox] = useState<{
-    start: Point;
-    end: Point;
-  } | null>(null);
-  const [selectedBoundingBox, setSelectedBoundingBox] = useState<{
-    start: Point;
-    end: Point;
-  } | null>(null);
   const lastMousePosRef = useRef<Point>({ x: 0, y: 0 });
 
   const clearSelection = () => {

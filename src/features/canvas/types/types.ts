@@ -29,3 +29,34 @@ export type ToolState = {
 };
 
 export type SelectionBox = { start: Point; end: Point } | null;
+
+/** API of the state object returned by useRender (getters + setters). */
+export interface RenderStateAPI {
+  objects: DrawObject[];
+  setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>;
+  currentPath: Point[];
+  setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>;
+  color: string;
+  setColor: React.Dispatch<React.SetStateAction<string>>;
+  size: number;
+  setSize: React.Dispatch<React.SetStateAction<number>>;
+  selectionBox: SelectionBox;
+  setSelectionBox: React.Dispatch<React.SetStateAction<SelectionBox>>;
+  selectedBoundingBox: SelectionBox;
+  setSelectedBoundingBox: React.Dispatch<React.SetStateAction<SelectionBox>>;
+}
+
+export interface RenderState {
+  objects: DrawObject[];
+  currentPath: Point[];
+  // camera
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+  // tool
+  color: string;
+  size: number;
+  // overlays
+  selectionBox: SelectionBox;
+  selectedBoundingBox: SelectionBox;
+}

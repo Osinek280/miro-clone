@@ -1,16 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { WebGLRenderer } from './WebGLRenderer';
-import {
-  DrawModeEnum,
-  type DrawObject,
-  type Point,
-  type SelectionBox,
-  type ToolState,
-} from './types/types';
+import { DrawModeEnum, type DrawObject } from './types/types';
+import { useRender } from './hooks/useRenderer';
 import { useCamera } from './hooks/useCamera';
 import { useMouseHandlers } from './hooks/useMouseHandlers';
 import Palette from './components/Palette';
-import { usePalette } from './components/usePalette';
 import { getCursor } from './utils/cursorUtils';
 import Toolbar from './components/Toolbar';
 import { Zoom } from './components/Zoom';
@@ -20,62 +14,29 @@ import SelectionToolbar from './components/SelectionToolbar';
 export default function Whiteboard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
-  const [objects, setObjects] = useState<DrawObject[]>([]);
+  const cameraRef = useRef({ zoom: 1, offsetX: 0, offsetY: 0 });
+  const targetCameraRef = useRef({ zoom: 1, offsetX: 0, offsetY: 0 });
   const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
-  const [currentPath, setCurrentPath] = useState<Point[]>([]);
-  const objectsRef = useRef(objects);
-  const currentPathRef = useRef(currentPath);
-  const selectionBoxRef = useRef<SelectionBox>(null);
-  const selectedBoundingBoxRef = useRef<SelectionBox>(null);
 
-  const tsRef = useRef<ToolState>({
-    // ts -> tool settings
-    color: '#000',
-    size: 10,
-  });
-
-  const { color, size, setColor, setSize } = usePalette(tsRef, mode, setMode);
+  const { renderFrame, state } = useRender(rendererRef, cameraRef);
 
   const {
-    cameraRef,
-    targetCameraRef,
     animationFrameRef,
     handleZoomIn,
     handleZoomOut,
     handleZoomReset,
     animateCameraRef,
     displayZoom,
-  } = useCamera(
-    canvasRef,
-    rendererRef,
-    objectsRef,
-    currentPathRef,
-    tsRef,
-    selectionBoxRef,
-    selectedBoundingBoxRef
-  );
+  } = useCamera(canvasRef, cameraRef, targetCameraRef, renderFrame);
 
-  const {
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
-    selectionBox,
-    selectedBoundingBox,
-  } = useMouseHandlers(
+  const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
     cameraRef,
     targetCameraRef,
-    rendererRef,
-    objects,
-    setObjects,
-    setCurrentPath,
-    currentPath,
-    color,
-    size,
+    renderFrame,
+    state,
     mode,
-    setMode,
-    selectionBoxRef,
-    selectedBoundingBoxRef
+    setMode
   );
 
   const generateObjects = () => {
@@ -97,7 +58,7 @@ export default function Whiteboard() {
       });
     }
 
-    setObjects(arr);
+    state.setObjects(arr);
   };
 
   // Initialize WebGL
@@ -144,51 +105,11 @@ export default function Whiteboard() {
     targetCameraRef.current.offsetY = centerY;
   }, []);
 
-  useEffect(() => {
-    objectsRef.current = objects;
-    currentPathRef.current = currentPath;
-  }, [objects, currentPath]);
-
-  useEffect(() => {
-    selectionBoxRef.current = selectionBox;
-    selectedBoundingBoxRef.current = selectedBoundingBox;
-  }, [selectionBox, selectedBoundingBox]);
-
   const animateCamera = useCallback(() => {
     if (animateCameraRef.current) {
       animateCameraRef.current();
     }
   }, [animateCameraRef]);
-
-  // Render function
-  const render = useCallback(() => {
-    if (!rendererRef.current) return;
-    const camera = cameraRef.current;
-    rendererRef.current.render(
-      objects,
-      currentPath,
-      camera.zoom,
-      camera.offsetX,
-      camera.offsetY,
-      color,
-      size,
-      selectionBox,
-      selectedBoundingBox
-    );
-  }, [
-    objects,
-    currentPath,
-    cameraRef,
-    color,
-    size,
-    selectionBox,
-    selectedBoundingBox,
-  ]);
-
-  // Render on changes
-  useEffect(() => {
-    render();
-  }, [render]);
 
   // Start animation loop if needed
   useEffect(() => {
@@ -212,6 +133,8 @@ export default function Whiteboard() {
       }
     };
   }, [animateCamera, animationFrameRef, cameraRef, targetCameraRef]);
+
+  const { color, size, setColor, setSize, selectedBoundingBox } = state;
 
   return (
     <div className="w-full h-full relative bg-gray-100">

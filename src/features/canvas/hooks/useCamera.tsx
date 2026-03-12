@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type {
-  Camera,
-  DrawObject,
-  Point,
-  SelectionBox,
-  ToolState,
-} from '../types/types';
-import type { WebGLRenderer } from '../WebGLRenderer';
+import type { Camera } from '../types/types';
 import {
   CAMERA_LERP_SPEED,
   CAMERA_THRESHOLD,
@@ -21,15 +14,10 @@ import {
 
 export function useCamera(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
-  rendererRef: React.RefObject<WebGLRenderer | null>,
-  objectsRef: React.RefObject<DrawObject[]>,
-  currentPathRef: React.RefObject<Point[]>,
-  toolStateRef: React.RefObject<ToolState>,
-  selectionBoxRef: React.RefObject<SelectionBox>,
-  selectedBoundingBoxRef: React.RefObject<SelectionBox>
+  cameraRef: React.RefObject<Camera>,
+  targetCameraRef: React.RefObject<Camera>,
+  renderFrame: () => void
 ) {
-  const cameraRef = useRef<Camera>({ zoom: 1, offsetX: 0, offsetY: 0 });
-  const targetCameraRef = useRef<Camera>({ zoom: 1, offsetX: 0, offsetY: 0 });
   const animationFrameRef = useRef<number | null>(null);
 
   const [displayZoom, setDisplayZoom] = useState(1.0);
@@ -52,20 +40,7 @@ export function useCamera(
         ZOOM_DISPLAY_PRECISION
       );
 
-      // render
-      if (rendererRef.current) {
-        rendererRef.current.render(
-          objectsRef.current,
-          currentPathRef.current,
-          camera.zoom,
-          camera.offsetX,
-          camera.offsetY,
-          toolStateRef.current.color,
-          toolStateRef.current.size,
-          selectionBoxRef.current,
-          selectedBoundingBoxRef.current
-        );
-      }
+      renderFrame();
 
       animationFrameRef.current = requestAnimationFrame(
         animateCameraRef.current
@@ -80,19 +55,7 @@ export function useCamera(
         ZOOM_DISPLAY_PRECISION
       );
 
-      if (rendererRef.current) {
-        rendererRef.current.render(
-          objectsRef.current,
-          currentPathRef.current,
-          camera.zoom,
-          camera.offsetX,
-          camera.offsetY,
-          toolStateRef.current.color,
-          toolStateRef.current.size,
-          selectionBoxRef.current,
-          selectedBoundingBoxRef.current
-        );
-      }
+      renderFrame();
 
       animationFrameRef.current = null;
     }
