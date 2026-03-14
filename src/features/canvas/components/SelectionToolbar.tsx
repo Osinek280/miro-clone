@@ -4,7 +4,6 @@ import { worldToScreen } from '../utils/cameraUtils';
 import type { RefObject } from 'react';
 import { PALETTE_COLORS } from '../constants/paletteColors';
 import { Icon } from '../constants/icons';
-import { useHistoryStore } from '../hooks/useHistoryStore';
 
 const TOOLBAR_WIDTH = 400;
 const TOOLBAR_HEIGHT = 48;
