@@ -178,8 +178,4 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
       batchDepth: 0,
       batchOps: [],
     }),
-
-  cancelBatch: () => {
-    set({ batchDepth: 0, batchOps: [] });
-  },
 }));

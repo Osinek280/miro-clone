@@ -4,6 +4,7 @@ import { worldToScreen } from '../utils/cameraUtils';
 import type { RefObject } from 'react';
 import { PALETTE_COLORS } from '../constants/paletteColors';
 import { Icon } from '../constants/icons';
+import { useHistoryStore } from '../hooks/useHistoryStore';
 
 const TOOLBAR_WIDTH = 400;
 const TOOLBAR_HEIGHT = 48;
@@ -96,16 +97,12 @@ type SelectionToolbarProps = {
   selectedBoundingBox: SelectionBox;
   cameraRef: RefObject<Camera>;
   canvasRef: RefObject<HTMLCanvasElement | null>;
-  isMoving?: boolean;
-  onDelete?: () => void;
 };
 
 export default function SelectionToolbar({
   selectedBoundingBox,
   cameraRef,
   canvasRef,
-  isMoving = false,
-  onDelete,
 }: SelectionToolbarProps) {
   const [position, setPosition] = useState<{ x: number; y: number } | null>(
     null
@@ -181,7 +178,7 @@ export default function SelectionToolbar({
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        pointerEvents: isMoving ? 'none' : 'auto',
+        // pointerEvents: isMoving ? 'none' : 'auto',
       }}
     >
       {/* COLORS */}
@@ -240,7 +237,6 @@ export default function SelectionToolbar({
 
       {/* DELETE */}
       <button
-        onClick={onDelete}
         title="Delete (Del)"
         className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-600 transition-all"
       >
