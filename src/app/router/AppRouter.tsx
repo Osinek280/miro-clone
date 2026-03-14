@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { PublicRoute } from './PublicRoute';
-import { ProtectedRoute } from './ProtectedRoute';
+// import { ProtectedRoute } from './ProtectedRoute';
 import { AppLayout } from '../layouts/AppLayout';
 import { LoginForm } from '../../features/auth/components/LoginForm';
 import { RegisterForm } from '../../features/auth/components/RegisterForm';
