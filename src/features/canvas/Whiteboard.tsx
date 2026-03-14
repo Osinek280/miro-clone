@@ -153,11 +153,30 @@ export default function Whiteboard() {
       const isRedo =
         (mod && e.shiftKey && key === 'z') || (mod && key === 'y');
 
-      if (!isUndo && !isRedo) return;
+      const isDelete = key === 'delete'
+
+      if (!isUndo && !isRedo && !isDelete) return;
 
       e.preventDefault();
 
-      const current = useCanvasStore.getState().objects;
+      const store = useCanvasStore.getState();
+
+      if (isDelete) {
+        const { objects, selectedIds, setObjects, clearSelection } = store;
+
+        const next = objects.filter((o) => !selectedIds.includes(o.id));
+
+        history.pushOperation({
+          type: 'remove',
+          objects: objects.filter((o) => !selectedIds.includes(o.id)),
+        });
+
+        setObjects(next);
+        clearSelection();
+        return;
+      }
+
+      const current = store.objects;
 
       if (isUndo) {
         const prev = history.undo(current);
