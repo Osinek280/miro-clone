@@ -3,7 +3,7 @@ import { useCanvasStore } from '../useCanvasStore';
 
 export function useGrabMode(
   cameraRef: React.RefObject<Camera>,
-  targetCameraRef: React.RefObject<Camera>
+  targetCameraRef: React.RefObject<Camera>,
 ) {
   const onMouseMove = (e: React.MouseEvent) => {
     const dx = e.movementX;

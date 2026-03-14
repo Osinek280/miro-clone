@@ -1,6 +1,10 @@
 import { useRef } from 'react';
 import type { Camera, Point } from '../../types/types';
-import { findObjectAtPoint, getVisibleObjects, calcBoundingBox } from '../../utils/objectUtils';
+import {
+  findObjectAtPoint,
+  getVisibleObjects,
+  calcBoundingBox,
+} from '../../utils/objectUtils';
 import { useHistoryStore } from '../useHistoryStore';
 import { useCanvasStore } from '../useCanvasStore';
 
@@ -60,8 +64,8 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
                 ...o,
                 points: o.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
               }
-            : o
-        )
+            : o,
+        ),
       );
       setSelectedBoundingBox((prev) =>
         prev
@@ -69,7 +73,7 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
               start: { x: prev.start.x + dx, y: prev.start.y + dy },
               end: { x: prev.end.x + dx, y: prev.end.y + dy },
             }
-          : null
+          : null,
       );
       lastMousePosRef.current = point;
     }
@@ -85,12 +89,12 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
       const visible = getVisibleObjects(objects);
       const selected = visible.filter((obj) =>
         obj.points.some(
-          (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY
-        )
+          (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY,
+        ),
       );
       setSelectedIds(selected.map((o) => o.id));
       setSelectedBoundingBox(
-        selected.length > 0 ? calcBoundingBox(selected) : null
+        selected.length > 0 ? calcBoundingBox(selected) : null,
       );
       setSelectionBox(null);
     } else if (isMoving && selectedIds.length > 0) {
@@ -109,7 +113,10 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
               id,
               points: currentPoints.map((p) => ({ ...p })),
               timestamp: Date.now(),
-              previousPoints: currentPoints.map((p) => ({ x: p.x - dx, y: p.y - dy })),
+              previousPoints: currentPoints.map((p) => ({
+                x: p.x - dx,
+                y: p.y - dy,
+              })),
             };
           }),
         });

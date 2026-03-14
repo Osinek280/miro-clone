@@ -30,7 +30,7 @@ export const DashboardPage = () => {
   };
 
   const filtered = boards.filter((b) =>
-    b.name?.toLowerCase().includes(search.toLowerCase())
+    b.name?.toLowerCase().includes(search.toLowerCase()),
   );
 
   const handleCreateBoard = async (name: string) => {

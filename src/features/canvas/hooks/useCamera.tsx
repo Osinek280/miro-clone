@@ -16,7 +16,7 @@ import { useCanvasStore } from './useCanvasStore';
 export function useCamera(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   cameraRef: React.RefObject<Camera>,
-  targetCameraRef: React.RefObject<Camera>
+  targetCameraRef: React.RefObject<Camera>,
 ) {
   const animationFrameRef = useRef<number | null>(null);
 
@@ -37,13 +37,13 @@ export function useCamera(
 
       setDisplayZoom(
         Math.round(camera.zoom * ZOOM_DISPLAY_PRECISION) /
-        ZOOM_DISPLAY_PRECISION
+          ZOOM_DISPLAY_PRECISION,
       );
 
       useCanvasStore.getState().renderFrame();
 
       animationFrameRef.current = requestAnimationFrame(
-        animateCameraRef.current
+        animateCameraRef.current,
       );
     } else {
       // snap
@@ -52,7 +52,7 @@ export function useCamera(
       camera.offsetY = target.offsetY;
       setDisplayZoom(
         Math.round(camera.zoom * ZOOM_DISPLAY_PRECISION) /
-        ZOOM_DISPLAY_PRECISION
+          ZOOM_DISPLAY_PRECISION,
       );
 
       useCanvasStore.getState().renderFrame();
@@ -92,7 +92,7 @@ export function useCamera(
         animationFrameRef.current = requestAnimationFrame(animateCamera);
       }
     },
-    [animateCamera, canvasRef]
+    [animateCamera, canvasRef],
   );
 
   useEffect(() => {

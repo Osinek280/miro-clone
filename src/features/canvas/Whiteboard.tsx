@@ -37,7 +37,7 @@ export default function Whiteboard() {
     cameraRef,
     targetCameraRef,
     mode,
-    setMode
+    setMode,
   );
 
   const generateObjects = () => {
@@ -97,7 +97,6 @@ export default function Whiteboard() {
     };
   }, []);
 
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !rendererRef.current) return;
@@ -150,10 +149,9 @@ export default function Whiteboard() {
       const key = e.key.toLowerCase();
       const mod = e.ctrlKey || e.metaKey;
       const isUndo = mod && !e.shiftKey && key === 'z';
-      const isRedo =
-        (mod && e.shiftKey && key === 'z') || (mod && key === 'y');
+      const isRedo = (mod && e.shiftKey && key === 'z') || (mod && key === 'y');
 
-      const isDelete = key === 'delete'
+      const isDelete = key === 'delete';
 
       if (!isUndo && !isRedo && !isDelete) return;
 
@@ -168,8 +166,8 @@ export default function Whiteboard() {
           history.pushOperation({ type: 'remove', objects: toRemove });
           setObjects((prev) =>
             prev.map((o) =>
-              selectedIds.includes(o.id) ? { ...o, tombstone: true } : o
-            )
+              selectedIds.includes(o.id) ? { ...o, tombstone: true } : o,
+            ),
           );
         }
         clearSelection();

@@ -27,7 +27,8 @@ function getTimestamp(): number {
 function stampOp<T extends HistoryOperation>(op: T): T {
   const o = structuredClone(op) as T;
   if (o.opId == null) (o as { opId: string }).opId = generateOpId();
-  if (o.timestamp == null) (o as { timestamp: number }).timestamp = getTimestamp();
+  if (o.timestamp == null)
+    (o as { timestamp: number }).timestamp = getTimestamp();
   return o;
 }
 
@@ -43,14 +44,19 @@ export function flattenBatch(batch: BatchOp): HistoryOperation[] {
     } else {
       const stamped = stampOp({
         ...structuredClone(o),
-        timestamp: (o as { timestamp?: number }).timestamp ?? baseTs + index++ * 0.001,
+        timestamp:
+          (o as { timestamp?: number }).timestamp ?? baseTs + index++ * 0.001,
       } as HistoryOperation);
       out.push(stamped);
     }
   }
   (batch.operations as HistoryOperation[]).forEach(collect);
 
-  out.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0) || ((a.opId ?? '').localeCompare(b.opId ?? '')));
+  out.sort(
+    (a, b) =>
+      (a.timestamp ?? 0) - (b.timestamp ?? 0) ||
+      (a.opId ?? '').localeCompare(b.opId ?? ''),
+  );
   return out;
 }
 
@@ -69,11 +75,12 @@ function applyAdd(children: DrawObject[], op: AddObjectOp): DrawObject[] {
 }
 
 /** Tombstone: mark objects as deleted instead of removing from array. */
-function applyRemove(children: DrawObject[], op: RemoveObjectsOp): DrawObject[] {
+function applyRemove(
+  children: DrawObject[],
+  op: RemoveObjectsOp,
+): DrawObject[] {
   const ids = new Set(op.objects.map((o) => o.id));
-  return children.map((c) =>
-    ids.has(c.id) ? { ...c, tombstone: true } : c
-  );
+  return children.map((c) => (ids.has(c.id) ? { ...c, tombstone: true } : c));
 }
 
 function applyAddMany(children: DrawObject[], op: AddObjectsOp): DrawObject[] {
@@ -81,13 +88,21 @@ function applyAddMany(children: DrawObject[], op: AddObjectsOp): DrawObject[] {
   for (const o of op.objects) {
     const obj = structuredClone(o);
     obj.tombstone = false;
-    result = applyAdd(result, { type: 'add', object: obj, opId: op.opId, timestamp: op.timestamp });
+    result = applyAdd(result, {
+      type: 'add',
+      object: obj,
+      opId: op.opId,
+      timestamp: op.timestamp,
+    });
   }
   return result;
 }
 
 /** LWW-Register: apply position only if op timestamp >= object's positionTimestamp. */
-function applySetPosition(children: DrawObject[], op: SetPositionOp): DrawObject[] {
+function applySetPosition(
+  children: DrawObject[],
+  op: SetPositionOp,
+): DrawObject[] {
   return children.map((c) => {
     const entry = op.positions.find((p) => p.id === c.id);
     if (!entry) return c;
@@ -103,7 +118,7 @@ function applySetPosition(children: DrawObject[], op: SetPositionOp): DrawObject
 
 export function applyOperation(
   children: DrawObject[],
-  op: HistoryOperation
+  op: HistoryOperation,
 ): DrawObject[] {
   switch (op.type) {
     case 'add':
@@ -131,7 +146,11 @@ function getInverse(op: HistoryOperation): HistoryOperation {
     case 'add':
       return { ...meta, type: 'remove', objects: [op.object] };
     case 'remove':
-      return { ...meta, type: 'addMany', objects: op.objects.map((o) => ({ ...o, tombstone: false })) };
+      return {
+        ...meta,
+        type: 'addMany',
+        objects: op.objects.map((o) => ({ ...o, tombstone: false })),
+      };
     case 'addMany':
       return { ...meta, type: 'remove', objects: op.objects };
     case 'setPosition':
@@ -161,16 +180,18 @@ function getInverse(op: HistoryOperation): HistoryOperation {
 /** Merge two operation streams by timestamp; deterministic order for LWW and tombstones. */
 export function mergeOperations(
   local: HistoryOperation[],
-  remote: HistoryOperation[]
+  remote: HistoryOperation[],
 ): HistoryOperation[] {
   const combined = [...local, ...remote].filter(
     (o): o is HistoryOperation & { timestamp: number; opId: string } =>
-      o != null && typeof (o as { timestamp?: number }).timestamp === 'number' && typeof (o as { opId?: string }).opId === 'string'
+      o != null &&
+      typeof (o as { timestamp?: number }).timestamp === 'number' &&
+      typeof (o as { opId?: string }).opId === 'string',
   );
   combined.sort(
     (a, b) =>
       a.timestamp - b.timestamp ||
-      (a.opId as string).localeCompare(b.opId as string)
+      (a.opId as string).localeCompare(b.opId as string),
   );
   return combined;
 }
@@ -178,7 +199,7 @@ export function mergeOperations(
 /** Apply a list of operations in order (e.g. after merge). */
 export function applyOperations(
   children: DrawObject[],
-  ops: HistoryOperation[]
+  ops: HistoryOperation[],
 ): DrawObject[] {
   return ops.reduce((acc, op) => applyOperation(acc, op), children);
 }
@@ -197,7 +218,10 @@ interface HistoryStoreState {
   canUndo: () => boolean;
   canRedo: () => boolean;
   clear: () => void;
-  mergeOperations: (local: HistoryOperation[], remote: HistoryOperation[]) => HistoryOperation[];
+  mergeOperations: (
+    local: HistoryOperation[],
+    remote: HistoryOperation[],
+  ) => HistoryOperation[];
 }
 
 export const useHistoryStore = create<HistoryStoreState>((set, get) => ({

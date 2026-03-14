@@ -5,7 +5,7 @@ export function useDrawMode(
   setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>,
   setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>,
   currentColor: string,
-  currentSize: number
+  currentSize: number,
 ) {
   const { pushOperation } = useHistoryStore.getState();
 
@@ -48,7 +48,11 @@ export function useDrawMode(
     return bestDist <= SNAP_THRESHOLD_RAD ? bestTarget : angleRad;
   };
 
-  const onMouseMove = (point: Point, prev: Point[], shiftKey = false): Point[] => {
+  const onMouseMove = (
+    point: Point,
+    prev: Point[],
+    shiftKey = false,
+  ): Point[] => {
     if (prev.length === 0) return [point];
     const last = prev[prev.length - 1];
     const dx = point.x - last.x;

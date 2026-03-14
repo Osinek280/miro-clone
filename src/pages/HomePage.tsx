@@ -7,9 +7,7 @@ export const HomePage = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen from-blue-50 to-white p-4">
       <div className="max-w-2xl text-center space-y-8">
-        <h1 className="text-5xl font-bold text-gray-900">
-          Welcome to our app
-        </h1>
+        <h1 className="text-5xl font-bold text-gray-900">Welcome to our app</h1>
         <p className="text-xl text-gray-600">
           Manage your tasks effectively and simply
         </p>

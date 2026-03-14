@@ -5,7 +5,7 @@ function screenToWorld(
   screenX: number,
   screenY: number,
   canvasRef: RefObject<HTMLCanvasElement | null>,
-  camera: Camera
+  camera: Camera,
 ): Point {
   const canvas = canvasRef.current;
   if (!canvas) return { x: 0, y: 0 };
@@ -20,7 +20,7 @@ export function worldToScreen(
   worldX: number,
   worldY: number,
   canvasRef: RefObject<HTMLCanvasElement | null>,
-  camera: Camera
+  camera: Camera,
 ): Point {
   const canvas = canvasRef.current;
   if (!canvas) return { x: 0, y: 0 };
@@ -34,7 +34,7 @@ export function worldToScreen(
 export function getCanvasPoint(
   e: React.MouseEvent<HTMLCanvasElement> | MouseEvent,
   canvasRef: RefObject<HTMLCanvasElement | null>,
-  camera: Camera
+  camera: Camera,
 ): Point {
   return screenToWorld(e.clientX, e.clientY, canvasRef, camera);
 }

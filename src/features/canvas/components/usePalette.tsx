@@ -4,7 +4,7 @@ import { DrawModeEnum, type ToolState } from '../types/types';
 export function usePalette(
   tsRef: React.RefObject<ToolState>,
   mode: DrawModeEnum,
-  setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>
+  setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>,
 ) {
   const [color, setColor] = useState('#000');
   const [size, setSize] = useState(10);

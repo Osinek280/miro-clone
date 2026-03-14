@@ -41,7 +41,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch {
         console.log(
-          '[Response Interceptor] Token refresh failed. Logging out user.'
+          '[Response Interceptor] Token refresh failed. Logging out user.',
         );
         tokenStorage.remove();
         useAuthStore.getState().clearAuth();
@@ -52,5 +52,5 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );

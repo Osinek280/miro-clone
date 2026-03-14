@@ -9,7 +9,7 @@ export const useRegister = () => {
     firstname: string,
     lastname: string,
     email: string,
-    password: string
+    password: string,
   ) => {
     const { data } = await authApi.register({
       firstname,

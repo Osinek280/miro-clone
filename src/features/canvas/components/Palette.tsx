@@ -35,7 +35,10 @@ export default function Palette({
 
       <div className="w-px h-5 bg-black/10" />
 
-      <div className="flex items-center gap-2 text-[0.6rem] uppercase tracking-wider text-gray-400" style={{ pointerEvents: 'auto' }}>
+      <div
+        className="flex items-center gap-2 text-[0.6rem] uppercase tracking-wider text-gray-400"
+        style={{ pointerEvents: 'auto' }}
+      >
         <span>Size</span>
         <input
           type="range"

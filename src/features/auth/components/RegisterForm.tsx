@@ -68,14 +68,13 @@ export const RegisterForm = () => {
       navigate('/login', {
         replace: true,
         state: {
-          message:
-            'Registration successful. You can now log in.',
+          message: 'Registration successful. You can now log in.',
         },
       });
     } catch (err: any) {
       setError(
         err?.response?.data?.message ??
-          'Registration failed. Please try again.'
+          'Registration failed. Please try again.',
       );
     } finally {
       setIsLoading(false);

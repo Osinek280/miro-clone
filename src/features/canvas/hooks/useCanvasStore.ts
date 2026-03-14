@@ -1,12 +1,7 @@
 import { create } from 'zustand';
 import type { RefObject } from 'react';
 import type { WebGLRenderer } from '../WebGLRenderer';
-import type {
-  Camera,
-  DrawObject,
-  Point,
-  SelectionBox,
-} from '../types/types';
+import type { Camera, DrawObject, Point, SelectionBox } from '../types/types';
 import { getVisibleObjects } from '../utils/objectUtils';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,7 +14,9 @@ import { getVisibleObjects } from '../utils/objectUtils';
 type SetStateAction<T> = T | ((prev: T) => T);
 
 function resolveAction<T>(action: SetStateAction<T>, current: T): T {
-  return typeof action === 'function' ? (action as (prev: T) => T)(current) : action;
+  return typeof action === 'function'
+    ? (action as (prev: T) => T)(current)
+    : action;
 }
 
 let renderScheduled = false;
@@ -54,7 +51,7 @@ export interface CanvasStoreState {
   // Refs + render
   setRefs: (
     rendererRef: RefObject<WebGLRenderer | null>,
-    cameraRef: RefObject<Camera>
+    cameraRef: RefObject<Camera>,
   ) => void;
   renderFrame: () => void;
 
@@ -96,7 +93,16 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   },
 
   renderFrame: () => {
-    const { rendererRef, cameraRef, objects, currentPath, color, size, selectionBox, selectedBoundingBox } = get();
+    const {
+      rendererRef,
+      cameraRef,
+      objects,
+      currentPath,
+      color,
+      size,
+      selectionBox,
+      selectedBoundingBox,
+    } = get();
     const r = rendererRef?.current;
     const c = cameraRef?.current;
     if (!r || !c) return;
@@ -109,7 +115,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       color,
       size,
       selectionBox,
-      selectedBoundingBox
+      selectedBoundingBox,
     );
   },
 
@@ -139,11 +145,14 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   },
 
   setSelectedBoundingBox: (action) => {
-    set((s) => ({ selectedBoundingBox: resolveAction(action, s.selectedBoundingBox) }));
+    set((s) => ({
+      selectedBoundingBox: resolveAction(action, s.selectedBoundingBox),
+    }));
     scheduleRender(get);
   },
 
-  setSelectedIds: (action) => set((s) => ({ selectedIds: resolveAction(action, s.selectedIds) })),
+  setSelectedIds: (action) =>
+    set((s) => ({ selectedIds: resolveAction(action, s.selectedIds) })),
   setIsDrawing: (value) => set({ isDrawing: value }),
   setIsMoving: (value) => set({ isMoving: value }),
   setIsGrabbing: (value) => set({ isGrabbing: value }),

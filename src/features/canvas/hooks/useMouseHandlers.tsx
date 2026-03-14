@@ -11,7 +11,7 @@ export function useMouseHandlers(
   cameraRef: React.RefObject<Camera>,
   targetCameraRef: React.RefObject<Camera>,
   mode: DrawModeEnum,
-  setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>
+  setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>,
 ) {
   const {
     setCurrentPath,
@@ -28,7 +28,7 @@ export function useMouseHandlers(
     setCurrentPath,
     setObjects,
     currentColor,
-    currentSize
+    currentSize,
   );
   const select = useSelectMode(cameraRef);
   const grab = useGrabMode(cameraRef, targetCameraRef);
@@ -57,7 +57,10 @@ export function useMouseHandlers(
     const point = getCanvasPoint(e, canvasRef, cameraRef.current);
     if (mode === DrawModeEnum.Select) {
       select.onMouseMove(point);
-    } else if (mode === DrawModeEnum.Draw && useCanvasStore.getState().isDrawing) {
+    } else if (
+      mode === DrawModeEnum.Draw &&
+      useCanvasStore.getState().isDrawing
+    ) {
       setCurrentPath((prev) => draw.onMouseMove(point, prev, e.shiftKey));
     }
   };
