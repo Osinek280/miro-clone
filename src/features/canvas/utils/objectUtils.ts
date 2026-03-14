@@ -1,5 +1,10 @@
 import type { DrawObject, Point } from '../types/types';
 
+/** Exclude tombstoned (soft-deleted) objects for display and hit-test. */
+export function getVisibleObjects(objects: DrawObject[]): DrawObject[] {
+  return objects.filter((o) => !o.tombstone);
+}
+
 export const calcBoundingBox = (objs: DrawObject[]) => {
   let minX = Infinity,
     minY = Infinity,
@@ -60,13 +65,11 @@ export function findObjectAtPoint(
   objects: DrawObject[],
   zoom: number = 1 // <-- receive zoom from camera
 ): DrawObject | null {
-  // BASE_HIT_PX is the desired hit margin in *screen* pixels.
-  // Dividing by zoom converts it to world-space units, matching
-  // the coordinate space your points are stored in.
+  const visible = getVisibleObjects(objects);
   const BASE_HIT_PX = 8;
 
-  for (let i = objects.length - 1; i >= 0; i--) {
-    const obj = objects[i];
+  for (let i = visible.length - 1; i >= 0; i--) {
+    const obj = visible[i];
 
     // The visible stroke radius in world-space is (size / 2).
     // Add a small screen-space margin on top for comfortable clicking.

@@ -163,15 +163,15 @@ export default function Whiteboard() {
 
       if (isDelete) {
         const { objects, selectedIds, setObjects, clearSelection } = store;
-
-        const next = objects.filter((o) => !selectedIds.includes(o.id));
-
-        history.pushOperation({
-          type: 'remove',
-          objects: objects.filter((o) => !selectedIds.includes(o.id)),
-        });
-
-        setObjects(next);
+        const toRemove = objects.filter((o) => selectedIds.includes(o.id));
+        if (toRemove.length > 0) {
+          history.pushOperation({ type: 'remove', objects: toRemove });
+          setObjects((prev) =>
+            prev.map((o) =>
+              selectedIds.includes(o.id) ? { ...o, tombstone: true } : o
+            )
+          );
+        }
         clearSelection();
         return;
       }

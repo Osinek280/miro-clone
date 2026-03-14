@@ -1,53 +1,104 @@
 import { create } from 'zustand';
-import type {
-  DrawObject,
-  HistoryOperation,
-  Point,
-} from '../types/types';
+import type { DrawObject, HistoryOperation } from '../types/types';
 import type {
   AddObjectOp,
   AddObjectsOp,
   BatchOp,
-  MoveObjectsOp,
   RemoveObjectsOp,
+  SetPositionOp,
 } from '../types/types';
-
-
 
 const MAX_HISTORY = 300;
 
-// ─── Apply operation to children array (immutable) ───────────────────────────
+// ─── Op identity (object.id + op.id + timestamp) ────────────────────────────
 
-function applyAdd(children: DrawObject[], op: AddObjectOp): DrawObject[] {
-  return [...children, structuredClone(op.object)];
+function generateOpId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
+function getTimestamp(): number {
+  return Date.now();
+}
+
+/** Ensure op has opId and timestamp; mutate clone. */
+function stampOp<T extends HistoryOperation>(op: T): T {
+  const o = structuredClone(op) as T;
+  if (o.opId == null) (o as { opId: string }).opId = generateOpId();
+  if (o.timestamp == null) (o as { timestamp: number }).timestamp = getTimestamp();
+  return o;
+}
+
+/** Flatten batch into single ops with timestamps, sorted by timestamp (for deterministic merge). */
+export function flattenBatch(batch: BatchOp): HistoryOperation[] {
+  const baseTs = batch.timestamp ?? getTimestamp();
+  const out: HistoryOperation[] = [];
+  let index = 0;
+
+  function collect(o: HistoryOperation) {
+    if (o.type === 'batch') {
+      (o.operations as HistoryOperation[]).forEach(collect);
+    } else {
+      const stamped = stampOp({
+        ...structuredClone(o),
+        timestamp: (o as { timestamp?: number }).timestamp ?? baseTs + index++ * 0.001,
+      } as HistoryOperation);
+      out.push(stamped);
+    }
+  }
+  (batch.operations as HistoryOperation[]).forEach(collect);
+
+  out.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0) || ((a.opId ?? '').localeCompare(b.opId ?? '')));
+  return out;
+}
+
+// ─── Apply (tombstone = soft delete, setPosition = LWW) ────────────────────────
+
+function applyAdd(children: DrawObject[], op: AddObjectOp): DrawObject[] {
+  const obj = structuredClone(op.object);
+  obj.tombstone = false;
+  const idx = children.findIndex((c) => c.id === obj.id);
+  if (idx >= 0) {
+    const out = [...children];
+    out[idx] = obj;
+    return out;
+  }
+  return [...children, obj];
+}
+
+/** Tombstone: mark objects as deleted instead of removing from array. */
 function applyRemove(children: DrawObject[], op: RemoveObjectsOp): DrawObject[] {
   const ids = new Set(op.objects.map((o) => o.id));
-  return children.filter((c) => !ids.has(c.id));
+  return children.map((c) =>
+    ids.has(c.id) ? { ...c, tombstone: true } : c
+  );
 }
 
 function applyAddMany(children: DrawObject[], op: AddObjectsOp): DrawObject[] {
-  return [...children, ...op.objects.map((o) => structuredClone(o))];
+  let result = children;
+  for (const o of op.objects) {
+    const obj = structuredClone(o);
+    obj.tombstone = false;
+    result = applyAdd(result, { type: 'add', object: obj, opId: op.opId, timestamp: op.timestamp });
+  }
+  return result;
 }
 
-function applyMove(children: DrawObject[], op: MoveObjectsOp): DrawObject[] {
-  const deltaById = new Map(op.deltas.map((d) => [d.id, d.delta]));
+/** LWW-Register: apply position only if op timestamp >= object's positionTimestamp. */
+function applySetPosition(children: DrawObject[], op: SetPositionOp): DrawObject[] {
   return children.map((c) => {
-    const delta = deltaById.get(c.id);
-    if (!delta) return c;
+    const entry = op.positions.find((p) => p.id === c.id);
+    if (!entry) return c;
+    const objTs = c.positionTimestamp ?? 0;
+    if (entry.timestamp < objTs) return c;
     return {
       ...c,
-      points: c.points.map((p) => ({
-        x: p.x + delta.x,
-        y: p.y + delta.y,
-      })),
+      points: entry.points.map((p) => ({ ...p })),
+      positionTimestamp: entry.timestamp,
     };
   });
-}
-
-function applyBatch(children: DrawObject[], op: BatchOp): DrawObject[] {
-  return op.operations.reduce((acc, o) => applyOperation(acc, o), children);
 }
 
 export function applyOperation(
@@ -61,41 +112,75 @@ export function applyOperation(
       return applyRemove(children, op);
     case 'addMany':
       return applyAddMany(children, op);
-    case 'move':
-      return applyMove(children, op);
-    case 'batch':
-      return applyBatch(children, op);
+    case 'setPosition':
+      return applySetPosition(children, op);
+    case 'batch': {
+      const flat = flattenBatch(op);
+      return flat.reduce((acc, o) => applyOperation(acc, o), children);
+    }
     default:
       return children;
   }
 }
 
-// ─── Inverse operation (for undo) ──────────────────────────────────────────
+// ─── Inverse (for undo) ──────────────────────────────────────────────────────
 
 function getInverse(op: HistoryOperation): HistoryOperation {
+  const meta = { opId: generateOpId(), timestamp: getTimestamp() };
   switch (op.type) {
     case 'add':
-      return { type: 'remove', objects: [op.object] };
+      return { ...meta, type: 'remove', objects: [op.object] };
     case 'remove':
-      return { type: 'addMany', objects: op.objects };
+      return { ...meta, type: 'addMany', objects: op.objects.map((o) => ({ ...o, tombstone: false })) };
     case 'addMany':
-      return { type: 'remove', objects: op.objects };
-    case 'move':
+      return { ...meta, type: 'remove', objects: op.objects };
+    case 'setPosition':
       return {
-        type: 'move',
-        deltas: op.deltas.map((d) => ({
-          id: d.id,
-          delta: { x: -d.delta.x, y: -d.delta.y } as Point,
+        ...meta,
+        type: 'setPosition',
+        positions: op.positions.map((p) => ({
+          id: p.id,
+          points: p.previousPoints ?? p.points,
+          timestamp: meta.timestamp,
+          previousPoints: p.points,
         })),
       };
     case 'batch':
       return {
+        ...meta,
         type: 'batch',
         operations: op.operations.map(getInverse).reverse(),
       };
     default:
       return op;
   }
+}
+
+// ─── Operational transform / merge (concurrent ops) ───────────────────────────
+
+/** Merge two operation streams by timestamp; deterministic order for LWW and tombstones. */
+export function mergeOperations(
+  local: HistoryOperation[],
+  remote: HistoryOperation[]
+): HistoryOperation[] {
+  const combined = [...local, ...remote].filter(
+    (o): o is HistoryOperation & { timestamp: number; opId: string } =>
+      o != null && typeof (o as { timestamp?: number }).timestamp === 'number' && typeof (o as { opId?: string }).opId === 'string'
+  );
+  combined.sort(
+    (a, b) =>
+      a.timestamp - b.timestamp ||
+      (a.opId as string).localeCompare(b.opId as string)
+  );
+  return combined;
+}
+
+/** Apply a list of operations in order (e.g. after merge). */
+export function applyOperations(
+  children: DrawObject[],
+  ops: HistoryOperation[]
+): DrawObject[] {
+  return ops.reduce((acc, op) => applyOperation(acc, op), children);
 }
 
 // ─── Store state ────────────────────────────────────────────────────────────
@@ -112,8 +197,8 @@ interface HistoryStoreState {
   canUndo: () => boolean;
   canRedo: () => boolean;
   clear: () => void;
+  mergeOperations: (local: HistoryOperation[], remote: HistoryOperation[]) => HistoryOperation[];
 }
-
 
 export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
   undoStack: [],
@@ -122,22 +207,26 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
   batchOps: [],
 
   pushOperation: (op) => {
-    const { batchDepth, batchOps } = get();
+    const { batchDepth, batchOps, undoStack } = get();
     if (batchDepth > 0) {
       set({ batchOps: [...batchOps, op] });
       return;
     }
-    console.log(get().undoStack)
+
+    const normalized = stampOp(structuredClone(op) as HistoryOperation);
+
+    if (normalized.type === 'batch') {
+      const flat = flattenBatch(normalized as BatchOp);
+      const nextStack = [...undoStack, ...flat].slice(-MAX_HISTORY);
+      set({ undoStack: nextStack, redoStack: [] });
+      return;
+    }
+
     set((s) => ({
-      undoStack: [
-        ...s.undoStack.slice(-(MAX_HISTORY - 1)),
-        structuredClone(op),
-      ],
+      undoStack: [...s.undoStack.slice(-(MAX_HISTORY - 1)), normalized],
       redoStack: [],
     }));
   },
-
-
 
   undo: (currentChildren) => {
     const { undoStack } = get();
@@ -178,4 +267,6 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
       batchDepth: 0,
       batchOps: [],
     }),
+
+  mergeOperations,
 }));

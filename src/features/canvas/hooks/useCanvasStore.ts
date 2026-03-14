@@ -7,6 +7,7 @@ import type {
   Point,
   SelectionBox,
 } from '../types/types';
+import { getVisibleObjects } from '../utils/objectUtils';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Canvas store – single source of truth for render + interaction state.
@@ -100,7 +101,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     const c = cameraRef?.current;
     if (!r || !c) return;
     r.render(
-      objects,
+      getVisibleObjects(objects),
       currentPath,
       c.zoom,
       c.offsetX,

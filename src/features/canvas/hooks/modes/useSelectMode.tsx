@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import type { Camera, Point } from '../../types/types';
-import { findObjectAtPoint } from '../../utils/objectUtils';
-import { calcBoundingBox } from '../../utils/objectUtils';
+import { findObjectAtPoint, getVisibleObjects, calcBoundingBox } from '../../utils/objectUtils';
 import { useHistoryStore } from '../useHistoryStore';
 import { useCanvasStore } from '../useCanvasStore';
 
@@ -83,7 +82,8 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
       const maxX = Math.max(start.x, end.x);
       const minY = Math.min(start.y, end.y);
       const maxY = Math.max(start.y, end.y);
-      const selected = objects.filter((obj) =>
+      const visible = getVisibleObjects(objects);
+      const selected = visible.filter((obj) =>
         obj.points.some(
           (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY
         )
@@ -99,12 +99,19 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
       const dx = end.x - start.x;
       const dy = end.y - start.y;
       if (dx !== 0 || dy !== 0) {
+        const state = useCanvasStore.getState();
         pushOperation({
-          type: 'move',
-          deltas: selectedIds.map((id) => ({
-            id,
-            delta: { x: dx, y: dy },
-          })),
+          type: 'setPosition',
+          positions: selectedIds.map((id) => {
+            const obj = state.objects.find((o) => o.id === id);
+            const currentPoints = obj?.points ?? []; // already moved by onMouseMove
+            return {
+              id,
+              points: currentPoints.map((p) => ({ ...p })),
+              timestamp: Date.now(),
+              previousPoints: currentPoints.map((p) => ({ x: p.x - dx, y: p.y - dy })),
+            };
+          }),
         });
       }
     }

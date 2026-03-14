@@ -9,6 +9,10 @@ export interface DrawObject {
   points: Point[];
   color: string;
   size: number;
+  /** Soft delete: when true, object is hidden and excluded from hit-test (LWW with remove op timestamp). */
+  tombstone?: boolean;
+  /** Timestamp of last position update (LWW register for move). */
+  positionTimestamp?: number;
 }
 
 export interface Camera {
@@ -61,29 +65,43 @@ export interface RenderState {
   selectedBoundingBox: SelectionBox;
 }
 
-// ─── Operation-based history (no snapshots; CRDT-ready) ─────────────────────
+// ─── Operation-based history (CRDT-ready: opId + timestamp, LWW, tombstone) ─
 
-export interface AddObjectOp {
+/** Base: every operation has unique id and timestamp (assigned by store if omitted). */
+export interface OpMeta {
+  opId?: string;
+  timestamp?: number;
+}
+
+export interface AddObjectOp extends OpMeta {
   type: 'add';
   object: DrawObject;
 }
 
-export interface RemoveObjectsOp {
+export interface RemoveObjectsOp extends OpMeta {
   type: 'remove';
+  /** Objects being removed (kept for undo restore). */
   objects: DrawObject[];
 }
 
-export interface AddObjectsOp {
+export interface AddObjectsOp extends OpMeta {
   type: 'addMany';
   objects: DrawObject[];
 }
 
-export interface MoveObjectsOp {
-  type: 'move';
-  deltas: { id: string; delta: Point }[];
+/** LWW-Register: absolute position + timestamp; last write wins. previousPoints used for undo. */
+export interface SetPositionOp extends OpMeta {
+  type: 'setPosition';
+  positions: {
+    id: string;
+    points: Point[];
+    timestamp: number;
+    previousPoints?: Point[];
+  }[];
 }
 
-export interface BatchOp {
+/** Logical batch; stored stack flattens to single ops ordered by timestamp. */
+export interface BatchOp extends OpMeta {
   type: 'batch';
   operations: HistoryOperation[];
 }
@@ -92,5 +110,5 @@ export type HistoryOperation =
   | AddObjectOp
   | RemoveObjectsOp
   | AddObjectsOp
-  | MoveObjectsOp
+  | SetPositionOp
   | BatchOp;
