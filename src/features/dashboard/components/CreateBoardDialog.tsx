@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Plus } from "lucide-react";
-import { Button } from "../../../components/ui/button";
-import { Input } from "../../../components/ui/input";
+import { useState } from 'react';
+import { Plus } from 'lucide-react';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../../components/ui/dialog";
-import { Label } from "../../../components/ui/label";
+} from '../../../components/ui/dialog';
+import { Label } from '../../../components/ui/label';
 
 interface CreateBoardDialogProps {
   onCreateBoard: (name: string) => Promise<void>;
@@ -23,7 +23,7 @@ export const CreateBoardDialog = ({
   isCreating = false,
 }: CreateBoardDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [boardName, setBoardName] = useState("");
+  const [boardName, setBoardName] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,17 +32,17 @@ export const CreateBoardDialog = ({
 
     try {
       await onCreateBoard(boardName.trim());
-      setBoardName("");
+      setBoardName('');
       setOpen(false);
     } catch (error) {
-      console.error("Failed to create board:", error);
+      console.error('Failed to create board:', error);
     }
   };
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     if (!newOpen) {
-      setBoardName("");
+      setBoardName('');
     }
   };
 
@@ -51,15 +51,15 @@ export const CreateBoardDialog = ({
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
-          Nowy whiteboard
+          New whiteboard
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Utwórz nowy whiteboard</DialogTitle>
+            <DialogTitle>Create new whiteboard</DialogTitle>
             <DialogDescription>
-              Podaj nazwę dla nowej tablicy. Możesz ją zmienić później.
+              Enter a name for the new board. You can change it later.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -67,7 +67,7 @@ export const CreateBoardDialog = ({
               <Label htmlFor="board-name">Nazwa tablicy</Label>
               <Input
                 id="board-name"
-                placeholder="np. Projekt marketingowy"
+                placeholder="e.g. Marketing project"
                 value={boardName}
                 onChange={(e) => setBoardName(e.target.value)}
                 autoFocus
@@ -85,7 +85,7 @@ export const CreateBoardDialog = ({
               Anuluj
             </Button>
             <Button type="submit" disabled={!boardName.trim() || isCreating}>
-              {isCreating ? "Tworzenie..." : "Utwórz"}
+              {isCreating ? 'Creating...' : 'Create'}
             </Button>
           </DialogFooter>
         </form>

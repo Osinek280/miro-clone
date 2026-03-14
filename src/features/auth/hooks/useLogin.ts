@@ -1,7 +1,7 @@
-import { authApi } from "../api/auth.api";
-import { useAuthStore } from "../store/auth.store";
-import { parseJwt } from "../utils/parseJwt";
-import { tokenStorage } from "../utils/TokenStorage";
+import { authApi } from '../api/auth.api';
+import { useAuthStore } from '../store/auth.store';
+import { parseJwt } from '../utils/parseJwt';
+import { tokenStorage } from '../utils/TokenStorage';
 
 export const useLogin = () => {
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -14,7 +14,7 @@ export const useLogin = () => {
     const payload = parseJwt(data.accessToken);
 
     if (!payload) {
-      throw new Error("Token parsing failed");
+      throw new Error('Token parsing failed');
     }
 
     const user = {

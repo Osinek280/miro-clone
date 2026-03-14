@@ -1,18 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useRegister } from "../hooks/useRegister";
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useRegister } from '../hooks/useRegister';
 
 export const RegisterForm = () => {
   const { register } = useRegister();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    firstname: "",
-    lastname: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+    firstname: '',
+    lastname: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +27,7 @@ export const RegisterForm = () => {
     }));
 
     // Clear password match error when user starts typing
-    if ((name === "password" || name === "confirmPassword") && passwordError) {
+    if ((name === 'password' || name === 'confirmPassword') && passwordError) {
       setPasswordError(null);
     }
   };
@@ -35,13 +35,13 @@ export const RegisterForm = () => {
   const validateForm = (): boolean => {
     // Check if passwords match
     if (formData.password !== formData.confirmPassword) {
-      setPasswordError("Hasła nie są identyczne");
+      setPasswordError('Passwords do not match');
       return false;
     }
 
     // Check password strength (optional)
     if (formData.password.length < 5) {
-      setPasswordError("Hasło musi mieć co najmniej 5 znaków");
+      setPasswordError('Password must be at least 5 characters');
       return false;
     }
 
@@ -65,17 +65,17 @@ export const RegisterForm = () => {
       await register(firstname, lastname, email, password);
 
       // Redirect to login or dashboard after successful registration
-      navigate("/login", {
+      navigate('/login', {
         replace: true,
         state: {
           message:
-            "Rejestracja zakończona sukcesem. Możesz się teraz zalogować.",
+            'Registration successful. You can now log in.',
         },
       });
     } catch (err: any) {
       setError(
         err?.response?.data?.message ??
-          "Nie udało się zarejestrować. Spróbuj ponownie.",
+          'Registration failed. Please try again.'
       );
     } finally {
       setIsLoading(false);
@@ -88,7 +88,7 @@ export const RegisterForm = () => {
       className="mx-auto mt-16 w-full max-w-md rounded-2xl bg-white p-8 shadow-lg"
     >
       <h2 className="mb-6 text-center text-2xl font-semibold text-gray-800">
-        Zarejestruj się
+        Sign up
       </h2>
 
       {error && (
@@ -100,7 +100,7 @@ export const RegisterForm = () => {
       <div className="mb-4 grid grid-cols-2 gap-4">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
-            Imię *
+            First name *
           </label>
           <input
             type="text"
@@ -115,7 +115,7 @@ export const RegisterForm = () => {
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
-            Nazwisko *
+            Last name *
           </label>
           <input
             type="text"
@@ -146,7 +146,7 @@ export const RegisterForm = () => {
 
       <div className="mb-4">
         <label className="mb-1 block text-sm font-medium text-gray-700">
-          Hasło *
+          Password *
         </label>
         <input
           type="password"
@@ -161,7 +161,7 @@ export const RegisterForm = () => {
 
       <div className="mb-6">
         <label className="mb-1 block text-sm font-medium text-gray-700">
-          Potwierdź hasło *
+          Confirm password *
         </label>
         <input
           type="password"
@@ -182,16 +182,16 @@ export const RegisterForm = () => {
         disabled={isLoading}
         className="mb-4 w-full rounded-lg bg-blue-600 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isLoading ? "Rejestrowanie..." : "Zarejestruj się"}
+        {isLoading ? 'Signing up...' : 'Sign up'}
       </button>
 
       <p className="text-center text-sm text-gray-600">
-        Masz już konto?{" "}
+        Already have an account?{' '}
         <Link
           to="/login"
           className="font-medium text-blue-600 hover:text-blue-500"
         >
-          Zaloguj się
+          Log in
         </Link>
       </p>
     </form>

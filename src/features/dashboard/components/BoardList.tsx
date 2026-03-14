@@ -1,22 +1,22 @@
-import { MoreHorizontal, Pencil, Share2, Trash2 } from "lucide-react";
-import { Badge } from "../../../components/ui/badge";
-import { Button } from "../../../components/ui/button";
-import { Card } from "../../../components/ui/card";
+import { MoreHorizontal, Pencil, Share2, Trash2 } from 'lucide-react';
+import { Badge } from '../../../components/ui/badge';
+import { Button } from '../../../components/ui/button';
+import { Card } from '../../../components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../../components/ui/dropdown-menu";
-import { ScrollArea } from "../../../components/ui/scroll-area";
-import type { Whiteboard } from "../api/dashboard.types";
+} from '../../../components/ui/dropdown-menu';
+import { ScrollArea } from '../../../components/ui/scroll-area';
+import type { Whiteboard } from '../api/dashboard.types';
 import {
   formatDate,
   getRoleIcon,
   getRoleLabel,
   getGradient,
-} from "../utils/board.utils";
+} from '../utils/board.utils';
 type Props = {
   boards: Whiteboard[];
   onOpen: (id: string) => void;
@@ -77,20 +77,20 @@ export const BoardsList = ({ boards, onOpen, onRemove }: Props) => {
 
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={() => console.log("rename", board.id)}
+                        onClick={() => console.log('rename', board.id)}
                       >
                         <Pencil className="mr-2 h-4 w-4" />
-                        Zmień nazwę
+                        Rename
                       </DropdownMenuItem>
 
                       <DropdownMenuItem
-                        onClick={() => console.log("share", board.id)}
+                        onClick={() => console.log('share', board.id)}
                       >
                         <Share2 className="mr-2 h-4 w-4" />
-                        Udostępnij dostęp
+                        Share
                       </DropdownMenuItem>
 
-                      {board.role === "OWNER" && (
+                      {board.role === 'OWNER' && (
                         <>
                           <DropdownMenuSeparator />
 
@@ -99,7 +99,7 @@ export const BoardsList = ({ boards, onOpen, onRemove }: Props) => {
                             onClick={() => onRemove(board.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Usuń
+                            Remove
                           </DropdownMenuItem>
                         </>
                       )}

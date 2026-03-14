@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { dashboardApi } from "../api/dashboard.api";
+import { useState } from 'react';
+import { dashboardApi } from '../api/dashboard.api';
 
 export const useBoardActions = () => {
   const [isCreating, setIsCreating] = useState(false);

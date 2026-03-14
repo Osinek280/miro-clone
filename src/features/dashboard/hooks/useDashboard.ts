@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import type { Whiteboard } from "../api/dashboard.types";
-import { dashboardApi } from "../api/dashboard.api";
+import { useState, useEffect } from 'react';
+import type { Whiteboard } from '../api/dashboard.types';
+import { dashboardApi } from '../api/dashboard.api';
 
 export const useDashboard = () => {
   const [boards, setBoards] = useState<Whiteboard[]>([]);
@@ -12,11 +12,11 @@ export const useDashboard = () => {
     setError(null);
     try {
       const { data } = await dashboardApi.getWhiteboards();
-      console.log("Fetched boards:", data);
+      console.log('Fetched boards:', data);
       setBoards(data);
     } catch (err) {
-      console.error("Failed to fetch boards:", err);
-      setError("Nie udało się pobrać tablic");
+      console.error('Failed to fetch boards:', err);
+      setError('Failed to load boards');
     } finally {
       setLoading(false);
     }

@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useLogout } from "../features/auth/hooks/useLogout";
-import { useAuthStore } from "../features/auth/store/auth.store";
-import { useDashboard } from "../features/dashboard/hooks/useDashboard";
-import { DashboardHeader } from "../features/dashboard/components/DashboardHeader";
-import { DashboardToolbar } from "../features/dashboard/components/DashboardToolbar";
-import { EmptyState } from "../features/dashboard/components/EmptyState";
-import { BoardsGrid } from "../features/dashboard/components/BoardsGrid";
-import { BoardsList } from "../features/dashboard/components/BoardList";
-import { useBoardActions } from "../features/dashboard/hooks/useCreateBoard";
+import { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLogout } from '../features/auth/hooks/useLogout';
+import { useAuthStore } from '../features/auth/store/auth.store';
+import { useDashboard } from '../features/dashboard/hooks/useDashboard';
+import { DashboardHeader } from '../features/dashboard/components/DashboardHeader';
+import { DashboardToolbar } from '../features/dashboard/components/DashboardToolbar';
+import { EmptyState } from '../features/dashboard/components/EmptyState';
+import { BoardsGrid } from '../features/dashboard/components/BoardsGrid';
+import { BoardsList } from '../features/dashboard/components/BoardList';
+import { useBoardActions } from '../features/dashboard/hooks/useCreateBoard';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -16,21 +16,21 @@ export const DashboardPage = () => {
   const user = useAuthStore((s) => s.user);
   const { fetchBoards, boards, loading, error } = useDashboard();
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
   const { createBoard, deleteBoard, isCreating } = useBoardActions();
 
-  const viewMode = (searchParams.get("view") as "grid" | "list") ?? "grid";
+  const viewMode = (searchParams.get('view') as 'grid' | 'list') ?? 'grid';
 
-  const setViewMode = (mode: "grid" | "list") => {
+  const setViewMode = (mode: 'grid' | 'list') => {
     setSearchParams((prev) => {
-      prev.set("view", mode);
+      prev.set('view', mode);
       return prev;
     });
   };
 
   const filtered = boards.filter((b) =>
-    b.name?.toLowerCase().includes(search.toLowerCase()),
+    b.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleCreateBoard = async (name: string) => {
@@ -60,7 +60,7 @@ export const DashboardPage = () => {
         email={user?.email}
         onLogout={async () => {
           await logout();
-          navigate("/");
+          navigate('/');
         }}
       />
 
@@ -72,7 +72,7 @@ export const DashboardPage = () => {
           setViewMode={setViewMode}
         />
 
-        {loading && <p>Ładowanie...</p>}
+        {loading && <p>Loading...</p>}
         {error && <p>{error}</p>}
 
         {!loading && filtered.length === 0 && (
@@ -81,7 +81,7 @@ export const DashboardPage = () => {
 
         {!loading &&
           filtered.length > 0 &&
-          (viewMode === "grid" ? (
+          (viewMode === 'grid' ? (
             <BoardsGrid
               boards={filtered}
               onOpen={(id) => navigate(`/board/${id}`)}
