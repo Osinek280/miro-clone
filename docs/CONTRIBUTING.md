@@ -6,11 +6,13 @@ Thanks for your interest in contributing. This document covers the development w
 
 1. **Prerequisites** — Node.js 20+ and npm.
 2. **Clone and install**
+
    ```bash
    git clone <repo-url>
    cd miro-clone
    npm install
    ```
+
 3. **Run the app**
    ```bash
    npm run dev

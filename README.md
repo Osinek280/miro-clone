@@ -17,15 +17,15 @@ A collaborative whiteboard application inspired by [Miro](https://miro.com). Cre
 
 ## Tech Stack
 
-| Area        | Stack                          |
-|------------|---------------------------------|
-| Framework  | React 19, TypeScript            |
-| Build      | Vite 7                          |
-| Styling    | Tailwind CSS 4                  |
-| State      | Zustand                         |
-| Routing    | React Router 7                  |
-| HTTP       | Axios                           |
-| UI         | Radix UI, Lucide icons          |
+| Area      | Stack                  |
+| --------- | ---------------------- |
+| Framework | React 19, TypeScript   |
+| Build     | Vite 7                 |
+| Styling   | Tailwind CSS 4         |
+| State     | Zustand                |
+| Routing   | React Router 7         |
+| HTTP      | Axios                  |
+| UI        | Radix UI, Lucide icons |
 
 ## Prerequisites
 
@@ -52,14 +52,14 @@ Open [http://localhost:5173](http://localhost:5173). You can use the UI without 
 
 ## Scripts
 
-| Command           | Description                    |
-|-------------------|--------------------------------|
-| `npm run dev`     | Start Vite dev server (HMR)    |
-| `npm run build`   | TypeScript check + production build |
-| `npm run preview` | Serve the production build     |
-| `npm run lint`    | Run ESLint                     |
-| `npm run format`  | Format code with Prettier      |
-| `npm run format:check` | Check formatting (CI)   |
+| Command                | Description                         |
+| ---------------------- | ----------------------------------- |
+| `npm run dev`          | Start Vite dev server (HMR)         |
+| `npm run build`        | TypeScript check + production build |
+| `npm run preview`      | Serve the production build          |
+| `npm run lint`         | Run ESLint                          |
+| `npm run format`       | Format code with Prettier           |
+| `npm run format:check` | Check formatting (CI)               |
 
 ## Project Structure
 
@@ -86,7 +86,7 @@ The frontend uses an API client with `baseURL: 'http://localhost:8080'` and `wit
 
 To point at another host (e.g. in production), you can:
 
-1. Introduce an env variable (e.g. `VITE_API_BASE_URL`) in the Vite config and use it in `src/app/api/apiClient.ts`, or  
+1. Introduce an env variable (e.g. `VITE_API_BASE_URL`) in the Vite config and use it in `src/app/api/apiClient.ts`, or
 2. Change the `baseURL` in `apiClient.ts` for your environment.
 
 Expected API surface (for reference):
