@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { WebGLRenderer } from './WebGLRenderer';
 import { DrawModeEnum, type DrawObject } from './types/types';
-import { useRender } from './hooks/useRenderer';
+import { useCanvasStore } from './hooks/useCanvasStore';
 import { useCamera } from './hooks/useCamera';
 import { useMouseHandlers } from './hooks/useMouseHandlers';
 import Palette from './components/Palette';
@@ -9,7 +9,6 @@ import { getCursor } from './utils/cursorUtils';
 import Toolbar from './components/Toolbar';
 import { Zoom } from './components/Zoom';
 import { Grid } from './grid/Grid';
-import SelectionToolbar from './components/SelectionToolbar';
 import { useHistoryStore } from './hooks/useHistoryStore';
 
 export default function Whiteboard() {
@@ -19,7 +18,9 @@ export default function Whiteboard() {
   const targetCameraRef = useRef({ zoom: 1, offsetX: 0, offsetY: 0 });
   const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
 
-  const { renderFrame, state } = useRender(rendererRef, cameraRef);
+  const { objects, setObjects, color, size, setColor, setSize } =
+    useCanvasStore();
+
   const history = useHistoryStore();
 
   const {
@@ -29,20 +30,18 @@ export default function Whiteboard() {
     handleZoomReset,
     animateCameraRef,
     displayZoom,
-  } = useCamera(canvasRef, cameraRef, targetCameraRef, renderFrame);
+  } = useCamera(canvasRef, cameraRef, targetCameraRef);
 
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
     cameraRef,
     targetCameraRef,
-    renderFrame,
-    state,
     mode,
     setMode
   );
 
   const generateObjects = () => {
-    const prev = state.objects;
+    const prev = objects;
     const arr: DrawObject[] = [];
 
     for (let i = 0; i < 10000; i++) {
@@ -68,7 +67,7 @@ export default function Whiteboard() {
         { type: 'addMany', objects: arr },
       ],
     });
-    state.setObjects(arr);
+    setObjects(arr);
   };
 
   // Initialize WebGL
@@ -82,6 +81,7 @@ export default function Whiteboard() {
     }
 
     rendererRef.current = renderer;
+    useCanvasStore.getState().setRefs(rendererRef, cameraRef);
 
     // Set up resize handler
     const resizeCanvas = () => {
@@ -102,7 +102,6 @@ export default function Whiteboard() {
     const canvas = canvasRef.current;
     if (!canvas || !rendererRef.current) return;
 
-    // Pobierz wymiary canvasa
     const rect = canvas.getBoundingClientRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
@@ -111,9 +110,10 @@ export default function Whiteboard() {
     cameraRef.current.offsetX = centerX;
     cameraRef.current.offsetY = centerY;
 
-    // Update targetCameraRef so animation doesn't move the camera
     targetCameraRef.current.offsetX = centerX;
     targetCameraRef.current.offsetY = centerY;
+
+    useCanvasStore.getState().renderFrame();
   }, []);
 
   const animateCamera = useCallback(() => {
@@ -145,8 +145,6 @@ export default function Whiteboard() {
     };
   }, [animateCamera, animationFrameRef, cameraRef, targetCameraRef]);
 
-  const { color, size, setColor, setSize, selectedBoundingBox } = state;
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
@@ -159,20 +157,20 @@ export default function Whiteboard() {
 
       e.preventDefault();
 
-      const current = state.objects;
+      const current = useCanvasStore.getState().objects;
 
       if (isUndo) {
         const prev = history.undo(current);
-        if (prev) state.setObjects(prev);
+        if (prev) useCanvasStore.getState().setObjects(prev);
       } else if (isRedo) {
         const next = history.redo(current);
-        if (next) state.setObjects(next);
+        if (next) useCanvasStore.getState().setObjects(next);
       }
     };
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [history, state.objects, state.setObjects]);
+  }, [history]);
 
   return (
     <div className="w-full h-full relative bg-gray-100">
@@ -202,14 +200,6 @@ export default function Whiteboard() {
       />
 
       <Grid cameraRef={cameraRef} style="grid"></Grid>
-
-      {selectedBoundingBox && (
-        <SelectionToolbar
-          selectedBoundingBox={selectedBoundingBox}
-          cameraRef={cameraRef}
-          canvasRef={canvasRef}
-        />
-      )}
 
       <canvas
         ref={canvasRef}

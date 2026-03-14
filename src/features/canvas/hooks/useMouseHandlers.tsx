@@ -1,40 +1,28 @@
 import { useEffect, useRef } from 'react';
-import {
-  DrawModeEnum,
-  type Camera,
-  type RenderStateAPI,
-} from '../types/types';
-import { useState } from 'react';
+import { DrawModeEnum, type Camera } from '../types/types';
 import { getCanvasPoint } from '../utils/cameraUtils';
 import { useDrawMode } from './modes/useDrawMode';
 import { useSelectMode } from './modes/useSelectMode';
 import { useGrabMode } from './modes/useGrabMode';
+import { useCanvasStore } from './useCanvasStore';
 
 export function useMouseHandlers(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   cameraRef: React.RefObject<Camera>,
   targetCameraRef: React.RefObject<Camera>,
-  renderFrame: () => void,
-  state: RenderStateAPI,
   mode: DrawModeEnum,
   setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>
 ) {
   const {
-    objects,
-    setObjects,
     setCurrentPath,
-    currentPath,
+    setObjects,
     color: currentColor,
     size: currentSize,
-    selectionBox,
-    setSelectionBox,
-    selectedBoundingBox,
-    setSelectedBoundingBox,
-  } = state;
+    setIsDrawing,
+    setIsGrabbing,
+  } = useCanvasStore();
 
-  const [isDrawing, setIsDrawing] = useState(false);
   const prevModeRef = useRef<DrawModeEnum>(DrawModeEnum.Draw);
-  const isGrabbingRef = useRef(false);
 
   const draw = useDrawMode(
     setCurrentPath,
@@ -42,23 +30,14 @@ export function useMouseHandlers(
     currentColor,
     currentSize
   );
-  const select = useSelectMode(
-    cameraRef,
-    objects,
-    setObjects,
-    selectionBox,
-    setSelectionBox,
-    selectedBoundingBox,
-    setSelectedBoundingBox
-  );
-
-  const grab = useGrabMode(cameraRef, targetCameraRef, renderFrame);
+  const select = useSelectMode(cameraRef);
+  const grab = useGrabMode(cameraRef, targetCameraRef);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (e.button === 1 || mode === DrawModeEnum.Grab) {
       prevModeRef.current = mode;
       setMode(DrawModeEnum.Grab);
-      isGrabbingRef.current = true;
+      setIsGrabbing(true);
       return;
     }
     const point = getCanvasPoint(e, canvasRef, cameraRef.current);
@@ -71,28 +50,28 @@ export function useMouseHandlers(
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isGrabbingRef.current) {
+    if (useCanvasStore.getState().isGrabbing) {
       grab.onMouseMove(e);
       return;
     }
     const point = getCanvasPoint(e, canvasRef, cameraRef.current);
     if (mode === DrawModeEnum.Select) {
       select.onMouseMove(point);
-    } else if (mode === DrawModeEnum.Draw && isDrawing) {
+    } else if (mode === DrawModeEnum.Draw && useCanvasStore.getState().isDrawing) {
       setCurrentPath((prev) => draw.onMouseMove(point, prev, e.shiftKey));
     }
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (e.button === 1 || isGrabbingRef.current) {
+    if (e.button === 1 || useCanvasStore.getState().isGrabbing) {
       setMode(prevModeRef.current);
-      isGrabbingRef.current = false;
+      setIsGrabbing(false);
       return;
     }
     if (mode === DrawModeEnum.Select) {
       select.onMouseUp();
     } else if (mode === DrawModeEnum.Draw) {
-      draw.onMouseUp(currentPath);
+      draw.onMouseUp(useCanvasStore.getState().currentPath);
       setIsDrawing(false);
     }
   };

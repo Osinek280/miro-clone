@@ -11,12 +11,12 @@ import {
   ZOOM_CHANGE_EPSILON,
   ZOOM_DISPLAY_PRECISION,
 } from '../constants/cameraConstants';
+import { useCanvasStore } from './useCanvasStore';
 
 export function useCamera(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   cameraRef: React.RefObject<Camera>,
-  targetCameraRef: React.RefObject<Camera>,
-  renderFrame: () => void
+  targetCameraRef: React.RefObject<Camera>
 ) {
   const animationFrameRef = useRef<number | null>(null);
 
@@ -40,7 +40,7 @@ export function useCamera(
         ZOOM_DISPLAY_PRECISION
       );
 
-      renderFrame();
+      useCanvasStore.getState().renderFrame();
 
       animationFrameRef.current = requestAnimationFrame(
         animateCameraRef.current
@@ -55,7 +55,7 @@ export function useCamera(
         ZOOM_DISPLAY_PRECISION
       );
 
-      renderFrame();
+      useCanvasStore.getState().renderFrame();
 
       animationFrameRef.current = null;
     }
