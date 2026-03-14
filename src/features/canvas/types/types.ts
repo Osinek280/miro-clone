@@ -60,3 +60,37 @@ export interface RenderState {
   selectionBox: SelectionBox;
   selectedBoundingBox: SelectionBox;
 }
+
+// ─── Operation-based history (no snapshots; CRDT-ready) ─────────────────────
+
+export interface AddObjectOp {
+  type: 'add';
+  object: DrawObject;
+}
+
+export interface RemoveObjectsOp {
+  type: 'remove';
+  objects: DrawObject[];
+}
+
+export interface AddObjectsOp {
+  type: 'addMany';
+  objects: DrawObject[];
+}
+
+export interface MoveObjectsOp {
+  type: 'move';
+  deltas: { id: string; delta: Point }[];
+}
+
+export interface BatchOp {
+  type: 'batch';
+  operations: HistoryOperation[];
+}
+
+export type HistoryOperation =
+  | AddObjectOp
+  | RemoveObjectsOp
+  | AddObjectsOp
+  | MoveObjectsOp
+  | BatchOp;

@@ -1,4 +1,5 @@
 import { type DrawObject, type Point } from '../../types/types';
+import { useHistoryStore } from '../useHistoryStore';
 
 export function useDrawMode(
   setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>,
@@ -6,6 +7,8 @@ export function useDrawMode(
   currentColor: string,
   currentSize: number
 ) {
+  const { pushOperation } = useHistoryStore.getState();
+
   const onMouseDown = (point: Point) => {
     return [point]; // initial path
   };
@@ -90,16 +93,15 @@ export function useDrawMode(
 
   const onMouseUp = (path: Point[]) => {
     if (path.length === 0) return;
-    setObjects((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        type: 'path',
-        points: path,
-        color: currentColor,
-        size: currentSize,
-      },
-    ]);
+    const object: DrawObject = {
+      id: Date.now().toString(),
+      type: 'path',
+      points: path,
+      color: currentColor,
+      size: currentSize,
+    };
+    pushOperation({ type: 'add', object });
+    setObjects((prev) => [...prev, object]);
     setCurrentPath([]);
   };
 

@@ -1,7 +1,13 @@
 import { useRef, useState } from 'react';
-import type { Camera, DrawObject, Point, SelectionBox } from '../../types/types';
+import type {
+  Camera,
+  DrawObject,
+  Point,
+  SelectionBox,
+} from '../../types/types';
 import { findObjectAtPoint } from '../../utils/objectUtils';
 import { calcBoundingBox } from '../../utils/objectUtils';
+import { useHistoryStore } from '../useHistoryStore';
 
 export function useSelectMode(
   cameraRef: React.RefObject<Camera>,
@@ -12,9 +18,11 @@ export function useSelectMode(
   selectedBoundingBox: SelectionBox,
   setSelectedBoundingBox: React.Dispatch<React.SetStateAction<SelectionBox>>
 ) {
+  const { pushOperation } = useHistoryStore.getState();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isMoving, setIsMoving] = useState(false);
   const lastMousePosRef = useRef<Point>({ x: 0, y: 0 });
+  const dragStartRef = useRef<Point>({ x: 0, y: 0 });
 
   const clearSelection = () => {
     setSelectedIds([]);
@@ -25,6 +33,7 @@ export function useSelectMode(
   const onMouseDown = (point: Point) => {
     const obj = findObjectAtPoint(point, objects, cameraRef.current.zoom);
     if (obj) {
+      dragStartRef.current = point;
       if (selectedIds.includes(obj.id)) {
         setIsMoving(true);
       } else {
@@ -85,6 +94,20 @@ export function useSelectMode(
         selected.length > 0 ? calcBoundingBox(selected) : null
       );
       setSelectionBox(null);
+    } else if (isMoving && selectedIds.length > 0) {
+      const start = dragStartRef.current;
+      const end = lastMousePosRef.current;
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      if (dx !== 0 || dy !== 0) {
+        pushOperation({
+          type: 'move',
+          deltas: selectedIds.map((id) => ({
+            id,
+            delta: { x: dx, y: dy },
+          })),
+        });
+      }
     }
     setIsMoving(false);
   };

@@ -10,6 +10,7 @@ import Toolbar from './components/Toolbar';
 import { Zoom } from './components/Zoom';
 import { Grid } from './grid/Grid';
 import SelectionToolbar from './components/SelectionToolbar';
+import { useHistoryStore } from './hooks/useHistoryStore';
 
 export default function Whiteboard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -19,6 +20,7 @@ export default function Whiteboard() {
   const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
 
   const { renderFrame, state } = useRender(rendererRef, cameraRef);
+  const history = useHistoryStore();
 
   const {
     animationFrameRef,
@@ -40,6 +42,7 @@ export default function Whiteboard() {
   );
 
   const generateObjects = () => {
+    const prev = state.objects;
     const arr: DrawObject[] = [];
 
     for (let i = 0; i < 10000; i++) {
@@ -58,6 +61,13 @@ export default function Whiteboard() {
       });
     }
 
+    history.pushOperation({
+      type: 'batch',
+      operations: [
+        { type: 'remove', objects: prev },
+        { type: 'addMany', objects: arr },
+      ],
+    });
     state.setObjects(arr);
   };
 
@@ -86,6 +96,7 @@ export default function Whiteboard() {
       renderer.cleanup();
     };
   }, []);
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -136,12 +147,39 @@ export default function Whiteboard() {
 
   const { color, size, setColor, setSize, selectedBoundingBox } = state;
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      const mod = e.ctrlKey || e.metaKey;
+      const isUndo = mod && !e.shiftKey && key === 'z';
+      const isRedo =
+        (mod && e.shiftKey && key === 'z') || (mod && key === 'y');
+
+      if (!isUndo && !isRedo) return;
+
+      e.preventDefault();
+
+      const current = state.objects;
+
+      if (isUndo) {
+        const prev = history.undo(current);
+        if (prev) state.setObjects(prev);
+      } else if (isRedo) {
+        const next = history.redo(current);
+        if (next) state.setObjects(next);
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [history, state.objects, state.setObjects]);
+
   return (
     <div className="w-full h-full relative bg-gray-100">
-      <div className="absolute top-4 left-4 z-10 flex gap-2 flex-wrap">
+      <div className="absolute top-4 left-4 z-10 flex gap-2 flex-wrap z-40">
         <button
           onClick={generateObjects}
-          className="px-4 py-2 rounded bg-amber-500 text-white"
+          className="px-4 py-2 rounded bg-amber-500 text-white cursor-pointer"
         >
           Generate 10k objects
         </button>
