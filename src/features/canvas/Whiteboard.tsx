@@ -56,6 +56,8 @@ export default function Whiteboard() {
         ],
         type: 'path',
         color: '#0d0d0d',
+        tombstone: false,
+        positionTimestamp: Date.now(),
         size: 15,
       });
     }

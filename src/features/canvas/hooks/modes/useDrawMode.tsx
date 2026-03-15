@@ -103,6 +103,8 @@ export function useDrawMode(
       points: path,
       color: currentColor,
       size: currentSize,
+      tombstone: false,
+      positionTimestamp: Date.now(),
     };
     pushOperation({ type: 'add', object });
     setObjects((prev) => [...prev, object]);
