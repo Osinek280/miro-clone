@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { WebGLRenderer } from './WebGLRenderer';
-import { DrawModeEnum, type DrawObject } from './types/types';
+import { DrawModeEnum, type DrawObject, type Point } from './types/types';
 import { useCanvasStore } from './hooks/useCanvasStore';
 import { useCamera } from './hooks/useCamera';
 import { useMouseHandlers } from './hooks/useMouseHandlers';
@@ -24,8 +24,6 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
 
   const history = useHistoryStore();
 
-  useBoardSync(boardId);
-
   const {
     animationFrameRef,
     handleZoomIn,
@@ -33,7 +31,37 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
     handleZoomReset,
     animateCameraRef,
     displayZoom,
+    setDisplayZoom,
   } = useCamera(canvasRef, cameraRef, targetCameraRef);
+
+  const setCenterAtPoint = useCallback(
+    (point: Point, zoom: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas || !rendererRef.current) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+
+      const offsetX = centerX - point.x * zoom;
+      const offsetY = centerY - point.y * zoom;
+
+      cameraRef.current.zoom = zoom;
+      cameraRef.current.offsetX = offsetX;
+      cameraRef.current.offsetY = offsetY;
+
+      targetCameraRef.current.zoom = zoom;
+      targetCameraRef.current.offsetX = offsetX;
+      targetCameraRef.current.offsetY = offsetY;
+
+      setDisplayZoom(zoom);
+
+      useCanvasStore.getState().renderFrame();
+    },
+    [setDisplayZoom],
+  );
+
+  useBoardSync(boardId, setCenterAtPoint);
 
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
@@ -100,24 +128,6 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
       window.removeEventListener('resize', resizeCanvas);
       renderer.cleanup();
     };
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !rendererRef.current) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-
-    // Set initial camera offset so (0,0) is at center
-    cameraRef.current.offsetX = centerX;
-    cameraRef.current.offsetY = centerY;
-
-    targetCameraRef.current.offsetX = centerX;
-    targetCameraRef.current.offsetY = centerY;
-
-    useCanvasStore.getState().renderFrame();
   }, []);
 
   const animateCamera = useCallback(() => {

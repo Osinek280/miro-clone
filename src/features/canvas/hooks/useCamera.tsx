@@ -164,5 +164,6 @@ export function useCamera(
     handleZoomReset,
     animateCameraRef,
     displayZoom,
+    setDisplayZoom,
   };
 }
