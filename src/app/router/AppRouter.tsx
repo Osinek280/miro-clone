@@ -33,7 +33,7 @@ export const router = createBrowserRouter([
             element: <DashboardPage />,
           },
           {
-            path: '/board/:id',
+            path: '/board/:boardId',
             element: <CanvasPage />,
           },
         ],

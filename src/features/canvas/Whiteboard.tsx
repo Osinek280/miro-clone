@@ -10,8 +10,9 @@ import Toolbar from './components/Toolbar';
 import { Zoom } from './components/Zoom';
 import { Grid } from './grid/Grid';
 import { useHistoryStore } from './hooks/useHistoryStore';
+import { useBoardSync } from './hooks/useBoardSync';
 
-export default function Whiteboard() {
+export default function Whiteboard({ boardId }: { boardId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
   const cameraRef = useRef({ zoom: 1, offsetX: 0, offsetY: 0 });
@@ -22,6 +23,8 @@ export default function Whiteboard() {
     useCanvasStore();
 
   const history = useHistoryStore();
+
+  useBoardSync(boardId);
 
   const {
     animationFrameRef,
