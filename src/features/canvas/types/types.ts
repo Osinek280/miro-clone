@@ -10,9 +10,9 @@ export interface DrawObject {
   color: string;
   size: number;
   /** Soft delete: when true, object is hidden and excluded from hit-test (LWW with remove op timestamp). */
-  tombstone?: boolean;
+  tombstone: boolean;
   /** Timestamp of last position update (LWW register for move). */
-  positionTimestamp?: number;
+  positionTimestamp: number;
 }
 
 export interface Camera {

@@ -65,6 +65,7 @@ export function flattenBatch(batch: BatchOp): HistoryOperation[] {
 function applyAdd(children: DrawObject[], op: AddObjectOp): DrawObject[] {
   const obj = structuredClone(op.object);
   obj.tombstone = false;
+  obj.positionTimestamp = obj.positionTimestamp ?? 0;
   const idx = children.findIndex((c) => c.id === obj.id);
   if (idx >= 0) {
     const out = [...children];
