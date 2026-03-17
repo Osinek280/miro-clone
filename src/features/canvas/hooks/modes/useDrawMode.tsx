@@ -98,7 +98,7 @@ export function useDrawMode(
   const onMouseUp = (path: Point[]) => {
     if (path.length === 0) return;
     const object: DrawObject = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       type: 'path',
       points: path,
       color: currentColor,

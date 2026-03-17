@@ -10,15 +10,6 @@ import type {
 
 const MAX_HISTORY = 300;
 
-// ─── Op identity (object.id + op.id + timestamp) ────────────────────────────
-
-function generateOpId(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-}
-
 function getTimestamp(): number {
   return Date.now();
 }
@@ -26,7 +17,7 @@ function getTimestamp(): number {
 /** Ensure op has opId and timestamp; mutate clone. */
 function stampOp<T extends HistoryOperation>(op: T): T {
   const o = structuredClone(op) as T;
-  if (o.opId == null) (o as { opId: string }).opId = generateOpId();
+  if (o.opId == null) (o as { opId: string }).opId = crypto.randomUUID();
   if (o.timestamp == null)
     (o as { timestamp: number }).timestamp = getTimestamp();
   return o;
@@ -142,7 +133,7 @@ export function applyOperation(
 // ─── Inverse (for undo) ──────────────────────────────────────────────────────
 
 function getInverse(op: HistoryOperation): HistoryOperation {
-  const meta = { opId: generateOpId(), timestamp: getTimestamp() };
+  const meta = { opId: crypto.randomUUID(), timestamp: getTimestamp() };
   switch (op.type) {
     case 'add':
       return { ...meta, type: 'remove', objects: [op.object] };

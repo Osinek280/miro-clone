@@ -80,7 +80,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
       const y = Math.random() * 5000 - 2500;
 
       arr.push({
-        id: `obj-${i}`,
+        id: crypto.randomUUID(),
         points: [
           { x, y },
           { x: x + Math.random() * 50, y: y + Math.random() * 50 },
@@ -129,6 +129,10 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
       renderer.cleanup();
     };
   }, []);
+
+  useEffect(() => {
+    console.log(objects);
+  }, [objects]);
 
   const animateCamera = useCallback(() => {
     if (animateCameraRef.current) {
