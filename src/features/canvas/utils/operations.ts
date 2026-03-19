@@ -1,5 +1,4 @@
 import type {
-  AddObjectOp,
   AddObjectsOp,
   BatchOp,
   DrawObject,
@@ -51,19 +50,6 @@ export function flattenBatch(batch: BatchOp): HistoryOperation[] {
 
 // ─── Apply (tombstone = soft delete, setPosition = LWW) ────────────────────────
 
-function applyAdd(children: DrawObject[], op: AddObjectOp): DrawObject[] {
-  const obj = structuredClone(op.object);
-  obj.tombstone = false;
-  obj.positionTimestamp = obj.positionTimestamp ?? 0;
-  const idx = children.findIndex((c) => c.id === obj.id);
-  if (idx >= 0) {
-    const out = [...children];
-    out[idx] = obj;
-    return out;
-  }
-  return [...children, obj];
-}
-
 /** Tombstone: mark objects as deleted instead of removing from array. */
 function applyRemove(
   children: DrawObject[],
@@ -78,12 +64,17 @@ function applyAddMany(children: DrawObject[], op: AddObjectsOp): DrawObject[] {
   for (const o of op.objects) {
     const obj = structuredClone(o);
     obj.tombstone = false;
-    result = applyAdd(result, {
-      type: 'add',
-      object: obj,
-      opId: op.opId,
-      timestamp: op.timestamp,
-    });
+    obj.positionTimestamp = obj.positionTimestamp ?? 0;
+
+    // Upsert by id: either replace existing object (restore) or append.
+    const idx = result.findIndex((c) => c.id === obj.id);
+    if (idx >= 0) {
+      const out = [...result];
+      out[idx] = obj;
+      result = out;
+    } else {
+      result = [...result, obj];
+    }
   }
   return result;
 }
@@ -111,8 +102,8 @@ export function applyOperation(
   op: HistoryOperation,
 ): DrawObject[] {
   switch (op.type) {
-    case 'add':
-      return applyAdd(children, op);
+    // case 'add':
+    //   return applyAdd(children, op);
     case 'remove':
       return applyRemove(children, op);
     case 'addMany':
@@ -133,8 +124,8 @@ export function applyOperation(
 export function getInverse(op: HistoryOperation): HistoryOperation {
   const meta = { opId: crypto.randomUUID(), timestamp: getTimestamp() };
   switch (op.type) {
-    case 'add':
-      return { ...meta, type: 'remove', objects: [op.object] };
+    // case 'add':
+    //   return { ...meta, type: 'remove', objects: [op.object] };
     case 'remove':
       return {
         ...meta,

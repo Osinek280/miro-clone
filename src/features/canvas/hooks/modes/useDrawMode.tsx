@@ -108,7 +108,7 @@ export function useDrawMode(
       tombstone: false,
       positionTimestamp: Date.now(),
     };
-    pushOperation({ type: 'add', object });
+    pushOperation({ type: 'add', objects: [object] });
     const client = stompClientRef.current;
 
     console.log('points length', object.points.length);

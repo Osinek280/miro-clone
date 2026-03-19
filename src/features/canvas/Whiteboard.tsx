@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { WebGLRenderer } from './WebGLRenderer';
 import { DrawModeEnum, type DrawObject, type Point } from './types/types';
 import { useCanvasStore } from './hooks/useCanvasStore';
@@ -98,7 +98,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
       type: 'batch',
       operations: [
         { type: 'remove', objects: prev },
-        { type: 'addMany', objects: arr },
+        { type: 'add', objects: arr },
       ],
     });
     setObjects(arr);
