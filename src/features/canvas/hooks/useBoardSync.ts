@@ -12,6 +12,8 @@ export function useBoardSync(
       const snapshot = await canvasApi.getSnapshot(boardId);
       const { setObjects } = useCanvasStore.getState();
 
+      console.log(snapshot.data);
+
       setCenterAtPoint(
         {
           x: snapshot.data.camera.x,

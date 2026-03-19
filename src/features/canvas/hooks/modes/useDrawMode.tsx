@@ -1,3 +1,4 @@
+import type { Client } from '@stomp/stompjs';
 import { type DrawObject, type Point } from '../../types/types';
 import { useHistoryStore } from '../useHistoryStore';
 
@@ -6,6 +7,7 @@ export function useDrawMode(
   setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>,
   currentColor: string,
   currentSize: number,
+  stompClientRef: React.RefObject<Client | null>,
 ) {
   const { pushOperation } = useHistoryStore.getState();
 
@@ -107,6 +109,18 @@ export function useDrawMode(
       positionTimestamp: Date.now(),
     };
     pushOperation({ type: 'add', object });
+    const client = stompClientRef.current;
+
+    console.log('points length', object.points.length);
+    console.log(JSON.stringify(object).length, 'bytes');
+
+    if (client?.connected) {
+      console.log('sending draw message');
+      client.publish({
+        destination: '/app/draw',
+        body: JSON.stringify({ type: 'add', object }),
+      });
+    }
     setObjects((prev) => [...prev, object]);
     setCurrentPath([]);
   };
