@@ -6,13 +6,16 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useHistoryStore } from './useHistoryStore';
 import { applyOperation } from '../utils/operations';
+import {
+  decodeBoardOpFromJson,
+  encodeBoardOpToJson,
+} from '../utils/boardWireCodec';
 
 export function useBoardSync(
   boardId: string,
   setCenterAtPoint: (point: Point, zoom: number) => void,
 ) {
   const stompClientRef = useRef<Client | null>(null);
-  const { pushOperation } = useHistoryStore.getState();
   const { setObjects } = useCanvasStore.getState();
 
   useEffect(() => {
@@ -37,7 +40,8 @@ export function useBoardSync(
 
   useEffect(() => {
     const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8080/ws') as any,
+      webSocketFactory: () =>
+        new SockJS('http://localhost:8080/ws') as unknown as WebSocket,
       reconnectDelay: 3000,
       debug: (str) => {
         console.log('STOMP:', str);
@@ -45,13 +49,10 @@ export function useBoardSync(
 
       onConnect: () => {
         console.log('connected');
-        client.subscribe('/topic/draw', (msg: any) => {
-          console.log('test');
-          const data: HistoryOperation = JSON.parse(msg.body);
+        client.subscribe('/topic/draw', (msg: { body: string }) => {
+          const data = decodeBoardOpFromJson(msg.body);
           const currentObjects = useCanvasStore.getState().objects;
-
           setObjects(applyOperation(currentObjects, data));
-          console.log('parsed:', data);
         });
       },
 
@@ -72,19 +73,17 @@ export function useBoardSync(
     };
   }, []);
 
-  const pushSyncedOperation = useCallback(
-    (op: HistoryOperation) => {
-      const client = stompClientRef.current;
-      if (client?.connected) {
-        client.publish({
-          destination: '/app/draw',
-          body: JSON.stringify(op),
-        });
-      }
-      pushOperation(op);
-    },
-    [useHistoryStore.getState()],
-  );
+  /** Compact JSON on the wire ({@link encodeBoardOpToJson}); deflate needs native WS, not SockJS. */
+  const pushSyncedOperation = useCallback((op: HistoryOperation) => {
+    const client = stompClientRef.current;
+    if (client?.connected) {
+      client.publish({
+        destination: '/app/draw',
+        body: encodeBoardOpToJson(op),
+      });
+    }
+    useHistoryStore.getState().pushOperation(op);
+  }, []);
 
   return { pushSyncedOperation };
 }
