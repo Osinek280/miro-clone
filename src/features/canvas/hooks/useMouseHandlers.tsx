@@ -1,11 +1,14 @@
 import { useEffect, useRef } from 'react';
-import { DrawModeEnum, type Camera } from '../types/types';
+import {
+  DrawModeEnum,
+  type Camera,
+  type HistoryOperation,
+} from '../types/types';
 import { getCanvasPoint } from '../utils/cameraUtils';
 import { useDrawMode } from './modes/useDrawMode';
 import { useSelectMode } from './modes/useSelectMode';
 import { useGrabMode } from './modes/useGrabMode';
 import { useCanvasStore } from './useCanvasStore';
-import type { Client } from '@stomp/stompjs';
 
 export function useMouseHandlers(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -13,7 +16,7 @@ export function useMouseHandlers(
   targetCameraRef: React.RefObject<Camera>,
   mode: DrawModeEnum,
   setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>,
-  stompClientRef: React.RefObject<Client | null>,
+  pushSyncedOperation: (op: HistoryOperation) => void,
 ) {
   const {
     setCurrentPath,
@@ -31,7 +34,7 @@ export function useMouseHandlers(
     setObjects,
     currentColor,
     currentSize,
-    stompClientRef,
+    pushSyncedOperation,
   );
   const select = useSelectMode(cameraRef);
   const grab = useGrabMode(cameraRef, targetCameraRef);

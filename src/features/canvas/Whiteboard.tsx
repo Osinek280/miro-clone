@@ -61,7 +61,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
     [setDisplayZoom],
   );
 
-  const { stompClientRef } = useBoardSync(boardId, setCenterAtPoint);
+  const { pushSyncedOperation } = useBoardSync(boardId, setCenterAtPoint);
 
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
@@ -69,7 +69,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
     targetCameraRef,
     mode,
     setMode,
-    stompClientRef,
+    pushSyncedOperation,
   );
 
   const generateObjects = () => {

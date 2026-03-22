@@ -1,7 +1,9 @@
 import { useLayoutEffect, useRef } from 'react';
-import type { Client } from '@stomp/stompjs';
-import { type DrawObject, type Point } from '../../types/types';
-import { useHistoryStore } from '../useHistoryStore';
+import {
+  type DrawObject,
+  type HistoryOperation,
+  type Point,
+} from '../../types/types';
 import { useCanvasStore } from '../useCanvasStore';
 
 export function useDrawMode(
@@ -9,9 +11,8 @@ export function useDrawMode(
   setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>,
   currentColor: string,
   currentSize: number,
-  stompClientRef: React.RefObject<Client | null>,
+  pushSyncedOperation: (op: HistoryOperation) => void,
 ) {
-  const { pushOperation } = useHistoryStore.getState();
   const strokePathRef = useRef<Point[]>([]);
 
   useLayoutEffect(() => {
@@ -126,19 +127,11 @@ export function useDrawMode(
       tombstone: false,
       positionTimestamp: Date.now(),
     };
-    pushOperation({ type: 'add', objects: [object] });
-    const client = stompClientRef.current;
+    pushSyncedOperation({ type: 'add', objects: [object] });
 
     console.log('points length', object.points.length);
     console.log(JSON.stringify(object).length, 'bytes');
 
-    if (client?.connected) {
-      console.log('sending draw message');
-      client.publish({
-        destination: '/app/draw',
-        body: JSON.stringify({ type: 'add', object }),
-      });
-    }
     setObjects((p) => [...p, object]);
     setCurrentPath([]);
   };

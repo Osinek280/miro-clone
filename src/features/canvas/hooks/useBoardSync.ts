@@ -1,15 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { canvasApi } from '../api/canvas.api';
-import type { Point } from '../types/types';
+import type { HistoryOperation, Point } from '../types/types';
 import { useCanvasStore } from './useCanvasStore';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { useHistoryStore } from './useHistoryStore';
 
 export function useBoardSync(
   boardId: string,
   setCenterAtPoint: (point: Point, zoom: number) => void,
 ) {
   const stompClientRef = useRef<Client | null>(null);
+  const { pushOperation } = useHistoryStore.getState();
 
   useEffect(() => {
     async function loadIntialState() {
@@ -66,5 +68,19 @@ export function useBoardSync(
     };
   }, []);
 
-  return { stompClientRef };
+  const pushSyncedOperation = useCallback(
+    (op: HistoryOperation) => {
+      const client = stompClientRef.current;
+      if (client?.connected) {
+        client.publish({
+          destination: '/app/draw',
+          body: JSON.stringify(op),
+        });
+      }
+      pushOperation(op);
+    },
+    [useHistoryStore.getState()],
+  );
+
+  return { pushSyncedOperation };
 }
