@@ -102,11 +102,9 @@ export function applyOperation(
   op: HistoryOperation,
 ): DrawObject[] {
   switch (op.type) {
-    // case 'add':
-    //   return applyAdd(children, op);
     case 'remove':
       return applyRemove(children, op);
-    case 'addMany':
+    case 'add':
       return applyAddMany(children, op);
     case 'setPosition':
       return applySetPosition(children, op);
@@ -124,15 +122,13 @@ export function applyOperation(
 export function getInverse(op: HistoryOperation): HistoryOperation {
   const meta = { opId: crypto.randomUUID(), timestamp: getTimestamp() };
   switch (op.type) {
-    // case 'add':
-    //   return { ...meta, type: 'remove', objects: [op.object] };
     case 'remove':
       return {
         ...meta,
-        type: 'addMany',
+        type: 'add',
         objects: op.objects.map((o) => ({ ...o, tombstone: false })),
       };
-    case 'addMany':
+    case 'add':
       return { ...meta, type: 'remove', objects: op.objects };
     case 'setPosition':
       return {
