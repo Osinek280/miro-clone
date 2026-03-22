@@ -1,8 +1,4 @@
-import type {
-  DrawObject,
-  HistoryOperation,
-  Point,
-} from '../types/types';
+import type { DrawObject, HistoryOperation, Point } from '../types/types';
 
 /** Wire format version: compact point tuples + optional short keys on nested payloads. */
 export const BOARD_WIRE_VERSION = 2 as const;
@@ -166,7 +162,10 @@ export function boardOpFromWireRecord(
   const opId = typeof data.opId === 'string' ? data.opId : undefined;
   const timestamp =
     typeof data.timestamp === 'number' ? data.timestamp : undefined;
-  const meta = { ...(opId != null ? { opId } : {}), ...(timestamp != null ? { timestamp } : {}) };
+  const meta = {
+    ...(opId != null ? { opId } : {}),
+    ...(timestamp != null ? { timestamp } : {}),
+  };
 
   if (type === 'add' || type === 'remove') {
     const objectsRaw = data.objects;
