@@ -46,12 +46,7 @@ function drawObjectFromWire(raw: Record<string, unknown>): DrawObject | null {
   const id = raw.id;
   const type = raw.type;
   if (typeof id !== 'string' || type !== 'path') return null;
-  const points =
-    'pts' in raw
-      ? fromWirePoints(raw.pts)
-      : 'points' in raw
-        ? fromLegacyPoints(raw.points)
-        : [];
+  const points = 'pts' in raw ? fromWirePoints(raw.pts) : [];
   const color = typeof raw.color === 'string' ? raw.color : '#000000';
   const size = typeof raw.size === 'number' ? raw.size : 1;
   const tombstone = Boolean(raw.tombstone);
@@ -66,24 +61,6 @@ function drawObjectFromWire(raw: Record<string, unknown>): DrawObject | null {
     tombstone,
     positionTimestamp,
   };
-}
-
-function fromLegacyPoints(pts: unknown): Point[] {
-  if (!Array.isArray(pts)) return [];
-  const out: Point[] = [];
-  for (const p of pts) {
-    if (
-      p &&
-      typeof p === 'object' &&
-      'x' in p &&
-      'y' in p &&
-      typeof (p as Point).x === 'number' &&
-      typeof (p as Point).y === 'number'
-    ) {
-      out.push({ x: (p as Point).x, y: (p as Point).y });
-    }
-  }
-  return out;
 }
 
 /** Plain object for JSON or MessagePack (same tree). */
@@ -140,18 +117,8 @@ function positionEntryFromWire(raw: Record<string, unknown>): {
   if (typeof id !== 'string') return null;
   const timestamp =
     typeof raw.timestamp === 'number' ? raw.timestamp : Date.now();
-  const points =
-    'pts' in raw
-      ? fromWirePoints(raw.pts)
-      : 'points' in raw
-        ? fromLegacyPoints(raw.points)
-        : [];
-  const previousPoints =
-    'pp' in raw
-      ? fromWirePoints(raw.pp)
-      : 'previousPoints' in raw
-        ? fromLegacyPoints(raw.previousPoints)
-        : undefined;
+  const points = 'pts' in raw ? fromWirePoints(raw.pts) : [];
+  const previousPoints = 'pp' in raw ? fromWirePoints(raw.pp) : undefined;
   return { id, points, timestamp, previousPoints };
 }
 
@@ -242,16 +209,10 @@ export function normalizeDecodedWireRecord(
   return data as unknown as HistoryOperation;
 }
 
-/**
- * JSON string for STOMP (SockJS is text-framed — binary/MessagePack needs raw WebSocket).
- */
 export function encodeBoardOpToJson(op: HistoryOperation): string {
   return JSON.stringify(boardOpToWireRecord(op));
 }
 
-/**
- * Parse message body: v2 compact wire or legacy canonical JSON (full `{x,y}` points).
- */
 export function decodeBoardOpFromJson(body: string): HistoryOperation {
   const data = JSON.parse(body) as Record<string, unknown>;
   return normalizeDecodedWireRecord(data);
