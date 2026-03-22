@@ -3,7 +3,7 @@ import { WebGLRenderer } from './WebGLRenderer';
 import { DrawModeEnum, type DrawObject, type Point } from './types/types';
 import { useCanvasStore } from './hooks/useCanvasStore';
 import { useCamera } from './hooks/useCamera';
-import { useMouseHandlers } from './hooks/useMouseHandlers';
+import { useMouseHandlers } from './hooks/mouse/useMouseHandlers';
 import Palette from './components/Palette';
 import { getCursor } from './utils/cursorUtils';
 import Toolbar from './components/Toolbar';

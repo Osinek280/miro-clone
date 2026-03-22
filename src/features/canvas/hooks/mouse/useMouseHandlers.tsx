@@ -3,12 +3,12 @@ import {
   DrawModeEnum,
   type Camera,
   type HistoryOperation,
-} from '../types/types';
-import { getCanvasPoint } from '../utils/cameraUtils';
+} from '../../types/types';
+import { getCanvasPoint } from '../../utils/cameraUtils';
 import { useDrawMode } from './modes/useDrawMode';
 import { useSelectMode } from './modes/useSelectMode';
 import { useGrabMode } from './modes/useGrabMode';
-import { useCanvasStore } from './useCanvasStore';
+import { useCanvasStore } from '../useCanvasStore';
 
 export function useMouseHandlers(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,

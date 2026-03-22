@@ -1,10 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
-import {
-  type DrawObject,
-  type HistoryOperation,
-  type Point,
-} from '../../types/types';
-import { useCanvasStore } from '../useCanvasStore';
+import type { DrawObject, HistoryOperation, Point } from '../../../types/types';
+import { useCanvasStore } from '../../useCanvasStore';
 
 export function useDrawMode(
   setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>,

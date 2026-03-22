@@ -1,11 +1,11 @@
 import { useLayoutEffect, useRef } from 'react';
-import type { Camera, HistoryOperation, Point } from '../../types/types';
+import type { Camera, HistoryOperation, Point } from '../../../types/types';
+import { useCanvasStore } from '../../useCanvasStore';
 import {
+  calcBoundingBox,
   findObjectAtPoint,
   getVisibleObjects,
-  calcBoundingBox,
-} from '../../utils/objectUtils';
-import { useCanvasStore } from '../useCanvasStore';
+} from '../../../utils/objectUtils';
 
 export function useSelectMode(
   cameraRef: React.RefObject<Camera>,
