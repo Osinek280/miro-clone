@@ -58,7 +58,6 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
     const state = useCanvasStore.getState();
     const currentSelectionBox = state.selectionBox;
     const currentIsMoving = state.isMoving;
-    const currentSelectedIds = state.selectedIds;
 
     if (currentSelectionBox) {
       setSelectionBox({ ...currentSelectionBox, end: point });
