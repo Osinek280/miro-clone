@@ -1,8 +1,5 @@
 import type { DrawObject, HistoryOperation, Point } from '../types/types';
 
-/** Wire format version: compact point tuples + optional short keys on nested payloads. */
-export const BOARD_WIRE_VERSION = 2 as const;
-
 type WirePoint = [number, number];
 
 function toWirePoints(pts: Point[]): WirePoint[] {
@@ -75,14 +72,12 @@ export function boardOpToWireRecord(
     case 'add':
     case 'remove':
       return {
-        v: BOARD_WIRE_VERSION,
         type: op.type,
         objects: op.objects.map(drawObjectToWire),
         ...meta,
       };
     case 'setPosition': {
       return {
-        v: BOARD_WIRE_VERSION,
         type: 'setPosition',
         positions: op.positions.map((p) => ({
           id: p.id,
@@ -97,7 +92,6 @@ export function boardOpToWireRecord(
     }
     case 'batch':
       return {
-        v: BOARD_WIRE_VERSION,
         type: 'batch',
         operations: op.operations.map((inner) => boardOpToWireRecord(inner)),
         ...meta,
@@ -199,14 +193,7 @@ type SetPositionFromWire = {
 export function normalizeDecodedWireRecord(
   data: Record<string, unknown>,
 ): HistoryOperation {
-  if (
-    data &&
-    typeof data === 'object' &&
-    Number(data.v) === BOARD_WIRE_VERSION
-  ) {
-    return boardOpFromWireRecord(data);
-  }
-  return data as unknown as HistoryOperation;
+  return boardOpFromWireRecord(data);
 }
 
 export function encodeBoardOpToJson(op: HistoryOperation): string {

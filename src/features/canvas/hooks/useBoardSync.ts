@@ -49,7 +49,7 @@ export function useBoardSync(
 
       onConnect: () => {
         console.log('connected');
-        client.subscribe('/topic/draw', (msg: { body: string }) => {
+        client.subscribe(`/topic/draw/${boardId}`, (msg: { body: string }) => {
           const data = decodeBoardOpFromJson(msg.body);
           const currentObjects = useCanvasStore.getState().objects;
           setObjects(applyOperation(currentObjects, data));
@@ -71,19 +71,22 @@ export function useBoardSync(
     return () => {
       client.deactivate();
     };
-  }, []);
+  }, [boardId]);
 
   /** Compact JSON on the wire ({@link encodeBoardOpToJson}); deflate needs native WS, not SockJS. */
-  const pushSyncedOperation = useCallback((op: HistoryOperation) => {
-    const client = stompClientRef.current;
-    if (client?.connected) {
-      client.publish({
-        destination: '/app/draw',
-        body: encodeBoardOpToJson(op),
-      });
-    }
-    useHistoryStore.getState().pushOperation(op);
-  }, []);
+  const pushSyncedOperation = useCallback(
+    (op: HistoryOperation) => {
+      const client = stompClientRef.current;
+      if (client?.connected) {
+        client.publish({
+          destination: `/app/draw/${boardId}`,
+          body: encodeBoardOpToJson(op),
+        });
+      }
+      useHistoryStore.getState().pushOperation(op);
+    },
+    [boardId],
+  );
 
   return { pushSyncedOperation };
 }
