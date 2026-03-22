@@ -1,6 +1,8 @@
+import { useLayoutEffect, useRef } from 'react';
 import type { Client } from '@stomp/stompjs';
 import { type DrawObject, type Point } from '../../types/types';
 import { useHistoryStore } from '../useHistoryStore';
+import { useCanvasStore } from '../useCanvasStore';
 
 export function useDrawMode(
   setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>,
@@ -10,9 +12,15 @@ export function useDrawMode(
   stompClientRef: React.RefObject<Client | null>,
 ) {
   const { pushOperation } = useHistoryStore.getState();
+  const strokePathRef = useRef<Point[]>([]);
+
+  useLayoutEffect(() => {
+    useCanvasStore.getState().setInProgressStrokeRef(strokePathRef);
+    return () => useCanvasStore.getState().setInProgressStrokeRef(null);
+  }, []);
 
   const onMouseDown = (point: Point) => {
-    return [point]; // initial path
+    strokePathRef.current = [point];
   };
 
   /** Threshold in radians – snap only when the angle is very close to a target value (~10°) */
@@ -50,12 +58,13 @@ export function useDrawMode(
     return bestDist <= SNAP_THRESHOLD_RAD ? bestTarget : angleRad;
   };
 
-  const onMouseMove = (
-    point: Point,
-    prev: Point[],
-    shiftKey = false,
-  ): Point[] => {
-    if (prev.length === 0) return [point];
+  const onMouseMove = (point: Point, shiftKey = false) => {
+    const prev = strokePathRef.current;
+    if (prev.length === 0) {
+      strokePathRef.current = [point];
+      useCanvasStore.getState().scheduleRedraw();
+      return;
+    }
     const last = prev[prev.length - 1];
     const dx = point.x - last.x;
     const dy = point.y - last.y;
@@ -67,7 +76,11 @@ export function useDrawMode(
       const totalDy = point.y - start.y;
       const totalDist = Math.sqrt(totalDx * totalDx + totalDy * totalDy);
 
-      if (totalDist === 0) return [start];
+      if (totalDist === 0) {
+        strokePathRef.current = [start];
+        useCanvasStore.getState().scheduleRedraw();
+        return;
+      }
 
       const angle = Math.atan2(totalDy, totalDx);
       const snappedAngle = snapAngleOnlyWhenClose(angle);
@@ -83,21 +96,26 @@ export function useDrawMode(
         const t = i / steps;
         linePoints.push({ x: start.x + snapDx * t, y: start.y + snapDy * t });
       }
-      return linePoints;
+      strokePathRef.current = linePoints;
+      useCanvasStore.getState().scheduleRedraw();
+      return;
     }
 
     const steps = Math.floor(distance / 0.25);
-    const newPoints: Point[] = [];
-    for (let i = 1; i <= steps; i++) {
-      newPoints.push({
-        x: last.x + (dx * i) / steps,
-        y: last.y + (dy * i) / steps,
-      });
+    if (steps > 0) {
+      for (let i = 1; i <= steps; i++) {
+        prev.push({
+          x: last.x + (dx * i) / steps,
+          y: last.y + (dy * i) / steps,
+        });
+      }
+      useCanvasStore.getState().scheduleRedraw();
     }
-    return [...prev, ...newPoints];
   };
 
-  const onMouseUp = (path: Point[]) => {
+  const onMouseUp = () => {
+    const path = strokePathRef.current;
+    strokePathRef.current = [];
     if (path.length === 0) return;
     const object: DrawObject = {
       id: crypto.randomUUID(),
@@ -121,7 +139,7 @@ export function useDrawMode(
         body: JSON.stringify({ type: 'add', object }),
       });
     }
-    setObjects((prev) => [...prev, object]);
+    setObjects((p) => [...p, object]);
     setCurrentPath([]);
   };
 

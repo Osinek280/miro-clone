@@ -48,7 +48,8 @@ export function useMouseHandlers(
       select.onMouseDown(point);
     } else if (mode === DrawModeEnum.Draw) {
       setIsDrawing(true);
-      setCurrentPath(draw.onMouseDown(point));
+      draw.onMouseDown(point);
+      useCanvasStore.getState().scheduleRedraw();
     }
   };
 
@@ -64,7 +65,7 @@ export function useMouseHandlers(
       mode === DrawModeEnum.Draw &&
       useCanvasStore.getState().isDrawing
     ) {
-      setCurrentPath((prev) => draw.onMouseMove(point, prev, e.shiftKey));
+      draw.onMouseMove(point, e.shiftKey);
     }
   };
 
@@ -77,7 +78,7 @@ export function useMouseHandlers(
     if (mode === DrawModeEnum.Select) {
       select.onMouseUp();
     } else if (mode === DrawModeEnum.Draw) {
-      draw.onMouseUp(useCanvasStore.getState().currentPath);
+      draw.onMouseUp();
       setIsDrawing(false);
     }
   };

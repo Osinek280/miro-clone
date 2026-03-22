@@ -164,6 +164,34 @@ function buildPointBuffer(
   return { buffer: new Float32Array(buf), pointCount };
 }
 
+/** Copy cached interleaved vertices into `all` at `byteOffset` floats, adding (ox, oy) to x,y. */
+function writeCachedGeometryWithOffset(
+  g: CachedGeometry,
+  all: Float32Array,
+  floatOffset: number,
+  ox: number,
+  oy: number,
+): void {
+  const buf = g.buffer;
+  const pc = g.pointCount;
+  if (ox === 0 && oy === 0) {
+    all.set(buf, floatOffset);
+    return;
+  }
+  let w = floatOffset;
+  for (let i = 0; i < pc; i++) {
+    const si = i * FPV;
+    all[w] = buf[si] + ox;
+    all[w + 1] = buf[si + 1] + oy;
+    all[w + 2] = buf[si + 2];
+    all[w + 3] = buf[si + 3];
+    all[w + 4] = buf[si + 4];
+    all[w + 5] = buf[si + 5];
+    all[w + 6] = buf[si + 6];
+    w += FPV;
+  }
+}
+
 // ── WebGLRenderer ─────────────────────────────────────────────────────────────
 
 export class WebGLRenderer {
@@ -246,6 +274,7 @@ export class WebGLRenderer {
     currentPath: Point[],
     currentColor: string,
     currentSize: number,
+    selectionDrag: { offset: Point; selectedIds: readonly string[] } | null,
   ): number {
     const gl = this.gl!;
 
@@ -294,6 +323,15 @@ export class WebGLRenderer {
 
     if (totalPoints === 0) return 0;
 
+    const dragSet =
+      selectionDrag &&
+      selectionDrag.selectedIds.length > 0 &&
+      (selectionDrag.offset.x !== 0 || selectionDrag.offset.y !== 0)
+        ? new Set(selectionDrag.selectedIds)
+        : null;
+    const ox = selectionDrag?.offset.x ?? 0;
+    const oy = selectionDrag?.offset.y ?? 0;
+
     // Single allocation for merged buffer
     const all = new Float32Array(totalPoints * FPV);
     let offset = 0;
@@ -305,7 +343,13 @@ export class WebGLRenderer {
 
     for (const obj of objects) {
       const g = this.geoCache.get(obj.id);
-      if (g) append(g);
+      if (!g) continue;
+      if (dragSet?.has(obj.id)) {
+        writeCachedGeometryWithOffset(g, all, offset, ox, oy);
+        offset += g.buffer.length;
+      } else {
+        append(g);
+      }
     }
     if (liveGeo) append(liveGeo); // live path on top
 
@@ -432,6 +476,7 @@ export class WebGLRenderer {
     currentSize: number,
     selectionBox: SelectionBox,
     selectedBoundingBox: SelectionBox,
+    selectionDrag: { offset: Point; selectedIds: readonly string[] } | null = null,
   ): void {
     const gl = this.gl;
     if (!gl || !this.program || !this.canvas) return;
@@ -443,6 +488,7 @@ export class WebGLRenderer {
       currentPath,
       currentColor,
       currentSize,
+      selectionDrag,
     );
 
     gl.clearColor(0, 0, 0, 0);
@@ -489,13 +535,24 @@ export class WebGLRenderer {
       );
     }
     if (selectedBoundingBox) {
-      this.drawRect(
-        selectedBoundingBox,
-        [0.23, 0.51, 0.96, 1.0],
-        zoom,
-        offsetX,
-        offsetY,
-      );
+      let box = selectedBoundingBox;
+      if (
+        selectionDrag &&
+        (selectionDrag.offset.x !== 0 || selectionDrag.offset.y !== 0)
+      ) {
+        const { x: dx, y: dy } = selectionDrag.offset;
+        box = {
+          start: {
+            x: selectedBoundingBox.start.x + dx,
+            y: selectedBoundingBox.start.y + dy,
+          },
+          end: {
+            x: selectedBoundingBox.end.x + dx,
+            y: selectedBoundingBox.end.y + dy,
+          },
+        };
+      }
+      this.drawRect(box, [0.23, 0.51, 0.96, 1.0], zoom, offsetX, offsetY);
     }
   }
 

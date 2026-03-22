@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { Camera, Point } from '../../types/types';
 import {
   findObjectAtPoint,
@@ -26,8 +26,16 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
   const { pushOperation } = useHistoryStore.getState();
   const lastMousePosRef = useRef<Point>({ x: 0, y: 0 });
   const dragStartRef = useRef<Point>({ x: 0, y: 0 });
+  const dragOffsetRef = useRef<Point>({ x: 0, y: 0 });
+
+  useLayoutEffect(() => {
+    useCanvasStore.getState().setSelectionDragOffsetRef(dragOffsetRef);
+    return () => useCanvasStore.getState().setSelectionDragOffsetRef(null);
+  }, []);
 
   const onMouseDown = (point: Point) => {
+    dragOffsetRef.current.x = 0;
+    dragOffsetRef.current.y = 0;
     const obj = findObjectAtPoint(point, objects, cameraRef.current.zoom);
     if (obj) {
       dragStartRef.current = point;
@@ -57,25 +65,10 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
     } else if (currentIsMoving) {
       const dx = point.x - lastMousePosRef.current.x;
       const dy = point.y - lastMousePosRef.current.y;
-      setObjects((prev) =>
-        prev.map((o) =>
-          currentSelectedIds.includes(o.id)
-            ? {
-                ...o,
-                points: o.points.map((p) => ({ x: p.x + dx, y: p.y + dy })),
-              }
-            : o,
-        ),
-      );
-      setSelectedBoundingBox((prev) =>
-        prev
-          ? {
-              start: { x: prev.start.x + dx, y: prev.start.y + dy },
-              end: { x: prev.end.x + dx, y: prev.end.y + dy },
-            }
-          : null,
-      );
+      dragOffsetRef.current.x += dx;
+      dragOffsetRef.current.y += dy;
       lastMousePosRef.current = point;
+      useCanvasStore.getState().scheduleRedraw();
     }
   };
 
@@ -98,29 +91,51 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
       );
       setSelectionBox(null);
     } else if (isMoving && selectedIds.length > 0) {
-      const start = dragStartRef.current;
-      const end = lastMousePosRef.current;
-      const dx = end.x - start.x;
-      const dy = end.y - start.y;
+      const dx = dragOffsetRef.current.x;
+      const dy = dragOffsetRef.current.y;
       if (dx !== 0 || dy !== 0) {
         const state = useCanvasStore.getState();
         pushOperation({
           type: 'setPosition',
           positions: selectedIds.map((id) => {
             const obj = state.objects.find((o) => o.id === id);
-            const currentPoints = obj?.points ?? []; // already moved by onMouseMove
+            const previousPoints = obj?.points ?? [];
             return {
               id,
-              points: currentPoints.map((p) => ({ ...p })),
-              timestamp: Date.now(),
-              previousPoints: currentPoints.map((p) => ({
-                x: p.x - dx,
-                y: p.y - dy,
+              points: previousPoints.map((p) => ({
+                x: p.x + dx,
+                y: p.y + dy,
               })),
+              timestamp: Date.now(),
+              previousPoints: previousPoints.map((p) => ({ ...p })),
             };
           }),
         });
+        setObjects((prev) =>
+          prev.map((o) =>
+            selectedIds.includes(o.id)
+              ? {
+                  ...o,
+                  points: o.points.map((p) => ({
+                    x: p.x + dx,
+                    y: p.y + dy,
+                  })),
+                  positionTimestamp: Date.now(),
+                }
+              : o,
+          ),
+        );
+        setSelectedBoundingBox((prev) =>
+          prev
+            ? {
+                start: { x: prev.start.x + dx, y: prev.start.y + dy },
+                end: { x: prev.end.x + dx, y: prev.end.y + dy },
+              }
+            : null,
+        );
       }
+      dragOffsetRef.current.x = 0;
+      dragOffsetRef.current.y = 0;
     }
     setIsMoving(false);
   };

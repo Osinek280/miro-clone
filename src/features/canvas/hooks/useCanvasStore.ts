@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { RefObject } from 'react';
+import type { MutableRefObject, RefObject } from 'react';
 import type { WebGLRenderer } from '../WebGLRenderer';
 import type { Camera, DrawObject, Point, SelectionBox } from '../types/types';
 import { getVisibleObjects } from '../utils/objectUtils';
@@ -33,6 +33,10 @@ export interface CanvasStoreState {
   // Refs (set once from Whiteboard)
   rendererRef: RefObject<WebGLRenderer | null> | null;
   cameraRef: RefObject<Camera> | null;
+  /** Live stroke while drawing — authoritative path; avoids O(n) store updates each move. */
+  inProgressStrokeRef: MutableRefObject<Point[]> | null;
+  /** Cumulative world offset while dragging selection (render-only until mouseUp). */
+  selectionDragOffsetRef: MutableRefObject<Point> | null;
 
   // Render state
   objects: DrawObject[];
@@ -53,7 +57,11 @@ export interface CanvasStoreState {
     rendererRef: RefObject<WebGLRenderer | null>,
     cameraRef: RefObject<Camera>,
   ) => void;
+  setInProgressStrokeRef: (r: MutableRefObject<Point[]> | null) => void;
+  setSelectionDragOffsetRef: (r: MutableRefObject<Point> | null) => void;
   renderFrame: () => void;
+  /** Coalesced redraw without mutating store slice (for ref-only preview updates). */
+  scheduleRedraw: () => void;
 
   // Setters (render-affecting ones call renderFrame after update)
   setObjects: (action: SetStateAction<DrawObject[]>) => void;
@@ -74,6 +82,8 @@ export interface CanvasStoreState {
 export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   rendererRef: null,
   cameraRef: null,
+  inProgressStrokeRef: null,
+  selectionDragOffsetRef: null,
 
   objects: [],
   currentPath: [],
@@ -92,6 +102,11 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     get().renderFrame();
   },
 
+  setInProgressStrokeRef: (r) => set({ inProgressStrokeRef: r }),
+  setSelectionDragOffsetRef: (r) => set({ selectionDragOffsetRef: r }),
+
+  scheduleRedraw: () => scheduleRender(get),
+
   renderFrame: () => {
     const {
       rendererRef,
@@ -102,13 +117,36 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       size,
       selectionBox,
       selectedBoundingBox,
+      isDrawing,
+      inProgressStrokeRef,
+      isMoving,
+      selectedIds,
+      selectionDragOffsetRef,
     } = get();
     const r = rendererRef?.current;
     const c = cameraRef?.current;
     if (!r || !c) return;
+
+    const liveStroke =
+      isDrawing && inProgressStrokeRef && inProgressStrokeRef.current.length > 0
+        ? inProgressStrokeRef.current
+        : currentPath;
+
+    const selectionDrag =
+      isMoving &&
+      selectedIds.length > 0 &&
+      selectionDragOffsetRef &&
+      (selectionDragOffsetRef.current.x !== 0 ||
+        selectionDragOffsetRef.current.y !== 0)
+        ? {
+            offset: selectionDragOffsetRef.current,
+            selectedIds,
+          }
+        : null;
+
     r.render(
       getVisibleObjects(objects),
-      currentPath,
+      liveStroke,
       c.zoom,
       c.offsetX,
       c.offsetY,
@@ -116,6 +154,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       size,
       selectionBox,
       selectedBoundingBox,
+      selectionDrag,
     );
   },
 
@@ -158,6 +197,8 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   setIsGrabbing: (value) => set({ isGrabbing: value }),
 
   clearSelection: () => {
+    const dragRef = get().selectionDragOffsetRef;
+    if (dragRef) dragRef.current = { x: 0, y: 0 };
     set({
       selectedIds: [],
       selectionBox: null,
