@@ -94,7 +94,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
       });
     }
 
-    history.pushOperation({
+    pushSyncedOperation({
       type: 'batch',
       operations: [
         { type: 'remove', objects: prev },

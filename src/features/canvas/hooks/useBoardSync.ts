@@ -5,6 +5,7 @@ import { useCanvasStore } from './useCanvasStore';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useHistoryStore } from './useHistoryStore';
+import { applyOperation } from '../utils/operations';
 
 export function useBoardSync(
   boardId: string,
@@ -12,11 +13,11 @@ export function useBoardSync(
 ) {
   const stompClientRef = useRef<Client | null>(null);
   const { pushOperation } = useHistoryStore.getState();
+  const { setObjects } = useCanvasStore.getState();
 
   useEffect(() => {
     async function loadIntialState() {
       const snapshot = await canvasApi.getSnapshot(boardId);
-      const { setObjects } = useCanvasStore.getState();
 
       console.log(snapshot.data);
 
@@ -46,7 +47,10 @@ export function useBoardSync(
         console.log('connected');
         client.subscribe('/topic/draw', (msg: any) => {
           console.log('test');
-          const data = JSON.parse(msg.body);
+          const data: HistoryOperation = JSON.parse(msg.body);
+          const currentObjects = useCanvasStore.getState().objects;
+
+          setObjects(applyOperation(currentObjects, data));
           console.log('parsed:', data);
         });
       },

@@ -36,7 +36,7 @@ export function useMouseHandlers(
     currentSize,
     pushSyncedOperation,
   );
-  const select = useSelectMode(cameraRef);
+  const select = useSelectMode(cameraRef, pushSyncedOperation);
   const grab = useGrabMode(cameraRef, targetCameraRef);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {

@@ -1,14 +1,16 @@
 import { useLayoutEffect, useRef } from 'react';
-import type { Camera, Point } from '../../types/types';
+import type { Camera, HistoryOperation, Point } from '../../types/types';
 import {
   findObjectAtPoint,
   getVisibleObjects,
   calcBoundingBox,
 } from '../../utils/objectUtils';
-import { useHistoryStore } from '../useHistoryStore';
 import { useCanvasStore } from '../useCanvasStore';
 
-export function useSelectMode(cameraRef: React.RefObject<Camera>) {
+export function useSelectMode(
+  cameraRef: React.RefObject<Camera>,
+  pushSyncedOperation: (op: HistoryOperation) => void,
+) {
   const {
     objects,
     setObjects,
@@ -23,7 +25,6 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
     clearSelection,
   } = useCanvasStore();
 
-  const { pushOperation } = useHistoryStore.getState();
   const lastMousePosRef = useRef<Point>({ x: 0, y: 0 });
   const dragStartRef = useRef<Point>({ x: 0, y: 0 });
   const dragOffsetRef = useRef<Point>({ x: 0, y: 0 });
@@ -94,7 +95,7 @@ export function useSelectMode(cameraRef: React.RefObject<Camera>) {
       const dy = dragOffsetRef.current.y;
       if (dx !== 0 || dy !== 0) {
         const state = useCanvasStore.getState();
-        pushOperation({
+        pushSyncedOperation({
           type: 'setPosition',
           positions: selectedIds.map((id) => {
             const obj = state.objects.find((o) => o.id === id);
