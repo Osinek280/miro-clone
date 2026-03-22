@@ -476,7 +476,10 @@ export class WebGLRenderer {
     currentSize: number,
     selectionBox: SelectionBox,
     selectedBoundingBox: SelectionBox,
-    selectionDrag: { offset: Point; selectedIds: readonly string[] } | null = null,
+    selectionDrag: {
+      offset: Point;
+      selectedIds: readonly string[];
+    } | null = null,
   ): void {
     const gl = this.gl;
     if (!gl || !this.program || !this.canvas) return;
