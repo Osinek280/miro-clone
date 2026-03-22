@@ -211,7 +211,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
 
   return (
     <div className="w-full h-full relative bg-gray-100">
-      <div className="absolute top-4 left-4 z-10 flex gap-2 flex-wrap z-40">
+      <div className="absolute top-4 left-4 flex gap-2 flex-wrap z-40">
         <button
           onClick={generateObjects}
           className="px-4 py-2 rounded bg-amber-500 text-white cursor-pointer"
