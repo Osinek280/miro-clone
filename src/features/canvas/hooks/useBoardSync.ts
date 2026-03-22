@@ -50,7 +50,6 @@ export function useBoardSync(
       onConnect: () => {
         console.log('connected');
         client.subscribe('/topic/draw', (msg: { body: string }) => {
-          console.log('msg', msg);
           const data = decodeBoardOpFromJson(msg.body);
           const currentObjects = useCanvasStore.getState().objects;
           setObjects(applyOperation(currentObjects, data));
