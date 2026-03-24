@@ -178,6 +178,7 @@ export class WebGLRenderer {
       gl,
       canvas,
       cursors,
+      color: currentColor,
       zoom,
       offsetX,
       offsetY,
