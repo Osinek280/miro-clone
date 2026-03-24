@@ -45,6 +45,7 @@ export interface CanvasStoreState {
   size: number;
   selectionBox: SelectionBox;
   selectedBoundingBox: SelectionBox;
+  cursors: Point[];
 
   // Interaction / selection
   selectedIds: string[];
@@ -70,6 +71,7 @@ export interface CanvasStoreState {
   setSize: (action: SetStateAction<number>) => void;
   setSelectionBox: (action: SetStateAction<SelectionBox>) => void;
   setSelectedBoundingBox: (action: SetStateAction<SelectionBox>) => void;
+  setCursors: (action: SetStateAction<Point[]>) => void;
 
   setSelectedIds: (action: SetStateAction<string[]>) => void;
   setIsDrawing: (value: boolean) => void;
@@ -91,6 +93,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   size: 10,
   selectionBox: null,
   selectedBoundingBox: null,
+  cursors: [],
 
   selectedIds: [],
   isDrawing: false,
@@ -104,7 +107,6 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
 
   setInProgressStrokeRef: (r) => set({ inProgressStrokeRef: r }),
   setSelectionDragOffsetRef: (r) => set({ selectionDragOffsetRef: r }),
-
   scheduleRedraw: () => scheduleRender(get),
 
   renderFrame: () => {
@@ -122,6 +124,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       isMoving,
       selectedIds,
       selectionDragOffsetRef,
+      cursors,
     } = get();
     const r = rendererRef?.current;
     const c = cameraRef?.current;
@@ -155,6 +158,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       selectionBox,
       selectedBoundingBox,
       selectionDrag,
+      cursors,
     );
   },
 
@@ -195,6 +199,11 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   setIsDrawing: (value) => set({ isDrawing: value }),
   setIsMoving: (value) => set({ isMoving: value }),
   setIsGrabbing: (value) => set({ isGrabbing: value }),
+
+  setCursors: (action) => {
+    set((s) => ({ cursors: resolveAction(action, s.cursors) }));
+    scheduleRender(get);
+  },
 
   clearSelection: () => {
     const dragRef = get().selectionDragOffsetRef;

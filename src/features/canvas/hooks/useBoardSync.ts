@@ -6,13 +6,14 @@ import { Client } from '@stomp/stompjs';
 import { useHistoryStore } from './useHistoryStore';
 import { applyOperation } from '../utils/operations';
 import throttle from 'lodash.throttle';
+import { tokenStorage } from '../../auth/utils/TokenStorage';
 
 export function useBoardSync(
   boardId: string,
   setCenterAtPoint: (point: Point, zoom: number) => void,
 ) {
   const stompClientRef = useRef<Client | null>(null);
-  const { setObjects } = useCanvasStore.getState();
+  const { setObjects, setCursors } = useCanvasStore.getState();
 
   useEffect(() => {
     async function loadIntialState() {
@@ -41,6 +42,9 @@ export function useBoardSync(
       debug: (str) => {
         console.log('STOMP:', str);
       },
+      connectHeaders: {
+        Authorization: `Bearer ${tokenStorage.get()}`,
+      },
 
       onConnect: () => {
         console.log('connected');
@@ -54,6 +58,7 @@ export function useBoardSync(
 
         client.subscribe(`/topic/cursor/${boardId}`, (msg) => {
           const cursor = decoder.decode(msg.binaryBody);
+          setCursors([JSON.parse(cursor)]);
         });
       },
 
