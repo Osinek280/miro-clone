@@ -3,13 +3,8 @@ import { canvasApi } from '../api/canvas.api';
 import type { HistoryOperation, Point } from '../types/types';
 import { useCanvasStore } from './useCanvasStore';
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { useHistoryStore } from './useHistoryStore';
 import { applyOperation } from '../utils/operations';
-import {
-  decodeBoardOpFromJson,
-  encodeBoardOpToJson,
-} from '../utils/boardWireCodec';
 
 export function useBoardSync(
   boardId: string,
@@ -40,8 +35,7 @@ export function useBoardSync(
 
   useEffect(() => {
     const client = new Client({
-      webSocketFactory: () =>
-        new SockJS('http://localhost:8080/ws') as unknown as WebSocket,
+      brokerURL: 'ws://localhost:8080/ws',
       reconnectDelay: 3000,
       debug: (str) => {
         console.log('STOMP:', str);
@@ -49,10 +43,12 @@ export function useBoardSync(
 
       onConnect: () => {
         console.log('connected');
-        client.subscribe(`/topic/draw/${boardId}`, (msg: { body: string }) => {
-          const data = decodeBoardOpFromJson(msg.body);
+        const decoder = new TextDecoder();
+        client.subscribe(`/topic/draw/${boardId}`, (msg) => {
+          const op = decoder.decode(msg.binaryBody);
+          console.log(JSON.parse(op));
           const currentObjects = useCanvasStore.getState().objects;
-          setObjects(applyOperation(currentObjects, data));
+          setObjects(applyOperation(currentObjects, JSON.parse(op)));
         });
       },
 
@@ -73,14 +69,13 @@ export function useBoardSync(
     };
   }, [boardId]);
 
-  /** Compact JSON on the wire ({@link encodeBoardOpToJson}); deflate needs native WS, not SockJS. */
   const pushSyncedOperation = useCallback(
     (op: HistoryOperation) => {
       const client = stompClientRef.current;
       if (client?.connected) {
         client.publish({
           destination: `/app/draw/${boardId}`,
-          body: encodeBoardOpToJson(op),
+          binaryBody: new TextEncoder().encode(JSON.stringify(op)),
         });
       }
       useHistoryStore.getState().pushOperation(op);

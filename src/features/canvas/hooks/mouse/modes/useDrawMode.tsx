@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import type { DrawObject, HistoryOperation, Point } from '../../../types/types';
+import { roundPoint } from '../../../utils/cameraUtils';
 import { useCanvasStore } from '../../useCanvasStore';
 
 export function useDrawMode(
@@ -91,7 +92,12 @@ export function useDrawMode(
       const linePoints: Point[] = [start];
       for (let i = 1; i <= steps; i++) {
         const t = i / steps;
-        linePoints.push({ x: start.x + snapDx * t, y: start.y + snapDy * t });
+        linePoints.push(
+          roundPoint({
+            x: start.x + snapDx * t,
+            y: start.y + snapDy * t,
+          }),
+        );
       }
       strokePathRef.current = linePoints;
       useCanvasStore.getState().scheduleRedraw();
@@ -101,10 +107,12 @@ export function useDrawMode(
     const steps = Math.floor(distance / 0.25);
     if (steps > 0) {
       for (let i = 1; i <= steps; i++) {
-        prev.push({
-          x: last.x + (dx * i) / steps,
-          y: last.y + (dy * i) / steps,
-        });
+        prev.push(
+          roundPoint({
+            x: last.x + (dx * i) / steps,
+            y: last.y + (dy * i) / steps,
+          }),
+        );
       }
       useCanvasStore.getState().scheduleRedraw();
     }
@@ -117,7 +125,7 @@ export function useDrawMode(
     const object: DrawObject = {
       id: crypto.randomUUID(),
       type: 'path',
-      points: path,
+      points: path.map(roundPoint),
       color: currentColor,
       size: currentSize,
       tombstone: false,

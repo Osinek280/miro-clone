@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import type { Camera, HistoryOperation, Point } from '../../../types/types';
 import { useCanvasStore } from '../../useCanvasStore';
+import { roundPoint } from '../../../utils/cameraUtils';
 import {
   calcBoundingBox,
   findObjectAtPoint,
@@ -102,10 +103,9 @@ export function useSelectMode(
             const previousPoints = obj?.points ?? [];
             return {
               id,
-              points: previousPoints.map((p) => ({
-                x: p.x + dx,
-                y: p.y + dy,
-              })),
+              points: previousPoints.map((p) =>
+                roundPoint({ x: p.x + dx, y: p.y + dy }),
+              ),
               timestamp: Date.now(),
               previousPoints: previousPoints.map((p) => ({ ...p })),
             };
@@ -116,10 +116,9 @@ export function useSelectMode(
             selectedIds.includes(o.id)
               ? {
                   ...o,
-                  points: o.points.map((p) => ({
-                    x: p.x + dx,
-                    y: p.y + dy,
-                  })),
+                  points: o.points.map((p) =>
+                    roundPoint({ x: p.x + dx, y: p.y + dy }),
+                  ),
                   positionTimestamp: Date.now(),
                 }
               : o,
@@ -128,8 +127,14 @@ export function useSelectMode(
         setSelectedBoundingBox((prev) =>
           prev
             ? {
-                start: { x: prev.start.x + dx, y: prev.start.y + dy },
-                end: { x: prev.end.x + dx, y: prev.end.y + dy },
+                start: roundPoint({
+                  x: prev.start.x + dx,
+                  y: prev.start.y + dy,
+                }),
+                end: roundPoint({
+                  x: prev.end.x + dx,
+                  y: prev.end.y + dy,
+                }),
               }
             : null,
         );

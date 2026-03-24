@@ -104,3 +104,13 @@ export interface BatchOp extends OpMeta {
 export type HistoryOperation =
   // | AddObjectOp
   RemoveObjectsOp | AddObjectsOp | SetPositionOp | BatchOp;
+
+export interface DrawObjectWire {
+  id: string;
+  type: 'path';
+  pointsEncoded: Uint8Array; // delta-encoded int16
+  color: string;
+  size: number;
+  tombstone: boolean;
+  positionTimestamp: number;
+}
