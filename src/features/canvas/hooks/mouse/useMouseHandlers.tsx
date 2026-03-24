@@ -3,6 +3,7 @@ import {
   DrawModeEnum,
   type Camera,
   type HistoryOperation,
+  type Point,
 } from '../../types/types';
 import { getCanvasPoint } from '../../utils/cameraUtils';
 import { useDrawMode } from './modes/useDrawMode';
@@ -17,6 +18,7 @@ export function useMouseHandlers(
   mode: DrawModeEnum,
   setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>,
   pushSyncedOperation: (op: HistoryOperation) => void,
+  pushSyncedCursor: (cursor: Point) => void,
 ) {
   const {
     setCurrentPath,
@@ -57,6 +59,7 @@ export function useMouseHandlers(
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    pushSyncedCursor(getCanvasPoint(e, canvasRef, cameraRef.current));
     if (useCanvasStore.getState().isGrabbing) {
       grab.onMouseMove(e);
       return;

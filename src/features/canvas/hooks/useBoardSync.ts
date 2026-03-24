@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { canvasApi } from '../api/canvas.api';
 import type { HistoryOperation, Point } from '../types/types';
 import { useCanvasStore } from './useCanvasStore';
 import { Client } from '@stomp/stompjs';
 import { useHistoryStore } from './useHistoryStore';
 import { applyOperation } from '../utils/operations';
+import throttle from 'lodash.throttle';
 
 export function useBoardSync(
   boardId: string,
@@ -50,6 +51,10 @@ export function useBoardSync(
           const currentObjects = useCanvasStore.getState().objects;
           setObjects(applyOperation(currentObjects, JSON.parse(op)));
         });
+
+        client.subscribe(`/topic/cursor/${boardId}`, (msg) => {
+          const cursor = decoder.decode(msg.binaryBody);
+        });
       },
 
       onWebSocketError: (error) => console.error('WebSocket error', error),
@@ -83,5 +88,23 @@ export function useBoardSync(
     [boardId],
   );
 
-  return { pushSyncedOperation };
+  const pushSyncedCursor = useCallback(
+    (cursor: Point) => {
+      const client = stompClientRef.current;
+      if (client?.connected) {
+        client.publish({
+          destination: `/app/cursor/${boardId}`,
+          binaryBody: new TextEncoder().encode(JSON.stringify(cursor)),
+        });
+      }
+    },
+    [boardId],
+  );
+
+  const pushSyncedCursorThrottled = useMemo(
+    () => throttle(pushSyncedCursor, 50), // 50ms = max 20 fps
+    [pushSyncedCursor],
+  );
+
+  return { pushSyncedOperation, pushSyncedCursorThrottled };
 }
