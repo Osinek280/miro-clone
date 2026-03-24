@@ -61,6 +61,7 @@ export class WebGLRenderer {
     if (!this.canvas || !this.gl) return;
     const w = this.canvas.clientWidth;
     const h = this.canvas.clientHeight;
+    if (w === 0 || h === 0) return;
     if (this.canvas.width !== w || this.canvas.height !== h) {
       this.canvas.width = w;
       this.canvas.height = h;
