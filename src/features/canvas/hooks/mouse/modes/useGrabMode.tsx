@@ -1,5 +1,5 @@
-import type { Camera } from '../../types/types';
-import { useCanvasStore } from '../useCanvasStore';
+import type { Camera } from '../../../types/types';
+import { useCanvasStore } from '../../useCanvasStore';
 
 export function useGrabMode(
   cameraRef: React.RefObject<Camera>,

@@ -1,10 +1,15 @@
 import { useEffect, useRef } from 'react';
-import { DrawModeEnum, type Camera } from '../types/types';
-import { getCanvasPoint } from '../utils/cameraUtils';
+import {
+  DrawModeEnum,
+  type Camera,
+  type HistoryOperation,
+  type Point,
+} from '../../types/types';
+import { getCanvasPoint } from '../../utils/cameraUtils';
 import { useDrawMode } from './modes/useDrawMode';
 import { useSelectMode } from './modes/useSelectMode';
 import { useGrabMode } from './modes/useGrabMode';
-import { useCanvasStore } from './useCanvasStore';
+import { useCanvasStore } from '../useCanvasStore';
 
 export function useMouseHandlers(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -12,6 +17,8 @@ export function useMouseHandlers(
   targetCameraRef: React.RefObject<Camera>,
   mode: DrawModeEnum,
   setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>,
+  pushSyncedOperation: (op: HistoryOperation) => void,
+  pushSyncedCursor: (cursor: Point) => void,
 ) {
   const {
     setCurrentPath,
@@ -29,8 +36,9 @@ export function useMouseHandlers(
     setObjects,
     currentColor,
     currentSize,
+    pushSyncedOperation,
   );
-  const select = useSelectMode(cameraRef);
+  const select = useSelectMode(cameraRef, pushSyncedOperation);
   const grab = useGrabMode(cameraRef, targetCameraRef);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -45,11 +53,13 @@ export function useMouseHandlers(
       select.onMouseDown(point);
     } else if (mode === DrawModeEnum.Draw) {
       setIsDrawing(true);
-      setCurrentPath(draw.onMouseDown(point));
+      draw.onMouseDown(point);
+      useCanvasStore.getState().scheduleRedraw();
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    pushSyncedCursor(getCanvasPoint(e, canvasRef, cameraRef.current));
     if (useCanvasStore.getState().isGrabbing) {
       grab.onMouseMove(e);
       return;
@@ -61,7 +71,7 @@ export function useMouseHandlers(
       mode === DrawModeEnum.Draw &&
       useCanvasStore.getState().isDrawing
     ) {
-      setCurrentPath((prev) => draw.onMouseMove(point, prev, e.shiftKey));
+      draw.onMouseMove(point, e.shiftKey);
     }
   };
 
@@ -74,7 +84,7 @@ export function useMouseHandlers(
     if (mode === DrawModeEnum.Select) {
       select.onMouseUp();
     } else if (mode === DrawModeEnum.Draw) {
-      draw.onMouseUp(useCanvasStore.getState().currentPath);
+      draw.onMouseUp();
       setIsDrawing(false);
     }
   };

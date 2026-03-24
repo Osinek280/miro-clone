@@ -1,17 +1,18 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { WebGLRenderer } from './WebGLRenderer';
-import { DrawModeEnum, type DrawObject } from './types/types';
+import { DrawModeEnum, type DrawObject, type Point } from './types/types';
 import { useCanvasStore } from './hooks/useCanvasStore';
 import { useCamera } from './hooks/useCamera';
-import { useMouseHandlers } from './hooks/useMouseHandlers';
+import { useMouseHandlers } from './hooks/mouse/useMouseHandlers';
 import Palette from './components/Palette';
 import { getCursor } from './utils/cursorUtils';
 import Toolbar from './components/Toolbar';
 import { Zoom } from './components/Zoom';
 import { Grid } from './grid/Grid';
 import { useHistoryStore } from './hooks/useHistoryStore';
+import { useBoardSync } from './hooks/useBoardSync';
 
-export default function Whiteboard() {
+export default function Whiteboard({ boardId }: { boardId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
   const cameraRef = useRef({ zoom: 1, offsetX: 0, offsetY: 0 });
@@ -30,7 +31,40 @@ export default function Whiteboard() {
     handleZoomReset,
     animateCameraRef,
     displayZoom,
+    setDisplayZoom,
   } = useCamera(canvasRef, cameraRef, targetCameraRef);
+
+  const setCenterAtPoint = useCallback(
+    (point: Point, zoom: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas || !rendererRef.current) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+
+      const offsetX = centerX - point.x * zoom;
+      const offsetY = centerY - point.y * zoom;
+
+      cameraRef.current.zoom = zoom;
+      cameraRef.current.offsetX = offsetX;
+      cameraRef.current.offsetY = offsetY;
+
+      targetCameraRef.current.zoom = zoom;
+      targetCameraRef.current.offsetX = offsetX;
+      targetCameraRef.current.offsetY = offsetY;
+
+      setDisplayZoom(zoom);
+
+      useCanvasStore.getState().renderFrame();
+    },
+    [setDisplayZoom],
+  );
+
+  const { pushSyncedOperation, pushSyncedCursorThrottled } = useBoardSync(
+    boardId,
+    setCenterAtPoint,
+  );
 
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
@@ -38,6 +72,8 @@ export default function Whiteboard() {
     targetCameraRef,
     mode,
     setMode,
+    pushSyncedOperation,
+    pushSyncedCursorThrottled,
   );
 
   const generateObjects = () => {
@@ -49,7 +85,7 @@ export default function Whiteboard() {
       const y = Math.random() * 5000 - 2500;
 
       arr.push({
-        id: `obj-${i}`,
+        id: crypto.randomUUID(),
         points: [
           { x, y },
           { x: x + Math.random() * 50, y: y + Math.random() * 50 },
@@ -62,11 +98,11 @@ export default function Whiteboard() {
       });
     }
 
-    history.pushOperation({
+    pushSyncedOperation({
       type: 'batch',
       operations: [
         { type: 'remove', objects: prev },
-        { type: 'addMany', objects: arr },
+        { type: 'add', objects: arr },
       ],
     });
     setObjects(arr);
@@ -100,22 +136,8 @@ export default function Whiteboard() {
   }, []);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !rendererRef.current) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-
-    // Set initial camera offset so (0,0) is at center
-    cameraRef.current.offsetX = centerX;
-    cameraRef.current.offsetY = centerY;
-
-    targetCameraRef.current.offsetX = centerX;
-    targetCameraRef.current.offsetY = centerY;
-
-    useCanvasStore.getState().renderFrame();
-  }, []);
+    console.log(objects);
+  }, [objects]);
 
   const animateCamera = useCallback(() => {
     if (animateCameraRef.current) {
@@ -193,7 +215,7 @@ export default function Whiteboard() {
 
   return (
     <div className="w-full h-full relative bg-gray-100">
-      <div className="absolute top-4 left-4 z-10 flex gap-2 flex-wrap z-40">
+      <div className="absolute top-4 left-4 flex gap-2 flex-wrap z-40">
         <button
           onClick={generateObjects}
           className="px-4 py-2 rounded bg-amber-500 text-white cursor-pointer"

@@ -1,5 +1,13 @@
 import type { RefObject } from 'react';
 import type { Camera, Point } from '../types/types';
+import { POINT_SCALE } from '../constants/pointPrecision';
+
+export function roundPoint(p: Point): Point {
+  return {
+    x: Math.round(p.x * POINT_SCALE) / POINT_SCALE,
+    y: Math.round(p.y * POINT_SCALE) / POINT_SCALE,
+  };
+}
 
 function screenToWorld(
   screenX: number,
@@ -10,10 +18,10 @@ function screenToWorld(
   const canvas = canvasRef.current;
   if (!canvas) return { x: 0, y: 0 };
   const rect = canvas.getBoundingClientRect();
-  return {
+  return roundPoint({
     x: (screenX - rect.left - camera.offsetX) / camera.zoom,
     y: (screenY - rect.top - camera.offsetY) / camera.zoom,
-  };
+  });
 }
 
 export function worldToScreen(

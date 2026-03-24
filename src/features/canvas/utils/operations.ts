@@ -1,0 +1,182 @@
+import type {
+  AddObjectsOp,
+  BatchOp,
+  DrawObject,
+  HistoryOperation,
+  RemoveObjectsOp,
+  SetPositionOp,
+} from '../types/types';
+
+function getTimestamp(): number {
+  return Date.now();
+}
+
+/** Ensure op has opId and timestamp; mutate clone. */
+export function stampOp<T extends HistoryOperation>(op: T): T {
+  const o = structuredClone(op) as T;
+  if (o.opId == null) (o as { opId: string }).opId = crypto.randomUUID();
+  if (o.timestamp == null)
+    (o as { timestamp: number }).timestamp = getTimestamp();
+  return o;
+}
+
+/** Flatten batch into single ops with timestamps, sorted by timestamp (for deterministic merge). */
+export function flattenBatch(batch: BatchOp): HistoryOperation[] {
+  const baseTs = batch.timestamp ?? getTimestamp();
+  const out: HistoryOperation[] = [];
+  let index = 0;
+
+  function collect(o: HistoryOperation) {
+    if (o.type === 'batch') {
+      (o.operations as HistoryOperation[]).forEach(collect);
+    } else {
+      const stamped = stampOp({
+        ...structuredClone(o),
+        timestamp:
+          (o as { timestamp?: number }).timestamp ?? baseTs + index++ * 0.001,
+      } as HistoryOperation);
+      out.push(stamped);
+    }
+  }
+  (batch.operations as HistoryOperation[]).forEach(collect);
+
+  out.sort(
+    (a, b) =>
+      (a.timestamp ?? 0) - (b.timestamp ?? 0) ||
+      (a.opId ?? '').localeCompare(b.opId ?? ''),
+  );
+  return out;
+}
+
+// ─── Apply (tombstone = soft delete, setPosition = LWW) ────────────────────────
+
+/** Tombstone: mark objects as deleted instead of removing from array. */
+function applyRemove(
+  children: DrawObject[],
+  op: RemoveObjectsOp,
+): DrawObject[] {
+  const ids = new Set(op.objects.map((o) => o.id));
+  return children.map((c) => (ids.has(c.id) ? { ...c, tombstone: true } : c));
+}
+
+function applyAddMany(children: DrawObject[], op: AddObjectsOp): DrawObject[] {
+  let result = children;
+  for (const o of op.objects) {
+    const obj = structuredClone(o);
+    obj.tombstone = false;
+    obj.positionTimestamp = obj.positionTimestamp ?? 0;
+
+    // Upsert by id: either replace existing object (restore) or append.
+    const idx = result.findIndex((c) => c.id === obj.id);
+    if (idx >= 0) {
+      const out = [...result];
+      out[idx] = obj;
+      result = out;
+    } else {
+      result = [...result, obj];
+    }
+  }
+  return result;
+}
+
+/** LWW-Register: apply position only if op timestamp >= object's positionTimestamp. */
+function applySetPosition(
+  children: DrawObject[],
+  op: SetPositionOp,
+): DrawObject[] {
+  return children.map((c) => {
+    const entry = op.positions.find((p) => p.id === c.id);
+    if (!entry) return c;
+    const objTs = c.positionTimestamp ?? 0;
+    if (entry.timestamp < objTs) return c;
+    return {
+      ...c,
+      points: entry.points.map((p) => ({ ...p })),
+      positionTimestamp: entry.timestamp,
+    };
+  });
+}
+
+export function applyOperation(
+  children: DrawObject[],
+  op: HistoryOperation,
+): DrawObject[] {
+  switch (op.type) {
+    case 'remove':
+      return applyRemove(children, op);
+    case 'add':
+      return applyAddMany(children, op);
+    case 'setPosition':
+      return applySetPosition(children, op);
+    case 'batch': {
+      const flat = flattenBatch(op);
+      return flat.reduce((acc, o) => applyOperation(acc, o), children);
+    }
+    default:
+      return children;
+  }
+}
+
+// ─── Inverse (for undo) ──────────────────────────────────────────────────────
+
+export function getInverse(op: HistoryOperation): HistoryOperation {
+  const meta = { opId: crypto.randomUUID(), timestamp: getTimestamp() };
+  switch (op.type) {
+    case 'remove':
+      return {
+        ...meta,
+        type: 'add',
+        objects: op.objects.map((o) => ({ ...o, tombstone: false })),
+      };
+    case 'add':
+      return { ...meta, type: 'remove', objects: op.objects };
+    case 'setPosition':
+      return {
+        ...meta,
+        type: 'setPosition',
+        positions: op.positions.map((p) => ({
+          id: p.id,
+          points: p.previousPoints ?? p.points,
+          timestamp: meta.timestamp,
+          previousPoints: p.points,
+        })),
+      };
+    case 'batch':
+      return {
+        ...meta,
+        type: 'batch',
+        operations: op.operations.map(getInverse).reverse(),
+      };
+    default:
+      return op;
+  }
+}
+
+// ─── Operational transform / merge (concurrent ops) ───────────────────────────
+
+/** Merge two operation streams by timestamp; deterministic order for LWW and tombstones. */
+export function mergeOperations(
+  local: HistoryOperation[],
+  remote: HistoryOperation[],
+): HistoryOperation[] {
+  const combined = [...local, ...remote].filter(
+    (o): o is HistoryOperation & { timestamp: number; opId: string } =>
+      o != null &&
+      typeof (o as { timestamp?: number }).timestamp === 'number' &&
+      typeof (o as { opId?: string }).opId === 'string',
+  );
+  combined.sort(
+    (a, b) =>
+      a.timestamp - b.timestamp ||
+      (a.opId as string).localeCompare(b.opId as string),
+  );
+  return combined;
+}
+
+/** Apply a list of operations in order (e.g. after merge). */
+export function applyOperations(
+  children: DrawObject[],
+  ops: HistoryOperation[],
+): DrawObject[] {
+  return ops.reduce((acc, op) => applyOperation(acc, op), children);
+}

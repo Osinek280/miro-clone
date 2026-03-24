@@ -73,11 +73,6 @@ export interface OpMeta {
   timestamp?: number;
 }
 
-export interface AddObjectOp extends OpMeta {
-  type: 'add';
-  object: DrawObject;
-}
-
 export interface RemoveObjectsOp extends OpMeta {
   type: 'remove';
   /** Objects being removed (kept for undo restore). */
@@ -85,7 +80,7 @@ export interface RemoveObjectsOp extends OpMeta {
 }
 
 export interface AddObjectsOp extends OpMeta {
-  type: 'addMany';
+  type: 'add';
   objects: DrawObject[];
 }
 
@@ -107,8 +102,15 @@ export interface BatchOp extends OpMeta {
 }
 
 export type HistoryOperation =
-  | AddObjectOp
-  | RemoveObjectsOp
-  | AddObjectsOp
-  | SetPositionOp
-  | BatchOp;
+  // | AddObjectOp
+  RemoveObjectsOp | AddObjectsOp | SetPositionOp | BatchOp;
+
+export interface DrawObjectWire {
+  id: string;
+  type: 'path';
+  pointsEncoded: Uint8Array; // delta-encoded int16
+  color: string;
+  size: number;
+  tombstone: boolean;
+  positionTimestamp: number;
+}
