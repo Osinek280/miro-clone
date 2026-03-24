@@ -7,12 +7,14 @@ import { useHistoryStore } from './useHistoryStore';
 import { applyOperation } from '../utils/operations';
 import throttle from 'lodash.throttle';
 import { tokenStorage } from '../../auth/utils/TokenStorage';
+import { useAuthStore } from '../../auth/store/auth.store';
 
 export function useBoardSync(
   boardId: string,
   setCenterAtPoint: (point: Point, zoom: number) => void,
 ) {
   const stompClientRef = useRef<Client | null>(null);
+  const userId = useAuthStore((s) => s.user?.id);
   const { setObjects, setCursors } = useCanvasStore.getState();
 
   useEffect(() => {
@@ -57,8 +59,10 @@ export function useBoardSync(
         });
 
         client.subscribe(`/topic/cursor/${boardId}`, (msg) => {
-          const cursor = decoder.decode(msg.binaryBody);
-          setCursors([JSON.parse(cursor)]);
+          const data = JSON.parse(decoder.decode(msg.binaryBody));
+          if (data.userId === userId) return;
+          console.log(data);
+          setCursors([data.cursor]);
         });
       },
 
@@ -97,9 +101,13 @@ export function useBoardSync(
     (cursor: Point) => {
       const client = stompClientRef.current;
       if (client?.connected) {
+        const CursorMessage = {
+          userId,
+          cursor,
+        };
         client.publish({
           destination: `/app/cursor/${boardId}`,
-          binaryBody: new TextEncoder().encode(JSON.stringify(cursor)),
+          binaryBody: new TextEncoder().encode(JSON.stringify(CursorMessage)),
         });
       }
     },
