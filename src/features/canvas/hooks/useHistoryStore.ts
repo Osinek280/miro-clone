@@ -57,7 +57,7 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
     if (undoStack.length === 0) return null;
 
     const op = undoStack[undoStack.length - 1];
-    const inverse = getInverse(op);
+    const inverse = getInverse(op, currentChildren);
     const nextChildren = applyOperation([...currentChildren], inverse);
 
     set((s) => ({

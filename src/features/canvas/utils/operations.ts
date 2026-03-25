@@ -56,7 +56,7 @@ function applyRemove(
   children: DrawObject[],
   op: RemoveObjectsOp,
 ): DrawObject[] {
-  const ids = new Set(op.objects.map((o) => o.id));
+  const ids = new Set(op.ids);
   return children.map((c) => (ids.has(c.id) ? { ...c, tombstone: true } : c));
 }
 
@@ -120,17 +120,24 @@ export function applyOperation(
 
 // ─── Inverse (for undo) ──────────────────────────────────────────────────────
 
-export function getInverse(op: HistoryOperation): HistoryOperation {
+export function getInverse(
+  op: HistoryOperation,
+  children: DrawObject[] = [],
+): HistoryOperation {
   const meta = { opId: crypto.randomUUID(), timestamp: getTimestamp() };
   switch (op.type) {
-    case 'remove':
+    case 'remove': {
+      const idSet = new Set(op.ids);
       return {
         ...meta,
         type: 'add',
-        objects: op.objects.map((o) => ({ ...o, tombstone: false })),
+        objects: children
+          .filter((o) => idSet.has(o.id))
+          .map((o) => ({ ...o, tombstone: false })),
       };
+    }
     case 'add':
-      return { ...meta, type: 'remove', objects: op.objects };
+      return { ...meta, type: 'remove', ids: op.objects.map((o) => o.id) };
     case 'translate':
       return {
         ...meta,
@@ -143,7 +150,9 @@ export function getInverse(op: HistoryOperation): HistoryOperation {
       return {
         ...meta,
         type: 'batch',
-        operations: op.operations.map(getInverse).reverse(),
+        operations: op.operations
+          .map((batchOp) => getInverse(batchOp, children))
+          .reverse(),
       };
     default:
       return op;

@@ -76,7 +76,8 @@ export interface OpMeta {
 export interface RemoveObjectsOp extends OpMeta {
   type: 'remove';
   /** Objects being removed (kept for undo restore). */
-  objects: DrawObject[];
+  ids: string[];
+  // objects: DrawObject[];
 }
 
 export interface AddObjectsOp extends OpMeta {

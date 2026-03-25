@@ -105,7 +105,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
           opId: crypto.randomUUID(),
           timestamp: Date.now(),
           type: 'remove',
-          objects: prev,
+          ids: prev.map((o) => o.id),
         },
         {
           opId: crypto.randomUUID(),
@@ -201,7 +201,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
             opId: crypto.randomUUID(),
             timestamp: Date.now(),
             type: 'remove',
-            objects: toRemove,
+            ids: toRemove.map((o) => o.id),
           });
           setObjects((prev) =>
             prev.map((o) =>
