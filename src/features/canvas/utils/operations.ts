@@ -13,13 +13,13 @@ function getTimestamp(): number {
 }
 
 /** Ensure op has opId and timestamp; mutate clone. */
-export function stampOp<T extends HistoryOperation>(op: T): T {
-  const o = structuredClone(op) as T;
-  if (o.opId == null) (o as { opId: string }).opId = crypto.randomUUID();
-  if (o.timestamp == null)
-    (o as { timestamp: number }).timestamp = getTimestamp();
-  return o;
-}
+// export function stampOp<T extends HistoryOperation>(op: T): T {
+//   const o = structuredClone(op) as T;
+//   if (o.opId == null) (o as { opId: string }).opId = crypto.randomUUID();
+//   if (o.timestamp == null)
+//     (o as { timestamp: number }).timestamp = getTimestamp();
+//   return o;
+// }
 
 /** Flatten batch into single ops with timestamps, sorted by timestamp (for deterministic merge). */
 export function flattenBatch(batch: BatchOp): HistoryOperation[] {
@@ -31,11 +31,11 @@ export function flattenBatch(batch: BatchOp): HistoryOperation[] {
     if (o.type === 'batch') {
       (o.operations as HistoryOperation[]).forEach(collect);
     } else {
-      const stamped = stampOp({
+      const stamped = {
         ...structuredClone(o),
         timestamp:
           (o as { timestamp?: number }).timestamp ?? baseTs + index++ * 0.001,
-      } as HistoryOperation);
+      } as HistoryOperation;
       out.push(stamped);
     }
   }
@@ -81,10 +81,7 @@ function applyAddMany(children: DrawObject[], op: AddObjectsOp): DrawObject[] {
 }
 
 /** LWW: apply translation only if op timestamp >= object's positionTimestamp. */
-function applyTranslate(
-  children: DrawObject[],
-  op: TranslateOp,
-): DrawObject[] {
+function applyTranslate(children: DrawObject[], op: TranslateOp): DrawObject[] {
   const idSet = new Set(op.ids);
   const opTs = op.timestamp ?? 0;
   return children.map((c) => {

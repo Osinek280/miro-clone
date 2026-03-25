@@ -69,8 +69,8 @@ export interface RenderState {
 
 /** Base: every operation has unique id and timestamp (assigned by store if omitted). */
 export interface OpMeta {
-  opId?: string;
-  timestamp?: number;
+  opId: string;
+  timestamp: number;
 }
 
 export interface RemoveObjectsOp extends OpMeta {

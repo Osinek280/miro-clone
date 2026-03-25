@@ -97,10 +97,22 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
     }
 
     pushSyncedOperation({
+      opId: crypto.randomUUID(),
+      timestamp: Date.now(),
       type: 'batch',
       operations: [
-        { type: 'remove', objects: prev },
-        { type: 'add', objects: arr },
+        {
+          opId: crypto.randomUUID(),
+          timestamp: Date.now(),
+          type: 'remove',
+          objects: prev,
+        },
+        {
+          opId: crypto.randomUUID(),
+          timestamp: Date.now(),
+          type: 'add',
+          objects: arr,
+        },
       ],
     });
     setObjects(arr);
@@ -185,7 +197,12 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
         const { objects, selectedIds, setObjects, clearSelection } = store;
         const toRemove = objects.filter((o) => selectedIds.includes(o.id));
         if (toRemove.length > 0) {
-          pushSyncedOperation({ type: 'remove', objects: toRemove });
+          pushSyncedOperation({
+            opId: crypto.randomUUID(),
+            timestamp: Date.now(),
+            type: 'remove',
+            objects: toRemove,
+          });
           setObjects((prev) =>
             prev.map((o) =>
               selectedIds.includes(o.id) ? { ...o, tombstone: true } : o,

@@ -97,11 +97,12 @@ export function useSelectMode(
       if (dx !== 0 || dy !== 0) {
         const ts = Date.now();
         pushSyncedOperation({
+          opId: crypto.randomUUID(),
+          timestamp: ts,
           type: 'translate',
           ids: [...selectedIds],
           dx,
           dy,
-          timestamp: ts,
         });
         setObjects((prev) =>
           prev.map((o) =>

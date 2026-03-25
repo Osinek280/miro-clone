@@ -131,7 +131,12 @@ export function useDrawMode(
       tombstone: false,
       positionTimestamp: Date.now(),
     };
-    pushSyncedOperation({ type: 'add', objects: [object] });
+    pushSyncedOperation({
+      opId: crypto.randomUUID(),
+      timestamp: Date.now(),
+      type: 'add',
+      objects: [object],
+    });
 
     console.log('points length', object.points.length);
     console.log(JSON.stringify(object).length, 'bytes');
