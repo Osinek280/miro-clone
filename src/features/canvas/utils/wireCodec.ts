@@ -5,31 +5,36 @@ import type {
   Point,
   WireHistoryOperation,
 } from '../types/types';
+import { POINT_SCALE } from '../constants/pointPrecision';
 
+/** Delta-encoded Int32 pairs in POINT_SCALE space (raw buffer, no prefix). */
 function encodePoints(points: Point[]): Uint8Array {
   if (points.length === 0) return new Uint8Array();
-  const out = new Int16Array(points.length * 2);
-  let prevX = 0;
-  let prevY = 0;
+
+  const deltas = new Int32Array(points.length * 2);
+  let prevScaledX = 0;
+  let prevScaledY = 0;
 
   for (let i = 0; i < points.length; i++) {
-    const px = Math.round(points[i].x);
-    const py = Math.round(points[i].y);
-    out[i * 2] = px - prevX;
-    out[i * 2 + 1] = py - prevY;
-    prevX = px;
-    prevY = py;
+    const sx = Math.round(points[i].x * POINT_SCALE);
+    const sy = Math.round(points[i].y * POINT_SCALE);
+    deltas[i * 2] = sx - prevScaledX;
+    deltas[i * 2 + 1] = sy - prevScaledY;
+    prevScaledX = sx;
+    prevScaledY = sy;
   }
 
-  return new Uint8Array(out.buffer);
+  return new Uint8Array(deltas.buffer);
 }
 
 function decodePoints(pointsEncoded: Uint8Array): Point[] {
-  if (pointsEncoded.length === 0) return [];
-  const ints = new Int16Array(
+  if (pointsEncoded.length === 0 || pointsEncoded.length % 4 !== 0) return [];
+  if ((pointsEncoded.length / 4) % 2 !== 0) return [];
+
+  const ints = new Int32Array(
     pointsEncoded.buffer,
     pointsEncoded.byteOffset,
-    Math.floor(pointsEncoded.byteLength / 2),
+    pointsEncoded.length / 4,
   );
 
   const points: Point[] = [];
@@ -39,7 +44,7 @@ function decodePoints(pointsEncoded: Uint8Array): Point[] {
   for (let i = 0; i + 1 < ints.length; i += 2) {
     x += ints[i];
     y += ints[i + 1];
-    points.push({ x, y });
+    points.push({ x: x / POINT_SCALE, y: y / POINT_SCALE });
   }
 
   return points;

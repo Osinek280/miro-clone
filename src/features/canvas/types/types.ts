@@ -105,7 +105,7 @@ export type HistoryOperation =
 export interface DrawObjectWire {
   id: string;
   type: 'path';
-  pointsEncoded: string; // base64(delta-encoded int16 bytes)
+  pointsEncoded: string; // base64 of Int32 delta pairs in POINT_SCALE space
   color: string;
   size: number;
   tombstone: boolean;
