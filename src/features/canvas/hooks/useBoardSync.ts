@@ -14,6 +14,12 @@ import throttle from 'lodash.throttle';
 import { tokenStorage } from '../../auth/utils/TokenStorage';
 import { useAuthStore } from '../../auth/store/auth.store';
 
+/**
+ * When true, serializes the non-wire op for size comparison (extra CPU on send).
+ * Keep false in normal use; enable only when benchmarking wire vs JSON payload size.
+ */
+const WS_LOG_WIRE_VS_NORMAL_PAYLOAD = false;
+
 export function useBoardSync(
   boardId: string,
   setCenterAtPoint: (point: Point, zoom: number) => void,
@@ -57,12 +63,33 @@ export function useBoardSync(
         console.log('connected');
         const decoder = new TextDecoder();
         client.subscribe(`/topic/draw/${boardId}`, (msg) => {
-          const op = fromWireOperation(
-            JSON.parse(decoder.decode(msg.binaryBody)) as WireHistoryOperation,
-          );
-          console.log(op);
+          const bodyBytes =
+            (msg.binaryBody as any)?.byteLength ??
+            (msg.binaryBody as any)?.length ??
+            0;
+
+          const t0 = performance.now();
+          const decoded = decoder.decode(msg.binaryBody);
+          const t1 = performance.now();
+          const parsed = JSON.parse(decoded) as WireHistoryOperation;
+          const t2 = performance.now();
+          const op = fromWireOperation(parsed);
+          const t3 = performance.now();
           const currentObjects = useCanvasStore.getState().objects;
-          setObjects(applyOperation(currentObjects, op));
+          const nextObjects = applyOperation(currentObjects, op);
+          const t4 = performance.now();
+          setObjects(nextObjects);
+          const t5 = performance.now();
+
+          console.log(
+            `[ws][draw][rx] msgBytes=${bodyBytes}B total=${(t5 - t0).toFixed(
+              2,
+            )}ms decode=${(t1 - t0).toFixed(2)}ms parse=${(t2 - t1).toFixed(
+              2,
+            )}ms wireDecode=${(t3 - t2).toFixed(2)}ms apply=${(t4 - t3).toFixed(
+              2,
+            )}ms`,
+          );
         });
 
         client.subscribe(`/topic/cursor/${boardId}`, (msg) => {
@@ -94,19 +121,39 @@ export function useBoardSync(
     (op: HistoryOperation) => {
       const client = stompClientRef.current;
       if (client?.connected) {
+        const t0 = performance.now();
         const wireOp = toWireOperation(op);
+        const t1 = performance.now();
         const encoder = new TextEncoder();
-        const wirePayload = encoder.encode(JSON.stringify(wireOp));
-        const normalPayload = encoder.encode(JSON.stringify(op));
-        const savedBytes = normalPayload.byteLength - wirePayload.byteLength;
-        const savedPercent =
-          normalPayload.byteLength > 0
-            ? (savedBytes / normalPayload.byteLength) * 100
-            : 0;
+        const wireString = JSON.stringify(wireOp);
+        const t2 = performance.now();
+        const wirePayload = encoder.encode(wireString);
+        const t3 = performance.now();
 
-        console.log(
-          `[ws][draw] payload size: wire=${wirePayload.byteLength}B, normal=${normalPayload.byteLength}B, saved=${savedBytes}B (${savedPercent.toFixed(1)}%)`,
-        );
+        if (WS_LOG_WIRE_VS_NORMAL_PAYLOAD) {
+          const normalString = JSON.stringify(op);
+          const t4 = performance.now();
+          const normalPayload = encoder.encode(normalString);
+          const t5 = performance.now();
+          const savedBytes = normalPayload.byteLength - wirePayload.byteLength;
+          const savedPercent =
+            normalPayload.byteLength > 0
+              ? (savedBytes / normalPayload.byteLength) * 100
+              : 0;
+
+          console.log(
+            `[ws][draw][tx] opType=${op.type} wire=${wirePayload.byteLength}B normal=${normalPayload.byteLength}B saved=${savedBytes}B (${savedPercent.toFixed(
+              1,
+            )}%) total=${(t5 - t0).toFixed(2)}ms toWire=${(t1 - t0).toFixed(
+              2,
+            )}ms stringifyWire=${(t2 - t1).toFixed(2)}ms encodeWire=${(
+              t3 - t2
+            ).toFixed(2)}ms stringifyNormal=${(t4 - t3).toFixed(
+              2,
+            )}ms encodeNormal=${(t5 - t4).toFixed(2)}ms`,
+          );
+        }
+
         client.publish({
           destination: `/app/draw/${boardId}`,
           binaryBody: wirePayload,

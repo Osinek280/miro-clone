@@ -61,23 +61,32 @@ function applyRemove(
 }
 
 function applyAddMany(children: DrawObject[], op: AddObjectsOp): DrawObject[] {
-  let result = children;
-  for (const o of op.objects) {
-    const obj = structuredClone(o);
-    obj.tombstone = false;
-    obj.positionTimestamp = obj.positionTimestamp ?? 0;
+  if (op.objects.length === 0) return children;
 
-    // Upsert by id: either replace existing object (restore) or append.
-    const idx = result.findIndex((c) => c.id === obj.id);
-    if (idx >= 0) {
-      const out = [...result];
+  const out = children.slice();
+  const idToIndex = new Map<string, number>();
+  for (let i = 0; i < out.length; i++) {
+    idToIndex.set(out[i].id, i);
+  }
+
+  for (const o of op.objects) {
+    const obj: DrawObject = {
+      ...o,
+      points: o.points.slice(),
+      tombstone: false,
+      positionTimestamp: o.positionTimestamp ?? 0,
+    };
+
+    const idx = idToIndex.get(obj.id);
+    if (idx !== undefined) {
       out[idx] = obj;
-      result = out;
     } else {
-      result = [...result, obj];
+      idToIndex.set(obj.id, out.length);
+      out.push(obj);
     }
   }
-  return result;
+
+  return out;
 }
 
 /** LWW: apply translation only if op timestamp >= object's positionTimestamp. */

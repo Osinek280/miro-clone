@@ -145,10 +145,6 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
     };
   }, []);
 
-  useEffect(() => {
-    console.log(objects);
-  }, [objects]);
-
   const animateCamera = useCallback(() => {
     if (animateCameraRef.current) {
       animateCameraRef.current();

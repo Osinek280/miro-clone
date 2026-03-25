@@ -138,9 +138,6 @@ export function useDrawMode(
       objects: [object],
     });
 
-    console.log('points length', object.points.length);
-    console.log(JSON.stringify(object).length, 'bytes');
-
     setObjects((p) => [...p, object]);
     setCurrentPath([]);
   };
