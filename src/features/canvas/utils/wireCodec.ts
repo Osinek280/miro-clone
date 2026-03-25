@@ -153,4 +153,3 @@ export function fromWireOperation(op: WireHistoryOperation): HistoryOperation {
 
   return op;
 }
-
