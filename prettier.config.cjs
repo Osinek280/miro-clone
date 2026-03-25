@@ -6,4 +6,5 @@ module.exports = {
   tabWidth: 2, // szerokość tabulacji
   bracketSpacing: true,
   arrowParens: 'always',
+  endOfLine: 'lf',
 };
