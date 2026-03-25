@@ -83,7 +83,7 @@ export function useBoardSync(
     };
   }, [boardId]);
 
-  const pushSyncedOperation = useCallback(
+  const publishOperation = useCallback(
     (op: HistoryOperation) => {
       const client = stompClientRef.current;
       if (client?.connected) {
@@ -92,9 +92,16 @@ export function useBoardSync(
           binaryBody: new TextEncoder().encode(JSON.stringify(op)),
         });
       }
-      useHistoryStore.getState().pushOperation(op);
     },
     [boardId],
+  );
+
+  const pushSyncedOperation = useCallback(
+    (op: HistoryOperation) => {
+      publishOperation(op);
+      useHistoryStore.getState().pushOperation(op);
+    },
+    [publishOperation],
   );
 
   const pushSyncedCursor = useCallback(
@@ -119,5 +126,5 @@ export function useBoardSync(
     [pushSyncedCursor],
   );
 
-  return { pushSyncedOperation, pushSyncedCursorThrottled };
+  return { pushSyncedOperation, publishOperation, pushSyncedCursorThrottled };
 }

@@ -65,6 +65,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
     boardId,
     setCenterAtPoint,
   );
+  const { publishOperation } = useBoardSync(boardId, setCenterAtPoint);
 
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
@@ -187,7 +188,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
         const { objects, selectedIds, setObjects, clearSelection } = store;
         const toRemove = objects.filter((o) => selectedIds.includes(o.id));
         if (toRemove.length > 0) {
-          history.pushOperation({ type: 'remove', objects: toRemove });
+          pushSyncedOperation({ type: 'remove', objects: toRemove });
           setObjects((prev) =>
             prev.map((o) =>
               selectedIds.includes(o.id) ? { ...o, tombstone: true } : o,
@@ -201,11 +202,17 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
       const current = store.objects;
 
       if (isUndo) {
-        const prev = history.undo(current);
-        if (prev) useCanvasStore.getState().setObjects(prev);
+        const res = history.undo(current);
+        if (res) {
+          useCanvasStore.getState().setObjects(res.nextChildren);
+          publishOperation(res.appliedOp);
+        }
       } else if (isRedo) {
-        const next = history.redo(current);
-        if (next) useCanvasStore.getState().setObjects(next);
+        const res = history.redo(current);
+        if (res) {
+          useCanvasStore.getState().setObjects(res.nextChildren);
+          publishOperation(res.appliedOp);
+        }
       }
     };
 

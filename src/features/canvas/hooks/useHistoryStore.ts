@@ -20,8 +20,12 @@ interface HistoryStoreState {
   batchOps: HistoryOperation[];
 
   pushOperation: (op: HistoryOperation) => void;
-  undo: (currentChildren: DrawObject[]) => DrawObject[] | null;
-  redo: (currentChildren: DrawObject[]) => DrawObject[] | null;
+  undo: (
+    currentChildren: DrawObject[],
+  ) => { nextChildren: DrawObject[]; appliedOp: HistoryOperation } | null;
+  redo: (
+    currentChildren: DrawObject[],
+  ) => { nextChildren: DrawObject[]; appliedOp: HistoryOperation } | null;
   canUndo: () => boolean;
   canRedo: () => boolean;
   clear: () => void;
@@ -71,7 +75,7 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
       undoStack: s.undoStack.slice(0, -1),
       redoStack: [...s.redoStack, op],
     }));
-    return nextChildren;
+    return { nextChildren, appliedOp: inverse };
   },
 
   redo: (currentChildren) => {
@@ -85,7 +89,7 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
       redoStack: s.redoStack.slice(0, -1),
       undoStack: [...s.undoStack, op],
     }));
-    return nextChildren;
+    return { nextChildren, appliedOp: op };
   },
 
   canUndo: () => get().undoStack.length > 0,
