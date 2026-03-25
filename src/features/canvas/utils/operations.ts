@@ -4,8 +4,9 @@ import type {
   DrawObject,
   HistoryOperation,
   RemoveObjectsOp,
-  SetPositionOp,
+  TranslateOp,
 } from '../types/types';
+import { roundPoint } from './cameraUtils';
 
 function getTimestamp(): number {
   return Date.now();
@@ -48,7 +49,7 @@ export function flattenBatch(batch: BatchOp): HistoryOperation[] {
   return out;
 }
 
-// ─── Apply (tombstone = soft delete, setPosition = LWW) ────────────────────────
+// ─── Apply (tombstone = soft delete, translate = LWW) ───────────────────────────
 
 /** Tombstone: mark objects as deleted instead of removing from array. */
 function applyRemove(
@@ -79,20 +80,23 @@ function applyAddMany(children: DrawObject[], op: AddObjectsOp): DrawObject[] {
   return result;
 }
 
-/** LWW-Register: apply position only if op timestamp >= object's positionTimestamp. */
-function applySetPosition(
+/** LWW: apply translation only if op timestamp >= object's positionTimestamp. */
+function applyTranslate(
   children: DrawObject[],
-  op: SetPositionOp,
+  op: TranslateOp,
 ): DrawObject[] {
+  const idSet = new Set(op.ids);
+  const opTs = op.timestamp ?? 0;
   return children.map((c) => {
-    const entry = op.positions.find((p) => p.id === c.id);
-    if (!entry) return c;
+    if (!idSet.has(c.id)) return c;
     const objTs = c.positionTimestamp ?? 0;
-    if (entry.timestamp < objTs) return c;
+    if (opTs < objTs) return c;
     return {
       ...c,
-      points: entry.points.map((p) => ({ ...p })),
-      positionTimestamp: entry.timestamp,
+      points: c.points.map((p) =>
+        roundPoint({ x: p.x + op.dx, y: p.y + op.dy }),
+      ),
+      positionTimestamp: opTs,
     };
   });
 }
@@ -106,8 +110,8 @@ export function applyOperation(
       return applyRemove(children, op);
     case 'add':
       return applyAddMany(children, op);
-    case 'setPosition':
-      return applySetPosition(children, op);
+    case 'translate':
+      return applyTranslate(children, op);
     case 'batch': {
       const flat = flattenBatch(op);
       return flat.reduce((acc, o) => applyOperation(acc, o), children);
@@ -130,16 +134,13 @@ export function getInverse(op: HistoryOperation): HistoryOperation {
       };
     case 'add':
       return { ...meta, type: 'remove', objects: op.objects };
-    case 'setPosition':
+    case 'translate':
       return {
         ...meta,
-        type: 'setPosition',
-        positions: op.positions.map((p) => ({
-          id: p.id,
-          points: p.previousPoints ?? p.points,
-          timestamp: meta.timestamp,
-          previousPoints: p.points,
-        })),
+        type: 'translate',
+        ids: [...op.ids],
+        dx: -op.dx,
+        dy: -op.dy,
       };
     case 'batch':
       return {

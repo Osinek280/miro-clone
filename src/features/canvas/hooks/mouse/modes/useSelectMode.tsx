@@ -95,21 +95,13 @@ export function useSelectMode(
       const dx = dragOffsetRef.current.x;
       const dy = dragOffsetRef.current.y;
       if (dx !== 0 || dy !== 0) {
-        const state = useCanvasStore.getState();
+        const ts = Date.now();
         pushSyncedOperation({
-          type: 'setPosition',
-          positions: selectedIds.map((id) => {
-            const obj = state.objects.find((o) => o.id === id);
-            const previousPoints = obj?.points ?? [];
-            return {
-              id,
-              points: previousPoints.map((p) =>
-                roundPoint({ x: p.x + dx, y: p.y + dy }),
-              ),
-              timestamp: Date.now(),
-              previousPoints: previousPoints.map((p) => ({ ...p })),
-            };
-          }),
+          type: 'translate',
+          ids: [...selectedIds],
+          dx,
+          dy,
+          timestamp: ts,
         });
         setObjects((prev) =>
           prev.map((o) =>
@@ -119,7 +111,7 @@ export function useSelectMode(
                   points: o.points.map((p) =>
                     roundPoint({ x: p.x + dx, y: p.y + dy }),
                   ),
-                  positionTimestamp: Date.now(),
+                  positionTimestamp: ts,
                 }
               : o,
           ),

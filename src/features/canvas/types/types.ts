@@ -84,15 +84,12 @@ export interface AddObjectsOp extends OpMeta {
   objects: DrawObject[];
 }
 
-/** LWW-Register: absolute position + timestamp; last write wins. previousPoints used for undo. */
-export interface SetPositionOp extends OpMeta {
-  type: 'setPosition';
-  positions: {
-    id: string;
-    points: Point[];
-    timestamp: number;
-    previousPoints?: Point[];
-  }[];
+/** LWW: apply translation only if op.timestamp >= object's positionTimestamp. */
+export interface TranslateOp extends OpMeta {
+  type: 'translate';
+  ids: string[];
+  dx: number;
+  dy: number;
 }
 
 /** Logical batch; stored stack flattens to single ops ordered by timestamp. */
@@ -103,7 +100,7 @@ export interface BatchOp extends OpMeta {
 
 export type HistoryOperation =
   // | AddObjectOp
-  RemoveObjectsOp | AddObjectsOp | SetPositionOp | BatchOp;
+  RemoveObjectsOp | AddObjectsOp | TranslateOp | BatchOp;
 
 export interface DrawObjectWire {
   id: string;

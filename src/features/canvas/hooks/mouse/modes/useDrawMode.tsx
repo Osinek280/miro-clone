@@ -87,7 +87,7 @@ export function useDrawMode(
       const snapDx = endX - start.x;
       const snapDy = endY - start.y;
 
-      const step = 0.25;
+      const step = 1.5;
       const steps = Math.max(1, Math.floor(totalDist / step));
       const linePoints: Point[] = [start];
       for (let i = 1; i <= steps; i++) {
