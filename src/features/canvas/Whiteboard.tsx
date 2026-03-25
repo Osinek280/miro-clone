@@ -61,11 +61,8 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
     [setDisplayZoom],
   );
 
-  const { pushSyncedOperation, pushSyncedCursorThrottled } = useBoardSync(
-    boardId,
-    setCenterAtPoint,
-  );
-  const { publishOperation } = useBoardSync(boardId, setCenterAtPoint);
+  const { pushSyncedOperation, pushSyncedCursorThrottled, publishOperation } =
+    useBoardSync(boardId, setCenterAtPoint);
 
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
