@@ -1,11 +1,9 @@
 import { create } from 'zustand';
-import type { DrawObject, HistoryOperation } from '../types/types';
-import type { BatchOp } from '../types/types';
+import type { BatchOp, DrawObject, HistoryOperation } from '../types/types';
 import {
   applyOperation,
   flattenBatch,
   getInverse,
-  stampOp,
   mergeOperations,
 } from '../utils/operations';
 
@@ -16,8 +14,6 @@ const MAX_HISTORY = 300;
 interface HistoryStoreState {
   undoStack: HistoryOperation[];
   redoStack: HistoryOperation[];
-  batchDepth: number;
-  batchOps: HistoryOperation[];
 
   pushOperation: (op: HistoryOperation) => void;
   undo: (
@@ -38,17 +34,10 @@ interface HistoryStoreState {
 export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
   undoStack: [],
   redoStack: [],
-  batchDepth: 0,
-  batchOps: [],
 
   pushOperation: (op) => {
-    const { batchDepth, batchOps, undoStack } = get();
-    if (batchDepth > 0) {
-      set({ batchOps: [...batchOps, op] });
-      return;
-    }
-
-    const normalized = stampOp(structuredClone(op) as HistoryOperation);
+    const { undoStack } = get();
+    const normalized = structuredClone(op) as HistoryOperation;
 
     if (normalized.type === 'batch') {
       const flat = flattenBatch(normalized as BatchOp);
@@ -99,8 +88,6 @@ export const useHistoryStore = create<HistoryStoreState>((set, get) => ({
     set({
       undoStack: [],
       redoStack: [],
-      batchDepth: 0,
-      batchOps: [],
     }),
 
   mergeOperations,
