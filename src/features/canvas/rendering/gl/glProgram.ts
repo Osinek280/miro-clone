@@ -27,6 +27,8 @@ export function linkProgram(
   gl.attachShader(program, vert);
   gl.attachShader(program, frag);
   gl.linkProgram(program);
+  gl.deleteShader(vert);
+  gl.deleteShader(frag);
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
     console.error('[WebGLRenderer] Link:', gl.getProgramInfoLog(program));
     gl.deleteProgram(program);

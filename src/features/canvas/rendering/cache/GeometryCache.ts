@@ -12,7 +12,7 @@ export class GeometryCache {
   private stateKey(obj: DrawObject): string {
     const first = obj.points[0];
     const last = obj.points[obj.points.length - 1];
-    return `${obj.color || '#000'}|${obj.size}|${obj.points.length}|${first?.x},${first?.y}|${last?.x},${last?.y}`;
+    return `${obj.positionTimestamp}|${obj.color || '#000'}|${obj.size}|${obj.points.length}|${first?.x},${first?.y}|${last?.x},${last?.y}`;
   }
 
   sync(objects: DrawObject[]): void {
@@ -30,7 +30,11 @@ export class GeometryCache {
 
       this.geometries.set(
         obj.id,
-        buildStrokeGeometry(obj.points, hexToRgba(obj.color || '#000'), obj.size || 15),
+        buildStrokeGeometry(
+          obj.points,
+          hexToRgba(obj.color || '#000'),
+          obj.size || 15,
+        ),
       );
       this.keys.set(obj.id, key);
     }

@@ -1,6 +1,8 @@
 import { FPV } from '../geometry/StrokeGeometry';
 import { compileShader, linkProgram } from '../gl/glProgram';
 
+const STRIDE_BYTES = FPV * 4;
+
 const VERT = /* glsl */ `
   precision highp float;
 
@@ -99,24 +101,15 @@ export class BrushPipeline {
     gl.uniform1f(this.uZoom, zoom);
     gl.uniform2f(this.uOffset, offsetX, offsetY);
 
-    const stride = FPV * 4;
-    const attr = (loc: number, size: number, offsetFloats: number) => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    const bindAttr = (loc: number, size: number, offsetFloats: number) => {
       if (loc < 0) return;
       gl.enableVertexAttribArray(loc);
-      gl.vertexAttribPointer(
-        loc,
-        size,
-        gl.FLOAT,
-        false,
-        stride,
-        offsetFloats * 4,
-      );
+      gl.vertexAttribPointer(loc, size, gl.FLOAT, false, STRIDE_BYTES, offsetFloats * 4);
     };
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    attr(this.aPos, 2, 0);
-    attr(this.aColor, 4, 2);
-    attr(this.aSize, 1, 6);
+    bindAttr(this.aPos, 2, 0);
+    bindAttr(this.aColor, 4, 2);
+    bindAttr(this.aSize, 1, 6);
     gl.drawArrays(gl.POINTS, 0, pointCount);
   }
 

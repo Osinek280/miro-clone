@@ -27,6 +27,25 @@ export function hexToRgba(hex: string): Rgba {
   ];
 }
 
+function countStrokeVertices(points: Point[]): number {
+  let lastX = NaN;
+  let lastY = NaN;
+  let count = 0;
+
+  for (const p of points) {
+    const dx = p.x - lastX;
+    const dy = p.y - lastY;
+    if (dx * dx + dy * dy < MIN_DIST * MIN_DIST && count > 0) continue;
+    count++;
+    lastX = p.x;
+    lastY = p.y;
+  }
+
+  const last = points[points.length - 1];
+  if (last.x !== lastX || last.y !== lastY) count++;
+  return count;
+}
+
 export function buildStrokeGeometry(
   points: Point[],
   color: Rgba,
@@ -34,30 +53,41 @@ export function buildStrokeGeometry(
 ): CachedGeometry | null {
   if (points.length === 0) return null;
 
-  const [r, g, b, a] = color;
-  const buf: number[] = [];
+  const pointCount = countStrokeVertices(points);
+  if (pointCount === 0) return null;
 
+  const [r, g, b, a] = color;
+  const buf = new Float32Array(pointCount * FPV);
   let lastX = NaN;
   let lastY = NaN;
+  let w = 0;
+
+  const write = (x: number, y: number) => {
+    buf[w] = x;
+    buf[w + 1] = y;
+    buf[w + 2] = r;
+    buf[w + 3] = g;
+    buf[w + 4] = b;
+    buf[w + 5] = a;
+    buf[w + 6] = size;
+    w += FPV;
+  };
 
   for (const p of points) {
     const dx = p.x - lastX;
     const dy = p.y - lastY;
-    if (dx * dx + dy * dy < MIN_DIST * MIN_DIST && buf.length > 0) continue;
-
-    buf.push(p.x, p.y, r, g, b, a, size);
+    if (dx * dx + dy * dy < MIN_DIST * MIN_DIST && w > 0) continue;
+    write(p.x, p.y);
     lastX = p.x;
     lastY = p.y;
   }
 
-  // Always add the last point so the path ends exactly there.
   const last = points[points.length - 1];
   if (last.x !== lastX || last.y !== lastY) {
-    buf.push(last.x, last.y, r, g, b, a, size);
+    write(last.x, last.y);
   }
 
-  const pointCount = buf.length / FPV;
-  return { buffer: new Float32Array(buf), pointCount };
+  return { buffer: buf, pointCount };
 }
 
 /** Copy cached interleaved vertices into `all` at float offset, adding (ox, oy) to x,y. */

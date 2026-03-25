@@ -100,6 +100,10 @@ export class CursorPipeline {
       gl.getUniformLocation(program, 'u_color')!,
     );
 
+    const quad = new Float32Array([0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, cursorBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
+
     pipeline.initializeTexture(gl);
     return pipeline;
   }
@@ -160,9 +164,7 @@ export class CursorPipeline {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.cursorTexture);
 
-    const quad = new Float32Array([0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1]);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.cursorBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(this.aPos);
     gl.vertexAttribPointer(this.aPos, 2, gl.FLOAT, false, 0, 0);
 

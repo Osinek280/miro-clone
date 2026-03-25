@@ -26,6 +26,8 @@ void main() {
 export class RectPipeline {
   private program: WebGLProgram;
   private rectBuf: WebGLBuffer;
+  /** Reused each draw to avoid per-frame Float32Array allocation. */
+  private rectVerts = new Float32Array(8);
   private aPos: number;
   private uResolution: WebGLUniformLocation;
   private uOffset: WebGLUniformLocation;
@@ -83,7 +85,15 @@ export class RectPipeline {
   }): void {
     const { gl, canvas, box, color, zoom, offsetX, offsetY } = params;
     const { start: s, end: e } = box;
-    const verts = new Float32Array([s.x, s.y, e.x, s.y, e.x, e.y, s.x, e.y]);
+    const v = this.rectVerts;
+    v[0] = s.x;
+    v[1] = s.y;
+    v[2] = e.x;
+    v[3] = s.y;
+    v[4] = e.x;
+    v[5] = e.y;
+    v[6] = s.x;
+    v[7] = e.y;
 
     gl.useProgram(this.program);
     gl.uniform2f(this.uResolution, canvas.width, canvas.height);
@@ -92,7 +102,7 @@ export class RectPipeline {
     gl.uniform4fv(this.uRectColor, color);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.rectBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, verts, gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, v, gl.DYNAMIC_DRAW);
     gl.enableVertexAttribArray(this.aPos);
     gl.vertexAttribPointer(this.aPos, 2, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.LINE_LOOP, 0, 4);
