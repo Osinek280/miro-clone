@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { canvasApi } from '../api/canvas.api';
-import type { HistoryOperation, Point } from '../types/types';
+import type {
+  HistoryOperation,
+  Point,
+  WireHistoryOperation,
+} from '../types/types';
 import { useCanvasStore } from './useCanvasStore';
 import { Client } from '@stomp/stompjs';
 import { useHistoryStore } from './useHistoryStore';
 import { applyOperation } from '../utils/operations';
+import { fromWireOperation, toWireOperation } from '../utils/wireCodec';
 import throttle from 'lodash.throttle';
 import { tokenStorage } from '../../auth/utils/TokenStorage';
 import { useAuthStore } from '../../auth/store/auth.store';
@@ -41,9 +46,9 @@ export function useBoardSync(
     const client = new Client({
       brokerURL: 'ws://localhost:8080/ws',
       reconnectDelay: 3000,
-      debug: (str) => {
-        console.log('STOMP:', str);
-      },
+      // debug: (str) => {
+      //   console.log('STOMP:', str);
+      // },
       connectHeaders: {
         Authorization: `Bearer ${tokenStorage.get()}`,
       },
@@ -52,10 +57,12 @@ export function useBoardSync(
         console.log('connected');
         const decoder = new TextDecoder();
         client.subscribe(`/topic/draw/${boardId}`, (msg) => {
-          const op = decoder.decode(msg.binaryBody);
-          console.log(JSON.parse(op));
+          const op = fromWireOperation(
+            JSON.parse(decoder.decode(msg.binaryBody)) as WireHistoryOperation,
+          );
+          console.log(op);
           const currentObjects = useCanvasStore.getState().objects;
-          setObjects(applyOperation(currentObjects, JSON.parse(op)));
+          setObjects(applyOperation(currentObjects, op));
         });
 
         client.subscribe(`/topic/cursor/${boardId}`, (msg) => {
@@ -87,9 +94,22 @@ export function useBoardSync(
     (op: HistoryOperation) => {
       const client = stompClientRef.current;
       if (client?.connected) {
+        const wireOp = toWireOperation(op);
+        const encoder = new TextEncoder();
+        const wirePayload = encoder.encode(JSON.stringify(wireOp));
+        const normalPayload = encoder.encode(JSON.stringify(op));
+        const savedBytes = normalPayload.byteLength - wirePayload.byteLength;
+        const savedPercent =
+          normalPayload.byteLength > 0
+            ? (savedBytes / normalPayload.byteLength) * 100
+            : 0;
+
+        console.log(
+          `[ws][draw] payload size: wire=${wirePayload.byteLength}B, normal=${normalPayload.byteLength}B, saved=${savedBytes}B (${savedPercent.toFixed(1)}%)`,
+        );
         client.publish({
           destination: `/app/draw/${boardId}`,
-          binaryBody: new TextEncoder().encode(JSON.stringify(op)),
+          binaryBody: wirePayload,
         });
       }
     },

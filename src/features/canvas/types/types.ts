@@ -77,7 +77,6 @@ export interface RemoveObjectsOp extends OpMeta {
   type: 'remove';
   /** Objects being removed (kept for undo restore). */
   ids: string[];
-  // objects: DrawObject[];
 }
 
 export interface AddObjectsOp extends OpMeta {
@@ -106,9 +105,25 @@ export type HistoryOperation =
 export interface DrawObjectWire {
   id: string;
   type: 'path';
-  pointsEncoded: Uint8Array; // delta-encoded int16
+  pointsEncoded: string; // base64(delta-encoded int16 bytes)
   color: string;
   size: number;
   tombstone: boolean;
   positionTimestamp: number;
 }
+
+export interface AddObjectsWireOp extends OpMeta {
+  type: 'add';
+  objects: DrawObjectWire[];
+}
+
+export interface BatchWireOp extends OpMeta {
+  type: 'batch';
+  operations: WireHistoryOperation[];
+}
+
+export type WireHistoryOperation =
+  | RemoveObjectsOp
+  | AddObjectsWireOp
+  | TranslateOp
+  | BatchWireOp;
