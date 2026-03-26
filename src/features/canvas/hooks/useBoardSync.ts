@@ -36,8 +36,8 @@ export function useBoardSync(
 
       setCenterAtPoint(
         {
-          x: snapshot.data.camera.x,
-          y: snapshot.data.camera.y,
+          x: snapshot.data.camera.offsetX,
+          y: snapshot.data.camera.offsetX,
         },
         snapshot.data.camera.zoom,
       );
