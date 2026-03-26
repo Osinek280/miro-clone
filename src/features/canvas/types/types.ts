@@ -71,6 +71,7 @@ export interface RenderState {
 export interface OpMeta {
   opId: string;
   timestamp: number;
+  userId?: string;
 }
 
 export interface RemoveObjectsOp extends OpMeta {

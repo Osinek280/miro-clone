@@ -32,7 +32,7 @@ export function useBoardSync(
     async function loadIntialState() {
       const snapshot = await canvasApi.getSnapshot(boardId);
 
-      console.log(snapshot.data);
+      console.log('snapshot', snapshot.data);
 
       setCenterAtPoint(
         {
@@ -72,6 +72,7 @@ export function useBoardSync(
           const decoded = decoder.decode(msg.binaryBody);
           const t1 = performance.now();
           const parsed = JSON.parse(decoded) as WireHistoryOperation;
+          if (parsed.userId === userId) return;
           const t2 = performance.now();
           const op = fromWireOperation(parsed);
           const t3 = performance.now();
@@ -122,7 +123,10 @@ export function useBoardSync(
       const client = stompClientRef.current;
       if (client?.connected) {
         const t0 = performance.now();
-        const wireOp = toWireOperation(op);
+        const wireOp = toWireOperation({
+          ...op,
+          userId: userId,
+        });
         const t1 = performance.now();
         const encoder = new TextEncoder();
         const wireString = JSON.stringify(wireOp);
