@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react';
 import { canvasApi } from '../api/canvas.api';
 import type {
+  Camera,
   HistoryOperation,
   Point,
   WireHistoryOperation,
@@ -9,6 +10,7 @@ import { useCanvasStore } from './useCanvasStore';
 import { Client } from '@stomp/stompjs';
 import { useHistoryStore } from './useHistoryStore';
 import { applyOperation } from '../utils/operations';
+import { cameraCanvasToPersistedCamera } from '../utils/cameraUtils';
 import { fromWireOperation, toWireOperation } from '../utils/wireCodec';
 import throttle from 'lodash.throttle';
 import { tokenStorage } from '../../auth/utils/TokenStorage';
@@ -23,8 +25,11 @@ const WS_LOG_WIRE_VS_NORMAL_PAYLOAD = false;
 export function useBoardSync(
   boardId: string,
   setCenterAtPoint: (point: Point, zoom: number) => void,
+  canvasRef: RefObject<HTMLCanvasElement | null>,
 ) {
   const stompClientRef = useRef<Client | null>(null);
+  /** Last API-shaped camera; needed on unmount because canvasRef is null before effect cleanup. */
+  const lastCameraPayloadRef = useRef<Camera | null>(null);
   const userId = useAuthStore((s) => s.user?.id);
   const { setObjects, setCursors } = useCanvasStore.getState();
 
@@ -37,7 +42,7 @@ export function useBoardSync(
       setCenterAtPoint(
         {
           x: snapshot.data.camera.offsetX,
-          y: snapshot.data.camera.offsetX,
+          y: snapshot.data.camera.offsetY,
         },
         snapshot.data.camera.zoom,
       );
@@ -117,6 +122,53 @@ export function useBoardSync(
       client.deactivate();
     };
   }, [boardId]);
+
+  useEffect(() => {
+    lastCameraPayloadRef.current = null;
+    let rafId = 0;
+    const tick = () => {
+      const cam = useCanvasStore.getState().cameraRef?.current;
+      const canvas = canvasRef.current;
+      if (cam && canvas) {
+        const p = cameraCanvasToPersistedCamera(cam, canvas);
+        if (p) lastCameraPayloadRef.current = p;
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [boardId, canvasRef]);
+
+  useEffect(() => {
+    let sentCamera = false;
+    const sendCameraOnLeave = () => {
+      if (sentCamera) return;
+      const cam = useCanvasStore.getState().cameraRef?.current;
+      if (!cam) return;
+      const canvas = canvasRef.current;
+      let payload =
+        canvas != null ? cameraCanvasToPersistedCamera(cam, canvas) : null;
+      if (!payload) payload = lastCameraPayloadRef.current;
+      if (!payload) return;
+
+      sentCamera = true;
+      canvasApi.sendCameraKeepalive(boardId, payload);
+    };
+
+    const onPageHide = () => {
+      sendCameraOnLeave();
+    };
+
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('unload', sendCameraOnLeave);
+
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('unload', sendCameraOnLeave);
+      // SPA: route change / unmount — pagehide often does not run for in-app navigation.
+      sendCameraOnLeave();
+    };
+  }, [boardId, canvasRef]);
 
   const publishOperation = useCallback(
     (op: HistoryOperation) => {

@@ -62,7 +62,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
   );
 
   const { pushSyncedOperation, pushSyncedCursorThrottled, publishOperation } =
-    useBoardSync(boardId, setCenterAtPoint);
+    useBoardSync(boardId, setCenterAtPoint, canvasRef);
 
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
