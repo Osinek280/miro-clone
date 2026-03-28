@@ -53,7 +53,7 @@ export function useBoardSync(
 
   useEffect(() => {
     setBoardReady(false);
-    // lastSnapshotCameraRef.current = null;
+    lastSnapshotCameraRef.current = null;
     useCanvasStore.getState().setObjects([]);
     useHistoryStore.getState().clear();
     let cancelled = false;
@@ -75,7 +75,7 @@ export function useBoardSync(
         setBoardReady(true);
       } catch {
         if (cancelled) return;
-        onSnapshotError?.();
+        onSnapshotError();
       }
     }
 
