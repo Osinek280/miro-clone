@@ -47,6 +47,7 @@ export class CursorPipeline {
   private uSize: WebGLUniformLocation;
   private uTex: WebGLUniformLocation;
   private uColor: WebGLUniformLocation;
+  private disposed = false;
 
   private constructor(
     program: WebGLProgram,
@@ -130,6 +131,7 @@ export class CursorPipeline {
 
     const img = new Image();
     img.onload = () => {
+      if (this.disposed) return;
       gl.bindTexture(gl.TEXTURE_2D, this.cursorTexture);
       const prevPremult = gl.getParameter(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0);
@@ -175,6 +177,7 @@ export class CursorPipeline {
   }
 
   dispose(gl: WebGLRenderingContext): void {
+    this.disposed = true;
     gl.deleteBuffer(this.cursorBuf);
     gl.deleteTexture(this.cursorTexture);
     gl.deleteProgram(this.program);

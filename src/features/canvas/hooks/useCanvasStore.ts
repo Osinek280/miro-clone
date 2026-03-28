@@ -90,7 +90,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   objects: [],
   currentPath: [],
   color: '#000',
-  size: 10,
+  size: 45,
   selectionBox: null,
   selectedBoundingBox: null,
   cursors: [],
