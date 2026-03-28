@@ -11,6 +11,7 @@ import { Zoom } from './components/Zoom';
 import { Grid } from './grid/Grid';
 import { useHistoryStore } from './hooks/useHistoryStore';
 import { useBoardSync } from './hooks/useBoardSync';
+import EquationSidebar from '../desmos/EquationSidebar';
 
 export default function Whiteboard({
   boardId,
@@ -297,11 +298,13 @@ export default function Whiteboard({
               aria-hidden
             />
             <p className="text-sm font-medium text-gray-600 animate-pulse motion-reduce:animate-none">
-              Ładowanie planszy…
+              Loading board…
             </p>
           </div>
         </div>
       )}
+
+      <EquationSidebar title="Equations"></EquationSidebar>
 
       <canvas
         ref={canvasRef}
