@@ -149,6 +149,7 @@ export default function Whiteboard({
     // Set up resize handler
     const resizeCanvas = () => {
       renderer.resizeCanvas();
+      useCanvasStore.getState().renderFrame();
     };
 
     resizeCanvas();
