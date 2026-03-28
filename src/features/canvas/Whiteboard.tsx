@@ -12,7 +12,13 @@ import { Grid } from './grid/Grid';
 import { useHistoryStore } from './hooks/useHistoryStore';
 import { useBoardSync } from './hooks/useBoardSync';
 
-export default function Whiteboard({ boardId }: { boardId: string }) {
+export default function Whiteboard({
+  boardId,
+  onSnapshotError,
+}: {
+  boardId: string;
+  onSnapshotError: () => void;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<WebGLRenderer | null>(null);
   const cameraRef = useRef({ zoom: 1, offsetX: 0, offsetY: 0 });
@@ -61,10 +67,15 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
     [setDisplayZoom],
   );
 
-  const { pushSyncedOperation, pushSyncedCursorThrottled } = useBoardSync(
-    boardId,
-    setCenterAtPoint,
-  );
+  const {
+    pushSyncedOperation,
+    pushSyncedCursorThrottled,
+    publishOperation,
+    boardReady,
+    replayInitialCamera,
+  } = useBoardSync(boardId, setCenterAtPoint, canvasRef, onSnapshotError);
+
+  const [rendererReady, setRendererReady] = useState(false);
 
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
@@ -74,6 +85,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
     setMode,
     pushSyncedOperation,
     pushSyncedCursorThrottled,
+    boardReady,
   );
 
   const generateObjects = () => {
@@ -99,10 +111,22 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
     }
 
     pushSyncedOperation({
+      opId: crypto.randomUUID(),
+      timestamp: Date.now(),
       type: 'batch',
       operations: [
-        { type: 'remove', objects: prev },
-        { type: 'add', objects: arr },
+        {
+          opId: crypto.randomUUID(),
+          timestamp: Date.now(),
+          type: 'remove',
+          ids: prev.map((o) => o.id),
+        },
+        {
+          opId: crypto.randomUUID(),
+          timestamp: Date.now(),
+          type: 'add',
+          objects: arr,
+        },
       ],
     });
     setObjects(arr);
@@ -120,6 +144,7 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
 
     rendererRef.current = renderer;
     useCanvasStore.getState().setRefs(rendererRef, cameraRef);
+    setRendererReady(true);
 
     // Set up resize handler
     const resizeCanvas = () => {
@@ -130,14 +155,16 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
     window.addEventListener('resize', resizeCanvas);
 
     return () => {
+      setRendererReady(false);
       window.removeEventListener('resize', resizeCanvas);
       renderer.cleanup();
     };
   }, []);
 
   useEffect(() => {
-    console.log(objects);
-  }, [objects]);
+    if (!rendererReady || !boardReady) return;
+    replayInitialCamera();
+  }, [rendererReady, boardReady, replayInitialCamera]);
 
   const animateCamera = useCallback(() => {
     if (animateCameraRef.current) {
@@ -170,6 +197,8 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (!boardReady) return;
+
       const key = e.key.toLowerCase();
       const mod = e.ctrlKey || e.metaKey;
       const isUndo = mod && !e.shiftKey && key === 'z';
@@ -187,7 +216,12 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
         const { objects, selectedIds, setObjects, clearSelection } = store;
         const toRemove = objects.filter((o) => selectedIds.includes(o.id));
         if (toRemove.length > 0) {
-          history.pushOperation({ type: 'remove', objects: toRemove });
+          pushSyncedOperation({
+            opId: crypto.randomUUID(),
+            timestamp: Date.now(),
+            type: 'remove',
+            ids: toRemove.map((o) => o.id),
+          });
           setObjects((prev) =>
             prev.map((o) =>
               selectedIds.includes(o.id) ? { ...o, tombstone: true } : o,
@@ -201,24 +235,32 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
       const current = store.objects;
 
       if (isUndo) {
-        const prev = history.undo(current);
-        if (prev) useCanvasStore.getState().setObjects(prev);
+        const res = history.undo(current);
+        if (res) {
+          useCanvasStore.getState().setObjects(res.nextChildren);
+          publishOperation(res.appliedOp);
+        }
       } else if (isRedo) {
-        const next = history.redo(current);
-        if (next) useCanvasStore.getState().setObjects(next);
+        const res = history.redo(current);
+        if (res) {
+          useCanvasStore.getState().setObjects(res.nextChildren);
+          publishOperation(res.appliedOp);
+        }
       }
     };
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [history]);
+  }, [history, boardReady, publishOperation, pushSyncedOperation]);
 
   return (
     <div className="w-full h-full relative bg-gray-100">
       <div className="absolute top-4 left-4 flex gap-2 flex-wrap z-40">
         <button
+          type="button"
+          disabled={!boardReady}
           onClick={generateObjects}
-          className="px-4 py-2 rounded bg-amber-500 text-white cursor-pointer"
+          className="px-4 py-2 rounded bg-amber-500 text-white cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
         >
           Generate 10k objects
         </button>
@@ -240,7 +282,25 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
         setSize={setSize}
       />
 
-      <Grid cameraRef={cameraRef} style="grid"></Grid>
+      {boardReady && <Grid cameraRef={cameraRef} style="grid" />}
+
+      {!boardReady && (
+        <div
+          className="absolute inset-0 z-[11] flex items-center justify-center bg-gray-100/85 backdrop-blur-[2px] pointer-events-none"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <div className="flex flex-col items-center gap-4">
+            <div
+              className="h-11 w-11 rounded-full border-2 border-gray-300 border-t-indigo-500 animate-spin motion-reduce:animate-none"
+              aria-hidden
+            />
+            <p className="text-sm font-medium text-gray-600 animate-pulse motion-reduce:animate-none">
+              Ładowanie planszy…
+            </p>
+          </div>
+        </div>
+      )}
 
       <canvas
         ref={canvasRef}
@@ -249,8 +309,9 @@ export default function Whiteboard({ boardId }: { boardId: string }) {
           position: 'absolute',
           inset: 0,
           zIndex: 10,
-          cursor: getCursor(mode),
+          cursor: boardReady ? getCursor(mode) : 'wait',
           touchAction: 'none',
+          pointerEvents: boardReady ? 'auto' : 'none',
         }}
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);

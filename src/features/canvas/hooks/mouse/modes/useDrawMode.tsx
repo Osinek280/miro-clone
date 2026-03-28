@@ -87,7 +87,7 @@ export function useDrawMode(
       const snapDx = endX - start.x;
       const snapDy = endY - start.y;
 
-      const step = 0.25;
+      const step = 1.5;
       const steps = Math.max(1, Math.floor(totalDist / step));
       const linePoints: Point[] = [start];
       for (let i = 1; i <= steps; i++) {
@@ -131,10 +131,12 @@ export function useDrawMode(
       tombstone: false,
       positionTimestamp: Date.now(),
     };
-    pushSyncedOperation({ type: 'add', objects: [object] });
-
-    console.log('points length', object.points.length);
-    console.log(JSON.stringify(object).length, 'bytes');
+    pushSyncedOperation({
+      opId: crypto.randomUUID(),
+      timestamp: Date.now(),
+      type: 'add',
+      objects: [object],
+    });
 
     setObjects((p) => [...p, object]);
     setCurrentPath([]);

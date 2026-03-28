@@ -69,14 +69,15 @@ export interface RenderState {
 
 /** Base: every operation has unique id and timestamp (assigned by store if omitted). */
 export interface OpMeta {
-  opId?: string;
-  timestamp?: number;
+  opId: string;
+  timestamp: number;
+  userId?: string;
 }
 
 export interface RemoveObjectsOp extends OpMeta {
   type: 'remove';
   /** Objects being removed (kept for undo restore). */
-  objects: DrawObject[];
+  ids: string[];
 }
 
 export interface AddObjectsOp extends OpMeta {
@@ -84,15 +85,12 @@ export interface AddObjectsOp extends OpMeta {
   objects: DrawObject[];
 }
 
-/** LWW-Register: absolute position + timestamp; last write wins. previousPoints used for undo. */
-export interface SetPositionOp extends OpMeta {
-  type: 'setPosition';
-  positions: {
-    id: string;
-    points: Point[];
-    timestamp: number;
-    previousPoints?: Point[];
-  }[];
+/** LWW: apply translation only if op.timestamp >= object's positionTimestamp. */
+export interface TranslateOp extends OpMeta {
+  type: 'translate';
+  ids: string[];
+  dx: number;
+  dy: number;
 }
 
 /** Logical batch; stored stack flattens to single ops ordered by timestamp. */
@@ -103,14 +101,30 @@ export interface BatchOp extends OpMeta {
 
 export type HistoryOperation =
   // | AddObjectOp
-  RemoveObjectsOp | AddObjectsOp | SetPositionOp | BatchOp;
+  RemoveObjectsOp | AddObjectsOp | TranslateOp | BatchOp;
 
 export interface DrawObjectWire {
   id: string;
   type: 'path';
-  pointsEncoded: Uint8Array; // delta-encoded int16
+  pointsEncoded: string; // base64 of Int32 delta pairs in POINT_SCALE space
   color: string;
   size: number;
   tombstone: boolean;
   positionTimestamp: number;
 }
+
+export interface AddObjectsWireOp extends OpMeta {
+  type: 'add';
+  objects: DrawObjectWire[];
+}
+
+export interface BatchWireOp extends OpMeta {
+  type: 'batch';
+  operations: WireHistoryOperation[];
+}
+
+export type WireHistoryOperation =
+  | RemoveObjectsOp
+  | AddObjectsWireOp
+  | TranslateOp
+  | BatchWireOp;

@@ -4,21 +4,22 @@ import type {
   DrawObject,
   HistoryOperation,
   RemoveObjectsOp,
-  SetPositionOp,
+  TranslateOp,
 } from '../types/types';
+import { roundPoint } from './cameraUtils';
 
 function getTimestamp(): number {
   return Date.now();
 }
 
 /** Ensure op has opId and timestamp; mutate clone. */
-export function stampOp<T extends HistoryOperation>(op: T): T {
-  const o = structuredClone(op) as T;
-  if (o.opId == null) (o as { opId: string }).opId = crypto.randomUUID();
-  if (o.timestamp == null)
-    (o as { timestamp: number }).timestamp = getTimestamp();
-  return o;
-}
+// export function stampOp<T extends HistoryOperation>(op: T): T {
+//   const o = structuredClone(op) as T;
+//   if (o.opId == null) (o as { opId: string }).opId = crypto.randomUUID();
+//   if (o.timestamp == null)
+//     (o as { timestamp: number }).timestamp = getTimestamp();
+//   return o;
+// }
 
 /** Flatten batch into single ops with timestamps, sorted by timestamp (for deterministic merge). */
 export function flattenBatch(batch: BatchOp): HistoryOperation[] {
@@ -30,11 +31,11 @@ export function flattenBatch(batch: BatchOp): HistoryOperation[] {
     if (o.type === 'batch') {
       (o.operations as HistoryOperation[]).forEach(collect);
     } else {
-      const stamped = stampOp({
+      const stamped = {
         ...structuredClone(o),
         timestamp:
           (o as { timestamp?: number }).timestamp ?? baseTs + index++ * 0.001,
-      } as HistoryOperation);
+      } as HistoryOperation;
       out.push(stamped);
     }
   }
@@ -48,51 +49,60 @@ export function flattenBatch(batch: BatchOp): HistoryOperation[] {
   return out;
 }
 
-// ─── Apply (tombstone = soft delete, setPosition = LWW) ────────────────────────
+// ─── Apply (tombstone = soft delete, translate = LWW) ───────────────────────────
 
 /** Tombstone: mark objects as deleted instead of removing from array. */
 function applyRemove(
   children: DrawObject[],
   op: RemoveObjectsOp,
 ): DrawObject[] {
-  const ids = new Set(op.objects.map((o) => o.id));
+  const ids = new Set(op.ids);
   return children.map((c) => (ids.has(c.id) ? { ...c, tombstone: true } : c));
 }
 
 function applyAddMany(children: DrawObject[], op: AddObjectsOp): DrawObject[] {
-  let result = children;
-  for (const o of op.objects) {
-    const obj = structuredClone(o);
-    obj.tombstone = false;
-    obj.positionTimestamp = obj.positionTimestamp ?? 0;
+  if (op.objects.length === 0) return children;
 
-    // Upsert by id: either replace existing object (restore) or append.
-    const idx = result.findIndex((c) => c.id === obj.id);
-    if (idx >= 0) {
-      const out = [...result];
+  const out = children.slice();
+  const idToIndex = new Map<string, number>();
+  for (let i = 0; i < out.length; i++) {
+    idToIndex.set(out[i].id, i);
+  }
+
+  for (const o of op.objects) {
+    const obj: DrawObject = {
+      ...o,
+      points: o.points.slice(),
+      tombstone: false,
+      positionTimestamp: o.positionTimestamp ?? 0,
+    };
+
+    const idx = idToIndex.get(obj.id);
+    if (idx !== undefined) {
       out[idx] = obj;
-      result = out;
     } else {
-      result = [...result, obj];
+      idToIndex.set(obj.id, out.length);
+      out.push(obj);
     }
   }
-  return result;
+
+  return out;
 }
 
-/** LWW-Register: apply position only if op timestamp >= object's positionTimestamp. */
-function applySetPosition(
-  children: DrawObject[],
-  op: SetPositionOp,
-): DrawObject[] {
+/** LWW: apply translation only if op timestamp >= object's positionTimestamp. */
+function applyTranslate(children: DrawObject[], op: TranslateOp): DrawObject[] {
+  const idSet = new Set(op.ids);
+  const opTs = op.timestamp ?? 0;
   return children.map((c) => {
-    const entry = op.positions.find((p) => p.id === c.id);
-    if (!entry) return c;
+    if (!idSet.has(c.id)) return c;
     const objTs = c.positionTimestamp ?? 0;
-    if (entry.timestamp < objTs) return c;
+    if (opTs < objTs) return c;
     return {
       ...c,
-      points: entry.points.map((p) => ({ ...p })),
-      positionTimestamp: entry.timestamp,
+      points: c.points.map((p) =>
+        roundPoint({ x: p.x + op.dx, y: p.y + op.dy }),
+      ),
+      positionTimestamp: opTs,
     };
   });
 }
@@ -106,8 +116,8 @@ export function applyOperation(
       return applyRemove(children, op);
     case 'add':
       return applyAddMany(children, op);
-    case 'setPosition':
-      return applySetPosition(children, op);
+    case 'translate':
+      return applyTranslate(children, op);
     case 'batch': {
       const flat = flattenBatch(op);
       return flat.reduce((acc, o) => applyOperation(acc, o), children);
@@ -119,33 +129,39 @@ export function applyOperation(
 
 // ─── Inverse (for undo) ──────────────────────────────────────────────────────
 
-export function getInverse(op: HistoryOperation): HistoryOperation {
+export function getInverse(
+  op: HistoryOperation,
+  children: DrawObject[] = [],
+): HistoryOperation {
   const meta = { opId: crypto.randomUUID(), timestamp: getTimestamp() };
   switch (op.type) {
-    case 'remove':
+    case 'remove': {
+      const idSet = new Set(op.ids);
       return {
         ...meta,
         type: 'add',
-        objects: op.objects.map((o) => ({ ...o, tombstone: false })),
+        objects: children
+          .filter((o) => idSet.has(o.id))
+          .map((o) => ({ ...o, tombstone: false })),
       };
+    }
     case 'add':
-      return { ...meta, type: 'remove', objects: op.objects };
-    case 'setPosition':
+      return { ...meta, type: 'remove', ids: op.objects.map((o) => o.id) };
+    case 'translate':
       return {
         ...meta,
-        type: 'setPosition',
-        positions: op.positions.map((p) => ({
-          id: p.id,
-          points: p.previousPoints ?? p.points,
-          timestamp: meta.timestamp,
-          previousPoints: p.points,
-        })),
+        type: 'translate',
+        ids: [...op.ids],
+        dx: -op.dx,
+        dy: -op.dy,
       };
     case 'batch':
       return {
         ...meta,
         type: 'batch',
-        operations: op.operations.map(getInverse).reverse(),
+        operations: op.operations
+          .map((batchOp) => getInverse(batchOp, children))
+          .reverse(),
       };
     default:
       return op;

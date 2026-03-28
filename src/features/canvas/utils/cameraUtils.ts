@@ -46,3 +46,23 @@ export function getCanvasPoint(
 ): Point {
   return screenToWorld(e.clientX, e.clientY, canvasRef, camera);
 }
+
+/**
+ * Inverse of Whiteboard `setCenterAtPoint`: live camera + canvas → world center and zoom
+ * for API snapshot/POST (offsetX/offsetY on the wire are world space, not pan offsets).
+ * Uses `getBoundingClientRect()` dimensions like `setCenterAtPoint`, not `canvas.width`.
+ */
+export function cameraCanvasToPersistedCamera(
+  camera: Camera,
+  canvas: HTMLCanvasElement,
+): Camera | null {
+  const rect = canvas.getBoundingClientRect();
+  const halfW = rect.width / 2;
+  const halfH = rect.height / 2;
+  if (halfW <= 0 || halfH <= 0) return null;
+  return {
+    offsetX: (halfW - camera.offsetX) / camera.zoom,
+    offsetY: (halfH - camera.offsetY) / camera.zoom,
+    zoom: camera.zoom,
+  };
+}
