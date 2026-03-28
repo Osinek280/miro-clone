@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { canvasApi } from '../api/canvas.api';
 import type {
   Camera,
@@ -26,32 +33,57 @@ export function useBoardSync(
   boardId: string,
   setCenterAtPoint: (point: Point, zoom: number) => void,
   canvasRef: RefObject<HTMLCanvasElement | null>,
+  onSnapshotError: () => void,
 ) {
   const stompClientRef = useRef<Client | null>(null);
   /** Last API-shaped camera; needed on unmount because canvasRef is null before effect cleanup. */
   const lastCameraPayloadRef = useRef<Camera | null>(null);
+  /** Snapshot camera for replay after WebGL/canvas is ready (initial load can run before init). */
+  const lastSnapshotCameraRef = useRef<{ point: Point; zoom: number } | null>(
+    null,
+  );
   const userId = useAuthStore((s) => s.user?.id);
   const { setObjects, setCursors } = useCanvasStore.getState();
+  const [boardReady, setBoardReady] = useState(false);
+
+  const replayInitialCamera = useCallback(() => {
+    const cam = lastSnapshotCameraRef.current;
+    if (cam) setCenterAtPoint(cam.point, cam.zoom);
+  }, [setCenterAtPoint]);
 
   useEffect(() => {
-    async function loadIntialState() {
-      const snapshot = await canvasApi.getSnapshot(boardId);
+    setBoardReady(false);
+    // lastSnapshotCameraRef.current = null;
+    useCanvasStore.getState().setObjects([]);
+    useHistoryStore.getState().clear();
+    let cancelled = false;
 
-      console.log('snapshot', snapshot.data);
+    async function loadInitialState() {
+      try {
+        const { data } = await canvasApi.getSnapshot(boardId);
+        if (cancelled) return;
 
-      setCenterAtPoint(
-        {
-          x: snapshot.data.camera.offsetX,
-          y: snapshot.data.camera.offsetY,
-        },
-        snapshot.data.camera.zoom,
-      );
+        lastSnapshotCameraRef.current = {
+          point: {
+            x: data.camera.offsetX,
+            y: data.camera.offsetY,
+          },
+          zoom: data.camera.zoom,
+        };
 
-      setObjects(snapshot.data.objects);
+        useCanvasStore.getState().setObjects(data.objects);
+        setBoardReady(true);
+      } catch {
+        if (cancelled) return;
+        onSnapshotError?.();
+      }
     }
 
-    loadIntialState();
-  }, [boardId]);
+    void loadInitialState();
+    return () => {
+      cancelled = true;
+    };
+  }, [boardId, onSnapshotError, setCenterAtPoint]);
 
   useEffect(() => {
     const client = new Client({
@@ -249,5 +281,11 @@ export function useBoardSync(
     [pushSyncedCursor],
   );
 
-  return { pushSyncedOperation, publishOperation, pushSyncedCursorThrottled };
+  return {
+    pushSyncedOperation,
+    publishOperation,
+    pushSyncedCursorThrottled,
+    boardReady,
+    replayInitialCamera,
+  };
 }

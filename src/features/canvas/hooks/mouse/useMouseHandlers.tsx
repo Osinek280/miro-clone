@@ -19,6 +19,7 @@ export function useMouseHandlers(
   setMode: React.Dispatch<React.SetStateAction<DrawModeEnum>>,
   pushSyncedOperation: (op: HistoryOperation) => void,
   pushSyncedCursor: (cursor: Point) => void,
+  boardReady: boolean,
 ) {
   const {
     setCurrentPath,
@@ -42,6 +43,7 @@ export function useMouseHandlers(
   const grab = useGrabMode(cameraRef, targetCameraRef);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!boardReady) return;
     if (e.button === 1 || mode === DrawModeEnum.Grab) {
       prevModeRef.current = mode;
       setMode(DrawModeEnum.Grab);
@@ -59,6 +61,7 @@ export function useMouseHandlers(
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!boardReady) return;
     pushSyncedCursor(getCanvasPoint(e, canvasRef, cameraRef.current));
     if (useCanvasStore.getState().isGrabbing) {
       grab.onMouseMove(e);
@@ -76,6 +79,7 @@ export function useMouseHandlers(
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!boardReady) return;
     if (e.button === 1 || useCanvasStore.getState().isGrabbing) {
       setMode(prevModeRef.current);
       setIsGrabbing(false);
