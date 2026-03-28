@@ -15,12 +15,22 @@ export function assembleSceneBuffer(params: {
   currentSize: number;
   selectionDrag: { offset: Point; selectedIds: readonly string[] } | null;
 }): { vertices: Float32Array; pointCount: number } {
-  const { objects, cache, currentPath, currentColor, currentSize, selectionDrag } =
-    params;
+  const {
+    objects,
+    cache,
+    currentPath,
+    currentColor,
+    currentSize,
+    selectionDrag,
+  } = params;
 
   let liveGeo = null;
   if (currentPath.length > 0) {
-    liveGeo = buildStrokeGeometry(currentPath, hexToRgba(currentColor), currentSize);
+    liveGeo = buildStrokeGeometry(
+      currentPath,
+      hexToRgba(currentColor),
+      currentSize,
+    );
   }
 
   let totalPoints = 0;
@@ -30,7 +40,8 @@ export function assembleSceneBuffer(params: {
   }
   if (liveGeo) totalPoints += liveGeo.pointCount;
 
-  if (totalPoints === 0) return { vertices: new Float32Array(0), pointCount: 0 };
+  if (totalPoints === 0)
+    return { vertices: new Float32Array(0), pointCount: 0 };
 
   const dragSet =
     selectionDrag &&

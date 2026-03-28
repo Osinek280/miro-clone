@@ -93,7 +93,8 @@ export class BrushPipeline {
     offsetX: number;
     offsetY: number;
   }): void {
-    const { gl, canvas, vertexBuffer, pointCount, zoom, offsetX, offsetY } = params;
+    const { gl, canvas, vertexBuffer, pointCount, zoom, offsetX, offsetY } =
+      params;
     if (pointCount <= 0) return;
 
     gl.useProgram(this.program);
@@ -105,7 +106,14 @@ export class BrushPipeline {
     const bindAttr = (loc: number, size: number, offsetFloats: number) => {
       if (loc < 0) return;
       gl.enableVertexAttribArray(loc);
-      gl.vertexAttribPointer(loc, size, gl.FLOAT, false, STRIDE_BYTES, offsetFloats * 4);
+      gl.vertexAttribPointer(
+        loc,
+        size,
+        gl.FLOAT,
+        false,
+        STRIDE_BYTES,
+        offsetFloats * 4,
+      );
     };
     bindAttr(this.aPos, 2, 0);
     bindAttr(this.aColor, 4, 2);
