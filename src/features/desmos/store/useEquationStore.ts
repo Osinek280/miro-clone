@@ -6,18 +6,25 @@ import { newEquationId } from '../utils/equationMath';
 const mathFields = new Map<string, MathField>();
 
 interface EquationStoreState {
+  // state
   equations: EquationRow[];
   equationInputFocused: boolean;
   activeEquationId: string | null;
+
+  // setters
   addEquation: (equation: EquationRow) => void;
   removeEquation: (equation: EquationRow) => void;
   updateEquation: (equation: EquationRow) => void;
-  clear: () => void;
+
   setEquationInputFocused: (v: boolean) => void;
   setActiveEquationId: (id: string | null) => void;
   registerMathField: (id: string, mf: MathField | null) => void;
+
+  // getters
   getMathField: (id: string) => MathField | null;
   getMathTarget: () => MathField | null;
+
+  clear: () => void;
 }
 
 export const useEquationStore = create<EquationStoreState>((set, get) => ({
