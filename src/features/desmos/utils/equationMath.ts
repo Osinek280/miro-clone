@@ -1,6 +1,9 @@
 /** Parsing / validation helpers for MathQuill latex in the equation list. */
 
-const RESERVED_WORDS = /\b(sin|cos|tan|cot|sec|csc|ln|log|lim|max|min|sqrt|frac|sum|int|pi|infty)\b/gi;
+import type { EquationRow } from '../types/types';
+
+const RESERVED_WORDS =
+  /\b(sin|cos|tan|cot|sec|csc|ln|log|lim|max|min|sqrt|frac|sum|int|pi|infty)\b/gi;
 
 export type EquationValidation = {
   valid: boolean;
@@ -23,14 +26,22 @@ function normalizeParen(lhs: string): string {
   return lhs.replace(/\\left|\\right/g, '').replace(/\s/g, '');
 }
 
-export function splitEquation(latex: string): { lhs: string | null; rhs: string } {
+export function splitEquation(latex: string): {
+  lhs: string | null;
+  rhs: string;
+} {
   const idx = latex.indexOf('=');
   if (idx === -1) return { lhs: null, rhs: latex };
   return { lhs: latex.slice(0, idx), rhs: latex.slice(idx + 1) };
 }
 
 /** LHS is either a single variable `a` or a function head `f(x)`. */
-export function parseLhsStructure(lhs: string): { kind: 'var'; name: string } | { kind: 'func'; name: string; param: string } | null {
+export function parseLhsStructure(
+  lhs: string,
+):
+  | { kind: 'var'; name: string }
+  | { kind: 'func'; name: string; param: string }
+  | null {
   const c = normalizeParen(lhs);
   const func = c.match(/^([a-zA-Z])\(([a-zA-Z])\)$/);
   if (func) return { kind: 'func', name: func[1], param: func[2] };
@@ -63,7 +74,10 @@ export function mergeRowDefinitions(latex: string, defined: Set<string>): void {
 /**
  * Free variables in this row: used on the RHS (or whole line if no `=`), minus locals and already defined symbols.
  */
-export function getFreeVariables(latex: string, definedBeforeRow: Set<string>): string[] {
+export function getFreeVariables(
+  latex: string,
+  definedBeforeRow: Set<string>,
+): string[] {
   const sp = splitEquation(latex);
   const bound = new Set<string>();
   let text: string;
@@ -90,7 +104,11 @@ export function getFreeVariables(latex: string, definedBeforeRow: Set<string>): 
   return [...new Set(free)].sort();
 }
 
-function checkDelimitedBalanced(s: string, open: string, close: string): boolean {
+function checkDelimitedBalanced(
+  s: string,
+  open: string,
+  close: string,
+): boolean {
   let depth = 0;
   for (const ch of s) {
     if (ch === open) depth++;
@@ -131,8 +149,6 @@ export function validateMathEquationLatex(latex: string): EquationValidation {
 export function newEquationId(): string {
   return crypto.randomUUID();
 }
-
-export type EquationRow = { id: string; latex: string };
 
 /**
  * Ensures each free variable has a line `name=10` once, if no LHS assignment for that name exists yet.

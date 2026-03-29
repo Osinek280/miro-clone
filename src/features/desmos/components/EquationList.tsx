@@ -1,71 +1,75 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { addStyles, EditableMathField, type MathField } from 'react-mathquill';
-import { MathKeyboard } from './MathKeyboard';
-
-type EquationRow = {
-  id: string;
-  latex: string;
-};
-
-function newId() {
-  return crypto.randomUUID();
-}
+import { addStyles, EditableMathField } from 'react-mathquill';
+import { useEquationStore } from '../store/useEquationStore';
+import { newEquationId } from '../utils/equationMath';
 
 export default function EquationList() {
-  const [rows, setRows] = useState<EquationRow[]>(() => [
-    { id: newId(), latex: '' },
-  ]);
-  const fieldsRef = useRef<Map<string, MathField>>(new Map());
-  const activeIdRef = useRef<string | null>(null);
+  const equations = useEquationStore((s) => s.equations);
+  const updateEquation = useEquationStore((s) => s.updateEquation);
+  const setEquationInputFocused = useEquationStore(
+    (s) => s.setEquationInputFocused,
+  );
 
   useEffect(() => {
     addStyles();
   }, []);
 
-  const getTarget = useCallback((): MathField | null => {
-    const id = activeIdRef.current;
-    if (id) {
-      const mf = fieldsRef.current.get(id);
-      if (mf) return mf;
-    }
-    const first = rows[0]?.id;
-    return first ? (fieldsRef.current.get(first) ?? null) : null;
-  }, [rows]);
-
-  const updateLatex = useCallback((id: string, latex: string) => {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, latex } : r)));
+  useEffect(() => {
+    return () => useEquationStore.getState().setEquationInputFocused(false);
   }, []);
 
+  const updateLatex = useCallback(
+    (id: string, latex: string) => {
+      updateEquation({ id, latex });
+    },
+    [updateEquation],
+  );
+
   const addRow = useCallback(() => {
-    const id = newId();
-    setRows((prev) => [...prev, { id, latex: '' }]);
+    const {
+      equations: rows,
+      addEquation: add,
+      setActiveEquationId,
+      getMathField,
+    } = useEquationStore.getState();
+    const last = rows[rows.length - 1];
+    if (!last || last.latex.trim() === '') return;
+    const id = newEquationId();
+    add({ id, latex: '' });
     requestAnimationFrame(() => {
-      const mf = fieldsRef.current.get(id);
+      setActiveEquationId(id);
+      const mf = getMathField(id);
       mf?.focus();
-      activeIdRef.current = id;
     });
   }, []);
 
   const removeRow = useCallback((id: string) => {
-    setRows((prev) => {
-      if (prev.length <= 1) return prev;
-      const next = prev.filter((r) => r.id !== id);
-      fieldsRef.current.delete(id);
-      if (activeIdRef.current === id) {
-        activeIdRef.current = next[0]?.id ?? null;
-      }
-      return next;
-    });
+    const {
+      equations: rows,
+      removeEquation: remove,
+      registerMathField,
+      activeEquationId,
+      setActiveEquationId,
+    } = useEquationStore.getState();
+    if (rows.length <= 1) return;
+    const row = rows.find((r) => r.id === id);
+    if (!row) return;
+    remove(row);
+    registerMathField(id, null);
+    if (activeEquationId === id) {
+      const next = rows.filter((r) => r.id !== id);
+      setActiveEquationId(next[0]?.id ?? null);
+    }
   }, []);
 
   return (
     <div className="flex flex-col gap-3">
       <ul className="flex list-none flex-col gap-2 p-0">
-        {rows.map((row, index) => (
+        {equations.map((row, index) => (
           <li
             key={row.id}
-            className="flex items-start gap-2 rounded-md border border-gray-100 bg-gray-50/80 p-2"
+            className="flex items-start gap-2 border border-gray-100 bg-gray-50/80"
           >
             <span
               className="mt-2 w-5 shrink-0 text-right text-xs tabular-nums text-gray-400"
@@ -76,20 +80,22 @@ export default function EquationList() {
             <div className="min-w-0 flex-1">
               <EditableMathField
                 latex={row.latex}
-                className="w-full min-h-[2.5rem] rounded border border-gray-200 bg-white px-2 py-1.5 text-[15px] shadow-inner"
+                className="w-full min-h-[2.5rem] rounded-none border border-gray-200 bg-white px-2 py-1.5 text-[15px] shadow-inner"
                 config={{ spaceBehavesLikeTab: true }}
                 onChange={(mf) => updateLatex(row.id, mf.latex())}
                 mathquillDidMount={(mf) => {
-                  fieldsRef.current.set(row.id, mf);
+                  useEquationStore.getState().registerMathField(row.id, mf);
                 }}
                 onFocus={() => {
-                  activeIdRef.current = row.id;
+                  useEquationStore.getState().setActiveEquationId(row.id);
+                  setEquationInputFocused(true);
                 }}
+                onBlur={() => setEquationInputFocused(false)}
               />
             </div>
             <button
               type="button"
-              disabled={rows.length <= 1}
+              disabled={equations.length <= 1}
               className="mt-1.5 shrink-0 rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               aria-label="Usuń równanie"
               onClick={() => removeRow(row.id)}
@@ -108,8 +114,6 @@ export default function EquationList() {
         <Plus className="size-4" aria-hidden />
         Dodaj równanie
       </button>
-
-      <MathKeyboard getTarget={getTarget} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, PanelRightOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import EquationList from './EquationList';
 
 const MIN_WIDTH = 200;
@@ -9,7 +9,8 @@ const HANDLE_PX = 6;
 
 type EquationSidebarProps = {
   title?: string;
-  defaultOpen?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   defaultWidth?: number;
   side?: 'left' | 'right';
   className?: string;
@@ -17,12 +18,12 @@ type EquationSidebarProps = {
 
 export default function EquationSidebar({
   title = 'Equations',
-  defaultOpen = true,
+  open,
+  onOpenChange,
   defaultWidth = DEFAULT_WIDTH,
   side = 'right',
   className = '',
 }: EquationSidebarProps) {
-  const [open, setOpen] = useState(defaultOpen);
   const [width, setWidth] = useState(() =>
     Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, defaultWidth)),
   );
@@ -69,29 +70,7 @@ export default function EquationSidebar({
   }, [side]);
 
   if (!open) {
-    return (
-      <div
-        className={`absolute top-1/2 z-50 -translate-y-1/2 ${side === 'right' ? 'right-0' : 'left-0'} ${className}`}
-      >
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex cursor-pointer h-24 w-9 items-center justify-center rounded-l-md border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-          style={
-            side === 'left'
-              ? { borderRadius: '0 0.375rem 0.375rem 0' }
-              : undefined
-          }
-          aria-expanded={false}
-          aria-label={`Show ${title}`}
-        >
-          <PanelRightOpen
-            className={`size-5 shrink-0 ${side === 'left' ? 'rotate-180' : ''}`}
-            aria-hidden
-          />
-        </button>
-      </div>
-    );
+    return null;
   }
 
   const handle = (
@@ -107,7 +86,7 @@ export default function EquationSidebar({
 
   return (
     <aside
-      className={`absolute top-0 bottom-0 z-50 flex border-gray-200 bg-white shadow-lg ${side === 'right' ? 'right-0 border-l' : 'left-0 border-r'} ${className}`}
+      className={`flex h-full shrink-0 border-gray-200 bg-white shadow-lg ${side === 'right' ? 'border-l' : 'border-r'} ${className}`}
       style={{ width }}
     >
       {side === 'right' ? handle : null}
@@ -119,7 +98,7 @@ export default function EquationSidebar({
           </span>
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={() => onOpenChange(false)}
             className="rounded cursor-pointer p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             aria-label={`Hide ${title}`}
           >
@@ -130,7 +109,7 @@ export default function EquationSidebar({
             )}
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-auto p-3 text-sm text-gray-700">
+        <div className="min-h-0 flex-1 overflow-auto text-sm text-gray-700">
           <EquationList />
         </div>
       </div>

@@ -1,0 +1,73 @@
+import { create } from 'zustand';
+import type { MathField } from 'react-mathquill';
+import type { EquationRow } from '../types/types';
+import { newEquationId } from '../utils/equationMath';
+
+const mathFields = new Map<string, MathField>();
+
+interface EquationStoreState {
+  equations: EquationRow[];
+  equationInputFocused: boolean;
+  activeEquationId: string | null;
+  addEquation: (equation: EquationRow) => void;
+  removeEquation: (equation: EquationRow) => void;
+  updateEquation: (equation: EquationRow) => void;
+  clear: () => void;
+  setEquationInputFocused: (v: boolean) => void;
+  setActiveEquationId: (id: string | null) => void;
+  registerMathField: (id: string, mf: MathField | null) => void;
+  getMathField: (id: string) => MathField | null;
+  getMathTarget: () => MathField | null;
+}
+
+export const useEquationStore = create<EquationStoreState>((set, get) => ({
+  equations: [{ id: newEquationId(), latex: '' }],
+  equationInputFocused: false,
+  activeEquationId: null,
+
+  addEquation: (equation) =>
+    set((state) => ({ equations: [...state.equations, equation] })),
+
+  removeEquation: (equation) =>
+    set((state) => ({
+      equations: state.equations.filter((e) => e.id !== equation.id),
+    })),
+
+  updateEquation: (equation) =>
+    set((state) => ({
+      equations: state.equations.map((e) =>
+        e.id === equation.id ? equation : e,
+      ),
+    })),
+
+  clear: () => {
+    mathFields.clear();
+    set({
+      equations: [],
+      activeEquationId: null,
+      equationInputFocused: false,
+    });
+  },
+
+  setEquationInputFocused: (v) => set({ equationInputFocused: v }),
+
+  setActiveEquationId: (id) => set({ activeEquationId: id }),
+
+  registerMathField: (id, mf) => {
+    if (mf) mathFields.set(id, mf);
+    else mathFields.delete(id);
+  },
+
+  getMathField: (id) => mathFields.get(id) ?? null,
+
+  getMathTarget: () => {
+    const state = get();
+    const aid = state.activeEquationId;
+    if (aid) {
+      const mf = mathFields.get(aid);
+      if (mf) return mf;
+    }
+    const first = state.equations[0]?.id;
+    return first ? (mathFields.get(first) ?? null) : null;
+  },
+}));

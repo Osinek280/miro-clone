@@ -3,9 +3,12 @@ import { type MathField } from 'react-mathquill';
 
 type MathKeyboardProps = {
   getTarget: () => MathField | null;
+  /** When false, nothing is rendered (floating overlay hidden). */
+  visible?: boolean;
 };
 
-export function MathKeyboard({ getTarget }: MathKeyboardProps) {
+export function MathKeyboard({ getTarget, visible = true }: MathKeyboardProps) {
+  if (!visible) return null;
   const run = useCallback(
     (fn: (mf: MathField) => void) => {
       const mf = getTarget();
@@ -60,25 +63,32 @@ export function MathKeyboard({ getTarget }: MathKeyboardProps) {
   ];
 
   return (
-    <div className="mt-4 border-t border-gray-200 pt-3">
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
-        Keyboard
-      </p>
-      <div className="flex flex-col gap-1.5">
-        {rows.map((row, ri) => (
-          <div key={ri} className="flex flex-wrap gap-1">
-            {row.map((key) => (
-              <button
-                key={key.label}
-                type="button"
-                className="min-w-[2rem] flex-1 rounded border border-gray-200 bg-gray-50 px-1.5 py-1.5 text-center text-xs font-medium text-gray-800 shadow-sm transition-colors hover:border-indigo-200 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                onMouseDown={(e) => onKeyMouseDown(e, key.fn)}
-              >
-                {key.label}
-              </button>
-            ))}
-          </div>
-        ))}
+    <div className="absolute inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none">
+      <div
+        className="pointer-events-auto w-full max-w-lg rounded-lg border border-gray-200 bg-white p-3 shadow-xl"
+        onMouseDown={(e) => e.preventDefault()}
+        role="dialog"
+        aria-label="Klawiatura matematyczna"
+      >
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+          Keyboard
+        </p>
+        <div className="flex flex-col gap-1.5">
+          {rows.map((row, ri) => (
+            <div key={ri} className="flex flex-wrap gap-1">
+              {row.map((key) => (
+                <button
+                  key={key.label}
+                  type="button"
+                  className="min-w-[2rem] flex-1 rounded border border-gray-200 bg-gray-50 px-1.5 py-1.5 text-center text-xs font-medium text-gray-800 shadow-sm transition-colors hover:border-indigo-200 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  onMouseDown={(e) => onKeyMouseDown(e, key.fn)}
+                >
+                  {key.label}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
