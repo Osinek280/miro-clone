@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, PanelRightOpen } from 'lucide-react';
+import EquationList from './EquationList';
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 560;
@@ -130,7 +131,7 @@ export default function EquationSidebar({
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-auto p-3 text-sm text-gray-700">
-          Equations List Here
+          <EquationList />
         </div>
       </div>
 
