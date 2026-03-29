@@ -1,16 +1,16 @@
+import { useShallow } from 'zustand/react/shallow';
 import { PALETTE_COLORS } from '../constants/paletteColors';
+import { useCanvasStore } from '../hooks/useCanvasStore';
 
-export default function Palette({
-  color,
-  size,
-  setColor,
-  setSize,
-}: {
-  color: string;
-  size: number;
-  setColor: (color: string) => void;
-  setSize: (size: number) => void;
-}) {
+export default function Palette() {
+  const { color, size, setColor, setSize } = useCanvasStore(
+    useShallow((s) => ({
+      color: s.color,
+      size: s.size,
+      setColor: s.setColor,
+      setSize: s.setSize,
+    })),
+  );
   return (
     <div
       className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[#f9f6f0]/95 border border-black/10 rounded-full px-4 py-2 shadow-[0_8px_30px_rgba(13,13,13,0.09)] backdrop-blur-xl z-40"
