@@ -9,7 +9,5 @@ export function MathKeyboardOverlay() {
     [],
   );
 
-  return (
-    <MathKeyboard getTarget={getTarget} visible={equationInputFocused} />
-  );
+  return <MathKeyboard getTarget={getTarget} visible={equationInputFocused} />;
 }
