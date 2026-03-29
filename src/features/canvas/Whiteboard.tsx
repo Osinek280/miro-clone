@@ -11,7 +11,7 @@ import { Zoom } from './components/Zoom';
 import { Grid } from './grid/Grid';
 import { useHistoryStore } from './hooks/useHistoryStore';
 import { useBoardSync } from './hooks/useBoardSync';
-import EquationSidebar from '../desmos/EquationSidebar';
+import EquationSidebar from '../desmos/components/EquationSidebar';
 
 export default function Whiteboard({
   boardId,
