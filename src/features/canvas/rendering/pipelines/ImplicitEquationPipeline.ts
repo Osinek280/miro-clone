@@ -71,11 +71,19 @@ void main() {
   for (int i = 0; i < MAX_EQUATIONS; i++) {
     if (i >= u_equationCount) break;
     float f = evalEquation(i, world.x, mathY);
-    // Evaluate expressions in math coordinates (Y up) to avoid vertical mirroring.
-    float fx = evalEquation(i, world.x + worldPerPixel, mathY);
-    float fy = evalEquation(i, world.x, mathY + worldPerPixel);
-    float grad = length(vec2(fx - f, fy - f));
-    float edgeDistPx = abs(f) / max(grad, 1e-4);
+    // Central differences for |∇f| (more stable than one-sided when one axis barely changes).
+    float fxp = evalEquation(i, world.x + worldPerPixel, mathY);
+    float fxm = evalEquation(i, world.x - worldPerPixel, mathY);
+    float fyp = evalEquation(i, world.x, mathY + worldPerPixel);
+    float fym = evalEquation(i, world.x, mathY - worldPerPixel);
+    vec2 dfd = vec2(
+      (fxp - fxm) / (2.0 * worldPerPixel),
+      (fyp - fym) / (2.0 * worldPerPixel)
+    );
+    // |∇f| * worldPerPixel — same scale as forward length(fx - f, fy - f).
+    float gradStep = length(dfd) * worldPerPixel;
+    // Floor scales with zoom so a fixed 1e-4 in world units cannot dominate when worldPerPixel is tiny.
+    float edgeDistPx = abs(f) / max(gradStep, worldPerPixel * 1e-8);
     float contour = 1.0 - smoothstep(0.0, u_thickness[i], edgeDistPx);
     if (contour > bestAlpha) {
       bestAlpha = contour * u_colors[i].a;
