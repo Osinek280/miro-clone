@@ -4,6 +4,7 @@ import { BrushPipeline } from './rendering/pipelines/BrushPipeline';
 import { CursorPipeline } from './rendering/pipelines/CursorPipeline';
 import { RectPipeline } from './rendering/pipelines/RectPipeline';
 import { assembleSceneBuffer } from './rendering/scene/SceneAssembler';
+import { ImplicitEquationPipeline } from './rendering/pipelines/ImplicitEquationPipeline';
 
 export class WebGLRenderer {
   private gl: WebGLRenderingContext | null = null;
@@ -15,6 +16,7 @@ export class WebGLRenderer {
   private brushPipeline: BrushPipeline | null = null;
   private rectPipeline: RectPipeline | null = null;
   private cursorPipeline: CursorPipeline | null = null;
+  private implicitEquationPipeline: ImplicitEquationPipeline | null = null;
 
   initialize(canvas: HTMLCanvasElement): boolean {
     this.canvas = canvas;
@@ -39,13 +41,15 @@ export class WebGLRenderer {
     this.brushPipeline = BrushPipeline.create(gl);
     this.rectPipeline = RectPipeline.create(gl);
     this.cursorPipeline = CursorPipeline.create(gl);
+    this.implicitEquationPipeline = ImplicitEquationPipeline.create(gl);
 
     this.vertexBuffer = gl.createBuffer();
     if (
       !this.vertexBuffer ||
       !this.brushPipeline ||
       !this.rectPipeline ||
-      !this.cursorPipeline
+      !this.cursorPipeline ||
+      !this.implicitEquationPipeline
     ) {
       return false;
     }
@@ -99,7 +103,8 @@ export class WebGLRenderer {
       !vertexBuffer ||
       !this.brushPipeline ||
       !this.rectPipeline ||
-      !this.cursorPipeline
+      !this.cursorPipeline ||
+      !this.implicitEquationPipeline
     ) {
       return;
     }
@@ -127,6 +132,14 @@ export class WebGLRenderer {
       canvas,
       vertexBuffer,
       pointCount,
+      zoom,
+      offsetX,
+      offsetY,
+    });
+
+    this.implicitEquationPipeline.draw({
+      gl,
+      canvas,
       zoom,
       offsetX,
       offsetY,
@@ -192,6 +205,7 @@ export class WebGLRenderer {
       this.brushPipeline?.dispose(gl);
       this.rectPipeline?.dispose(gl);
       this.cursorPipeline?.dispose(gl);
+      this.implicitEquationPipeline?.dispose(gl);
     }
 
     this.gl = null;
@@ -200,6 +214,7 @@ export class WebGLRenderer {
     this.brushPipeline = null;
     this.rectPipeline = null;
     this.cursorPipeline = null;
+    this.implicitEquationPipeline = null;
     this.cache.clear();
   }
 }
