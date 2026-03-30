@@ -16,7 +16,7 @@ type EquationSidebarProps = {
   className?: string;
 };
 
-export default function EquationSidebar({
+function EquationSidebar({
   title = 'Equations',
   open,
   onOpenChange,
@@ -118,3 +118,5 @@ export default function EquationSidebar({
     </aside>
   );
 }
+
+export default React.memo(EquationSidebar);

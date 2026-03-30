@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import {
   DrawModeEnum,
   type Camera,
@@ -28,7 +29,16 @@ export function useMouseHandlers(
     size: currentSize,
     setIsDrawing,
     setIsGrabbing,
-  } = useCanvasStore();
+  } = useCanvasStore(
+    useShallow((s) => ({
+      setCurrentPath: s.setCurrentPath,
+      setObjects: s.setObjects,
+      color: s.color,
+      size: s.size,
+      setIsDrawing: s.setIsDrawing,
+      setIsGrabbing: s.setIsGrabbing,
+    })),
+  );
 
   const prevModeRef = useRef<DrawModeEnum>(DrawModeEnum.Draw);
 
@@ -94,21 +104,21 @@ export function useMouseHandlers(
   };
 
   useEffect(() => {
+    if (mode !== DrawModeEnum.Draw) return;
+
+    const state = useCanvasStore.getState();
     if (
-      mode === DrawModeEnum.Draw &&
-      (select.selectedIds.length > 0 ||
-        select.selectionBox !== null ||
-        select.selectedBoundingBox !== null)
+      state.selectedIds.length > 0 ||
+      state.selectionBox !== null ||
+      state.selectedBoundingBox !== null
     ) {
-      select.clearSelection();
+      state.clearSelection();
     }
-  }, [mode, select]);
+  }, [mode]);
 
   return {
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
-    selectionBox: select.selectionBox,
-    selectedBoundingBox: select.selectedBoundingBox,
   };
 }

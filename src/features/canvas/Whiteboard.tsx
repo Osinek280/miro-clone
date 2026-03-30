@@ -279,9 +279,7 @@ export default function Whiteboard({
 
           <Toolbar mode={mode} setMode={setMode} />
 
-          <Palette />
-
-          {equationInputFocused && <MathKeyboardOverlay />}
+          {equationInputFocused ? <MathKeyboardOverlay /> : <Palette />}
 
           {boardReady && <Grid cameraRef={cameraRef} style="grid" />}
 

@@ -12,20 +12,6 @@ export function useSelectMode(
   cameraRef: React.RefObject<Camera>,
   pushSyncedOperation: (op: HistoryOperation) => void,
 ) {
-  const {
-    objects,
-    setObjects,
-    selectionBox,
-    setSelectionBox,
-    selectedBoundingBox,
-    setSelectedBoundingBox,
-    selectedIds,
-    setSelectedIds,
-    isMoving,
-    setIsMoving,
-    clearSelection,
-  } = useCanvasStore();
-
   const lastMousePosRef = useRef<Point>({ x: 0, y: 0 });
   const dragStartRef = useRef<Point>({ x: 0, y: 0 });
   const dragOffsetRef = useRef<Point>({ x: 0, y: 0 });
@@ -36,23 +22,24 @@ export function useSelectMode(
   }, []);
 
   const onMouseDown = (point: Point) => {
+    const state = useCanvasStore.getState();
     dragOffsetRef.current.x = 0;
     dragOffsetRef.current.y = 0;
-    const obj = findObjectAtPoint(point, objects, cameraRef.current.zoom);
+    const obj = findObjectAtPoint(point, state.objects, cameraRef.current.zoom);
     if (obj) {
       dragStartRef.current = point;
-      if (selectedIds.includes(obj.id)) {
-        setIsMoving(true);
+      if (state.selectedIds.includes(obj.id)) {
+        state.setIsMoving(true);
       } else {
-        setSelectedIds([obj.id]);
-        setSelectedBoundingBox(calcBoundingBox([obj]));
-        setIsMoving(true);
+        state.setSelectedIds([obj.id]);
+        state.setSelectedBoundingBox(calcBoundingBox([obj]));
+        state.setIsMoving(true);
       }
       lastMousePosRef.current = point;
     } else {
-      setSelectionBox({ start: point, end: point });
-      setSelectedIds([]);
-      setSelectedBoundingBox(null);
+      state.setSelectionBox({ start: point, end: point });
+      state.setSelectedIds([]);
+      state.setSelectedBoundingBox(null);
     }
   };
 
@@ -62,7 +49,7 @@ export function useSelectMode(
     const currentIsMoving = state.isMoving;
 
     if (currentSelectionBox) {
-      setSelectionBox({ ...currentSelectionBox, end: point });
+      state.setSelectionBox({ ...currentSelectionBox, end: point });
     } else if (currentIsMoving) {
       const dx = point.x - lastMousePosRef.current.x;
       const dy = point.y - lastMousePosRef.current.y;
@@ -74,6 +61,9 @@ export function useSelectMode(
   };
 
   const onMouseUp = () => {
+    const state = useCanvasStore.getState();
+    const { selectionBox, isMoving, selectedIds, objects } = state;
+
     if (selectionBox) {
       const { start, end } = selectionBox;
       const minX = Math.min(start.x, end.x);
@@ -86,11 +76,11 @@ export function useSelectMode(
           (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY,
         ),
       );
-      setSelectedIds(selected.map((o) => o.id));
-      setSelectedBoundingBox(
+      state.setSelectedIds(selected.map((o) => o.id));
+      state.setSelectedBoundingBox(
         selected.length > 0 ? calcBoundingBox(selected) : null,
       );
-      setSelectionBox(null);
+      state.setSelectionBox(null);
     } else if (isMoving && selectedIds.length > 0) {
       const dx = dragOffsetRef.current.x;
       const dy = dragOffsetRef.current.y;
@@ -104,7 +94,7 @@ export function useSelectMode(
           dx,
           dy,
         });
-        setObjects((prev) =>
+        state.setObjects((prev) =>
           prev.map((o) =>
             selectedIds.includes(o.id)
               ? {
@@ -117,7 +107,7 @@ export function useSelectMode(
               : o,
           ),
         );
-        setSelectedBoundingBox((prev) =>
+        state.setSelectedBoundingBox((prev) =>
           prev
             ? {
                 start: roundPoint({
@@ -135,16 +125,11 @@ export function useSelectMode(
       dragOffsetRef.current.x = 0;
       dragOffsetRef.current.y = 0;
     }
-    setIsMoving(false);
+    state.setIsMoving(false);
   };
 
   return {
-    selectedIds,
-    setSelectedIds,
-    clearSelection,
-    selectionBox,
-    selectedBoundingBox,
-    isMoving,
+    clearSelection: useCanvasStore.getState().clearSelection,
     onMouseDown,
     onMouseMove,
     onMouseUp,
