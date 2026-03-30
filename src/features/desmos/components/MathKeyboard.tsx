@@ -3,7 +3,6 @@ import { type MathField } from 'react-mathquill';
 
 type MathKeyboardProps = {
   getTarget: () => MathField | null;
-  /** When false, nothing is rendered (floating overlay hidden). */
   visible?: boolean;
 };
 
@@ -63,9 +62,9 @@ export function MathKeyboard({ getTarget, visible = true }: MathKeyboardProps) {
   ];
 
   return (
-    <div className="absolute inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none">
+    <div className="absolute bottom-16 left-1/2 z-[60] -translate-x-1/2 pointer-events-none">
       <div
-        className="pointer-events-auto w-full max-w-lg rounded-lg border border-gray-200 bg-white p-3 shadow-xl"
+        className="pointer-events-auto w-[min(42rem,calc(100vw-2rem))] rounded-lg border border-gray-200 bg-white p-3 shadow-xl"
         onMouseDown={(e) => e.preventDefault()}
         role="dialog"
         aria-label="Klawiatura matematyczna"

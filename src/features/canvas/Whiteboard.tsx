@@ -14,6 +14,7 @@ import { useHistoryStore } from './hooks/useHistoryStore';
 import { useBoardSync } from './hooks/useBoardSync';
 import EquationSidebar from '../desmos/components/EquationSidebar';
 import { MathKeyboardOverlay } from '../desmos/components/MathKeyboardOverlay';
+import { useEquationStore } from '../desmos/store/useEquationStore';
 
 export default function Whiteboard({
   boardId,
@@ -28,6 +29,7 @@ export default function Whiteboard({
   const targetCameraRef = useRef({ zoom: 1, offsetX: 0, offsetY: 0 });
   const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
   const [equationSidebarOpen, setEquationSidebarOpen] = useState(true);
+  const equationInputFocused = useEquationStore((s) => s.equationInputFocused);
 
   const history = useHistoryStore();
 
@@ -279,6 +281,8 @@ export default function Whiteboard({
 
           <Palette />
 
+          {equationInputFocused && <MathKeyboardOverlay />}
+
           {boardReady && <Grid cameraRef={cameraRef} style="grid" />}
 
           {!boardReady && (
@@ -298,8 +302,6 @@ export default function Whiteboard({
               </div>
             </div>
           )}
-
-          <MathKeyboardOverlay />
 
           <canvas
             ref={canvasRef}
@@ -336,7 +338,7 @@ export default function Whiteboard({
           <button
             type="button"
             onClick={() => setEquationSidebarOpen(true)}
-            className="absolute top-1/2 right-0 z-40 flex h-24 w-9 -translate-y-1/2 items-center justify-center rounded-l-md border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="absolute cursor-pointer top-1/2 right-0 z-40 flex h-24 w-9 -translate-y-1/2 items-center justify-center rounded-l-md border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             aria-expanded={false}
             aria-label="Show Equations"
           >
