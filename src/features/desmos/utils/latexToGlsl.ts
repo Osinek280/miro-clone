@@ -155,10 +155,7 @@ class LatexParser {
   parseCommand(): string {
     this.consume('\\');
     const start = this.i;
-    while (
-      this.i < this.s.length &&
-      /[a-zA-Z]/.test(this.s[this.i]!)
-    ) {
+    while (this.i < this.s.length && /[a-zA-Z]/.test(this.s[this.i]!)) {
       this.i++;
     }
     const name = this.s.slice(start, this.i).toLowerCase();
