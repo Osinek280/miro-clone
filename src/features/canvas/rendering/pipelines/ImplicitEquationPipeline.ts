@@ -1,7 +1,9 @@
+import { MATH_UNIT_WORLD_SCALE } from '../../constants/mathViewConstants';
 import { HARDCODED_IMPLICIT_EQUATIONS } from '../equations/hardcodedImplicitEquations';
 import { compileShader, linkProgram } from '../gl/glProgram';
 
 const MAX_EQUATIONS = 16;
+const S = `${MATH_UNIT_WORLD_SCALE}.0`;
 
 const VERT = `
 attribute vec2 a_unit;
@@ -64,18 +66,20 @@ void main() {
   vec2 world = (screen - u_offset) / zoom;
   float worldPerPixel = 1.0 / zoom;
   float mathY = -world.y;
+  float mx = world.x / ${S};
+  float my = mathY / ${S};
 
   float bestAlpha = 0.0;
   vec4 bestColor = vec4(0.0);
 
   for (int i = 0; i < MAX_EQUATIONS; i++) {
     if (i >= u_equationCount) break;
-    float f = evalEquation(i, world.x, mathY);
+    float f = evalEquation(i, mx, my);
     // Central differences for |∇f| (more stable than one-sided when one axis barely changes).
-    float fxp = evalEquation(i, world.x + worldPerPixel, mathY);
-    float fxm = evalEquation(i, world.x - worldPerPixel, mathY);
-    float fyp = evalEquation(i, world.x, mathY + worldPerPixel);
-    float fym = evalEquation(i, world.x, mathY - worldPerPixel);
+    float fxp = evalEquation(i, mx + worldPerPixel / ${S}, my);
+    float fxm = evalEquation(i, mx - worldPerPixel / ${S}, my);
+    float fyp = evalEquation(i, mx, my + worldPerPixel / ${S});
+    float fym = evalEquation(i, mx, my - worldPerPixel / ${S});
     vec2 dfd = vec2(
       (fxp - fxm) / (2.0 * worldPerPixel),
       (fyp - fym) / (2.0 * worldPerPixel)

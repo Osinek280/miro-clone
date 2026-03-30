@@ -281,7 +281,7 @@ export default function Whiteboard({
 
           {equationInputFocused ? <MathKeyboardOverlay /> : <Palette />}
 
-          {boardReady && <Grid cameraRef={cameraRef} style="grid" />}
+          {boardReady && <Grid cameraRef={cameraRef} style="axes" />}
 
           {!boardReady && (
             <div
