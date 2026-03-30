@@ -40,4 +40,10 @@ export const HARDCODED_IMPLICIT_EQUATIONS: readonly ImplicitEquation[] = [
     color: [0.12, 0.62, 0.35, 0.95],
     thickness: 2.0,
   },
+  {
+    id: 'eq-circle-small-offset',
+    expr: '((y)-(pow((x), (pow((2.0), (2.0))))))',
+    color: [0.12, 0.62, 0.35, 0.95],
+    thickness: 2.0,
+  },
 ];
