@@ -3,6 +3,7 @@ import { PanelRightOpen } from 'lucide-react';
 import { WebGLRenderer } from './WebGLRenderer';
 import { DrawModeEnum, type DrawObject, type Point } from './types/types';
 import { useCanvasStore } from './hooks/useCanvasStore';
+import { useRedrawOnEquationChange } from './hooks/useRedrawOnEquationChange';
 import { useCamera } from './hooks/useCamera';
 import { useMouseHandlers } from './hooks/mouse/useMouseHandlers';
 import Palette from './components/Palette';
@@ -30,6 +31,7 @@ export default function Whiteboard({
   const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
   const [equationSidebarOpen, setEquationSidebarOpen] = useState(true);
   const equationInputFocused = useEquationStore((s) => s.equationInputFocused);
+  useRedrawOnEquationChange();
 
   const history = useHistoryStore();
 

@@ -3,13 +3,16 @@ import type { MutableRefObject, RefObject } from 'react';
 import type { WebGLRenderer } from '../WebGLRenderer';
 import type { Camera, DrawObject, Point, SelectionBox } from '../types/types';
 import { getVisibleObjects } from '../utils/objectUtils';
-import { HARDCODED_IMPLICIT_EQUATIONS } from '../rendering/equations/hardcodedImplicitEquations';
+import { useEquationStore } from '../../desmos/store/useEquationStore';
+import { buildImplicitEquations } from '../../desmos/utils/equationImplicit';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Canvas store – single source of truth for render + interaction state.
 // - Holds refs to renderer and camera (set from Whiteboard after init).
 // - renderFrame() reads store state + refs and triggers a draw (no prop drilling).
 // - Render is coalesced with rAF so multiple state updates in one frame = one draw.
+// - Equations live in useEquationStore; useRedrawOnEquationChange in Whiteboard
+//   keeps the canvas in sync (subscription → scheduleRedraw).
 // ─────────────────────────────────────────────────────────────────────────────
 
 type SetStateAction<T> = T | ((prev: T) => T);
@@ -160,7 +163,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       selectedBoundingBox,
       selectionDrag,
       cursors,
-      [...HARDCODED_IMPLICIT_EQUATIONS],
+      buildImplicitEquations(useEquationStore.getState().equations),
     );
   },
 
