@@ -1,5 +1,6 @@
 import type { DrawObject, Point, SelectionBox } from './types/types';
 import { GeometryCache } from './rendering/cache/GeometryCache';
+import { ShaderProgramCache } from './rendering/cache/ShaderProgramCache';
 import { BrushPipeline } from './rendering/pipelines/BrushPipeline';
 import { CursorPipeline } from './rendering/pipelines/CursorPipeline';
 import { RectPipeline } from './rendering/pipelines/RectPipeline';
@@ -13,6 +14,7 @@ export class WebGLRenderer {
   private vertexBuffer: WebGLBuffer | null = null;
 
   private cache = new GeometryCache();
+  private implicitShaderCache = new ShaderProgramCache();
 
   private brushPipeline: BrushPipeline | null = null;
   private rectPipeline: RectPipeline | null = null;
@@ -42,7 +44,10 @@ export class WebGLRenderer {
     this.brushPipeline = BrushPipeline.create(gl);
     this.rectPipeline = RectPipeline.create(gl);
     this.cursorPipeline = CursorPipeline.create(gl);
-    this.implicitEquationPipeline = ImplicitEquationPipeline.create(gl);
+    this.implicitEquationPipeline = ImplicitEquationPipeline.create(
+      gl,
+      this.implicitShaderCache,
+    );
 
     this.vertexBuffer = gl.createBuffer();
     if (
@@ -211,6 +216,7 @@ export class WebGLRenderer {
       this.rectPipeline?.dispose(gl);
       this.cursorPipeline?.dispose(gl);
       this.implicitEquationPipeline?.dispose(gl);
+      this.implicitShaderCache.clear(gl);
     }
 
     this.gl = null;

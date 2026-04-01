@@ -1,4 +1,5 @@
 import { MATH_UNIT_WORLD_SCALE } from '../../constants/mathViewConstants';
+import { ShaderProgramCache } from '../cache/ShaderProgramCache';
 import { type ImplicitEquation } from '../equations/hardcodedImplicitEquations';
 import { compileShader, linkProgram } from '../gl/glProgram';
 
@@ -104,7 +105,22 @@ void main() {
 `;
 }
 
+function compileImplicitEquationProgram(
+  gl: WebGLRenderingContext,
+  equations: readonly ImplicitEquation[],
+): WebGLProgram | null {
+  const fragSrc = buildFragmentShader(
+    equations.length,
+    equations.map((eq) => eq.expr),
+  );
+  const vert = compileShader(gl, gl.VERTEX_SHADER, VERT);
+  const frag = compileShader(gl, gl.FRAGMENT_SHADER, fragSrc);
+  if (!vert || !frag) return null;
+  return linkProgram(gl, vert, frag);
+}
+
 export class ImplicitEquationPipeline {
+  private shaderCache: ShaderProgramCache;
   private program: WebGLProgram;
   private quadBuffer: WebGLBuffer;
   private aUnit: number;
@@ -122,6 +138,7 @@ export class ImplicitEquationPipeline {
   private thickness = new Float32Array(MAX_EQUATIONS);
 
   private constructor(
+    shaderCache: ShaderProgramCache,
     program: WebGLProgram,
     quadBuffer: WebGLBuffer,
     aUnit: number,
@@ -134,6 +151,7 @@ export class ImplicitEquationPipeline {
     equationCount: number,
     equationSignature: string,
   ) {
+    this.shaderCache = shaderCache;
     this.program = program;
     this.quadBuffer = quadBuffer;
     this.aUnit = aUnit;
@@ -152,29 +170,21 @@ export class ImplicitEquationPipeline {
     equations: readonly ImplicitEquation[],
     signature: string,
   ): boolean {
-    const fragSrc = buildFragmentShader(
-      equations.length,
-      equations.map((eq) => eq.expr),
+    const program = this.shaderCache.getOrCreate(gl, signature, () =>
+      compileImplicitEquationProgram(gl, equations),
     );
+    if (!program) return false;
 
-    const vert = compileShader(gl, gl.VERTEX_SHADER, VERT);
-    const frag = compileShader(gl, gl.FRAGMENT_SHADER, fragSrc);
-    if (!vert || !frag) return false;
-
-    const newProgram = linkProgram(gl, vert, frag);
-    if (!newProgram) return false;
-
-    gl.deleteProgram(this.program);
-    this.program = newProgram;
+    this.program = program;
     this.equationSignature = signature;
 
-    this.uResolution = gl.getUniformLocation(newProgram, 'u_resolution')!;
-    this.uOffset = gl.getUniformLocation(newProgram, 'u_offset')!;
-    this.uZoom = gl.getUniformLocation(newProgram, 'u_zoom')!;
-    this.uEquationCount = gl.getUniformLocation(newProgram, 'u_equationCount')!;
-    this.uColors = gl.getUniformLocation(newProgram, 'u_colors[0]')!;
-    this.uThickness = gl.getUniformLocation(newProgram, 'u_thickness[0]')!;
-    this.aUnit = gl.getAttribLocation(newProgram, 'a_unit');
+    this.uResolution = gl.getUniformLocation(program, 'u_resolution')!;
+    this.uOffset = gl.getUniformLocation(program, 'u_offset')!;
+    this.uZoom = gl.getUniformLocation(program, 'u_zoom')!;
+    this.uEquationCount = gl.getUniformLocation(program, 'u_equationCount')!;
+    this.uColors = gl.getUniformLocation(program, 'u_colors[0]')!;
+    this.uThickness = gl.getUniformLocation(program, 'u_thickness[0]')!;
+    this.aUnit = gl.getAttribLocation(program, 'a_unit');
 
     return true;
   }
@@ -207,24 +217,22 @@ export class ImplicitEquationPipeline {
     return true;
   }
 
-  static create(gl: WebGLRenderingContext): ImplicitEquationPipeline | null {
+  static create(
+    gl: WebGLRenderingContext,
+    shaderCache: ShaderProgramCache,
+  ): ImplicitEquationPipeline | null {
     const equations: ImplicitEquation[] = [];
-    const fragSrc = buildFragmentShader(
-      equations.length,
-      equations.map((eq) => eq.expr),
+    const signature = equations.map((eq) => eq.expr).join('\u0000');
+    const program = shaderCache.getOrCreate(gl, signature, () =>
+      compileImplicitEquationProgram(gl, equations),
     );
-
-    const vert = compileShader(gl, gl.VERTEX_SHADER, VERT);
-    const frag = compileShader(gl, gl.FRAGMENT_SHADER, fragSrc);
-    if (!vert || !frag) return null;
-
-    const program = linkProgram(gl, vert, frag);
     if (!program) return null;
 
     const quadBuffer = gl.createBuffer();
     if (!quadBuffer) return null;
 
     const pipeline = new ImplicitEquationPipeline(
+      shaderCache,
       program,
       quadBuffer,
       gl.getAttribLocation(program, 'a_unit'),
@@ -286,6 +294,5 @@ export class ImplicitEquationPipeline {
 
   dispose(gl: WebGLRenderingContext): void {
     gl.deleteBuffer(this.quadBuffer);
-    gl.deleteProgram(this.program);
   }
 }
