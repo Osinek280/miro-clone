@@ -70,50 +70,50 @@ export default function EquationList() {
         {equations.map((row, index) => {
           const glslError = getEquationGlslError(row);
           return (
-          <li
-            key={row.id}
-            className="flex items-start gap-2 border border-gray-100 bg-gray-50/80"
-          >
-            <span
-              className="mt-2 w-5 shrink-0 text-right text-xs tabular-nums text-gray-400"
-              aria-hidden
+            <li
+              key={row.id}
+              className="flex items-start gap-2 border border-gray-100 bg-gray-50/80"
             >
-              {index + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <EditableMathField
-                latex={row.latex}
-                className="w-full min-h-[2.5rem] rounded-none border border-gray-200 bg-white px-2 py-1.5 text-[15px] shadow-inner"
-                config={{ spaceBehavesLikeTab: true }}
-                onChange={(mf) => updateLatex(row.id, mf.latex())}
-                mathquillDidMount={(mf) => {
-                  useEquationStore.getState().registerMathField(row.id, mf);
-                }}
-                onFocus={() => {
-                  useEquationStore.getState().setActiveEquationId(row.id);
-                  setEquationInputFocused(true);
-                }}
-                onBlur={() => setEquationInputFocused(false)}
-              />
-              {glslError ? (
-                <p
-                  className="mt-1 px-0.5 text-xs leading-snug text-red-600"
-                  role="alert"
-                >
-                  {glslError}
-                </p>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              disabled={equations.length <= 1}
-              className="mt-1.5 shrink-0 rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              aria-label="Usuń równanie"
-              onClick={() => removeRow(row.id)}
-            >
-              <Trash2 className="size-4" aria-hidden />
-            </button>
-          </li>
+              <span
+                className="mt-2 w-5 shrink-0 text-right text-xs tabular-nums text-gray-400"
+                aria-hidden
+              >
+                {index + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <EditableMathField
+                  latex={row.latex}
+                  className="w-full min-h-10 rounded-none border border-gray-200 bg-white px-2 py-1.5 text-[15px] shadow-inner"
+                  config={{ spaceBehavesLikeTab: true }}
+                  onChange={(mf) => updateLatex(row.id, mf.latex())}
+                  mathquillDidMount={(mf) => {
+                    useEquationStore.getState().registerMathField(row.id, mf);
+                  }}
+                  onFocus={() => {
+                    useEquationStore.getState().setActiveEquationId(row.id);
+                    setEquationInputFocused(true);
+                  }}
+                  onBlur={() => setEquationInputFocused(false)}
+                />
+                {glslError ? (
+                  <p
+                    className="mt-1 px-0.5 text-xs leading-snug text-red-600"
+                    role="alert"
+                  >
+                    {glslError}
+                  </p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                disabled={equations.length <= 1}
+                className="mt-1.5 shrink-0 rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                aria-label="Usuń równanie"
+                onClick={() => removeRow(row.id)}
+              >
+                <Trash2 className="size-4" aria-hidden />
+              </button>
+            </li>
           );
         })}
       </ul>
