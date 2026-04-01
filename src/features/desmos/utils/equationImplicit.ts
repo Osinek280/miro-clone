@@ -1,4 +1,4 @@
-import type { ImplicitEquation } from '../../canvas/rendering/equations/hardcodedImplicitEquations';
+import type { ImplicitEquation } from '../types/types';
 import type { EquationRow } from '../types/types';
 import { latexExprToGlsl, latexExprToGlslWithError } from './latexToGlsl';
 

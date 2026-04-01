@@ -1,6 +1,6 @@
 import { MATH_UNIT_WORLD_SCALE } from '../../constants/mathViewConstants';
 import { ShaderProgramCache } from '../cache/ShaderProgramCache';
-import { type ImplicitEquation } from '../equations/hardcodedImplicitEquations';
+import type { ImplicitEquation } from '../../../desmos/types/types';
 import { compileShader, linkProgram } from '../gl/glProgram';
 
 const MAX_EQUATIONS = 16;

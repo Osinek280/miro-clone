@@ -6,7 +6,7 @@ import { CursorPipeline } from './rendering/pipelines/CursorPipeline';
 import { RectPipeline } from './rendering/pipelines/RectPipeline';
 import { assembleSceneBuffer } from './rendering/scene/SceneAssembler';
 import { ImplicitEquationPipeline } from './rendering/pipelines/ImplicitEquationPipeline';
-import type { ImplicitEquation } from './rendering/equations/hardcodedImplicitEquations';
+import type { ImplicitEquation } from '../desmos/types/types';
 
 export class WebGLRenderer {
   private gl: WebGLRenderingContext | null = null;
