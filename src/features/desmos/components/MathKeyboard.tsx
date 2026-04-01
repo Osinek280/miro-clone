@@ -7,7 +7,6 @@ type MathKeyboardProps = {
 };
 
 export function MathKeyboard({ getTarget, visible = true }: MathKeyboardProps) {
-  if (!visible) return null;
   const run = useCallback(
     (fn: (mf: MathField) => void) => {
       const mf = getTarget();
@@ -17,6 +16,8 @@ export function MathKeyboard({ getTarget, visible = true }: MathKeyboardProps) {
     },
     [getTarget],
   );
+
+  if (!visible) return null;
 
   const onKeyMouseDown = (e: React.MouseEvent, fn: (mf: MathField) => void) => {
     e.preventDefault();
@@ -62,7 +63,7 @@ export function MathKeyboard({ getTarget, visible = true }: MathKeyboardProps) {
   ];
 
   return (
-    <div className="absolute bottom-16 left-1/2 z-[60] -translate-x-1/2 pointer-events-none">
+    <div className="absolute bottom-16 left-1/2 z-60 -translate-x-1/2 pointer-events-none">
       <div
         className="pointer-events-auto w-[min(42rem,calc(100vw-2rem))] rounded-lg border border-gray-200 bg-white p-3 shadow-xl"
         onMouseDown={(e) => e.preventDefault()}
@@ -79,7 +80,7 @@ export function MathKeyboard({ getTarget, visible = true }: MathKeyboardProps) {
                 <button
                   key={key.label}
                   type="button"
-                  className="min-w-[2rem] flex-1 rounded border border-gray-200 bg-gray-50 px-1.5 py-1.5 text-center text-xs font-medium text-gray-800 shadow-sm transition-colors hover:border-indigo-200 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  className="min-w-8 flex-1 rounded border border-gray-200 bg-gray-50 px-1.5 py-1.5 text-center text-xs font-medium text-gray-800 shadow-sm transition-colors hover:border-indigo-200 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   onMouseDown={(e) => onKeyMouseDown(e, key.fn)}
                 >
                   {key.label}
