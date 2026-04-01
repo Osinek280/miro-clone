@@ -1,5 +1,5 @@
 import { MATH_UNIT_WORLD_SCALE } from '../../constants/mathViewConstants';
-import { HARDCODED_IMPLICIT_EQUATIONS } from '../equations/hardcodedImplicitEquations';
+import { type ImplicitEquation } from '../equations/hardcodedImplicitEquations';
 import { compileShader, linkProgram } from '../gl/glProgram';
 
 const MAX_EQUATIONS = 16;
@@ -115,6 +115,7 @@ export class ImplicitEquationPipeline {
   private uColors: WebGLUniformLocation;
   private uThickness: WebGLUniformLocation;
   private equationCount: number;
+  private equationSignature: string;
 
   // Reused typed arrays: no per-frame allocations.
   private colors = new Float32Array(MAX_EQUATIONS * 4);
@@ -131,6 +132,7 @@ export class ImplicitEquationPipeline {
     uColors: WebGLUniformLocation,
     uThickness: WebGLUniformLocation,
     equationCount: number,
+    equationSignature: string,
   ) {
     this.program = program;
     this.quadBuffer = quadBuffer;
@@ -142,10 +144,71 @@ export class ImplicitEquationPipeline {
     this.uColors = uColors;
     this.uThickness = uThickness;
     this.equationCount = equationCount;
+    this.equationSignature = equationSignature;
+  }
+
+  private rebuildProgramForEquations(
+    gl: WebGLRenderingContext,
+    equations: readonly ImplicitEquation[],
+    signature: string,
+  ): boolean {
+    const fragSrc = buildFragmentShader(
+      equations.length,
+      equations.map((eq) => eq.expr),
+    );
+
+    const vert = compileShader(gl, gl.VERTEX_SHADER, VERT);
+    const frag = compileShader(gl, gl.FRAGMENT_SHADER, fragSrc);
+    if (!vert || !frag) return false;
+
+    const newProgram = linkProgram(gl, vert, frag);
+    if (!newProgram) return false;
+
+    gl.deleteProgram(this.program);
+    this.program = newProgram;
+    this.equationSignature = signature;
+
+    this.uResolution = gl.getUniformLocation(newProgram, 'u_resolution')!;
+    this.uOffset = gl.getUniformLocation(newProgram, 'u_offset')!;
+    this.uZoom = gl.getUniformLocation(newProgram, 'u_zoom')!;
+    this.uEquationCount = gl.getUniformLocation(newProgram, 'u_equationCount')!;
+    this.uColors = gl.getUniformLocation(newProgram, 'u_colors[0]')!;
+    this.uThickness = gl.getUniformLocation(newProgram, 'u_thickness[0]')!;
+    this.aUnit = gl.getAttribLocation(newProgram, 'a_unit');
+
+    return true;
+  }
+
+  private updateEquations(
+    gl: WebGLRenderingContext,
+    implicitEquations: readonly ImplicitEquation[],
+  ): boolean {
+    const equations = implicitEquations.slice(0, MAX_EQUATIONS);
+    const signature = equations.map((eq) => eq.expr).join('\u0000');
+
+    if (
+      signature !== this.equationSignature &&
+      !this.rebuildProgramForEquations(gl, equations, signature)
+    ) {
+      return false;
+    }
+
+    this.equationCount = equations.length;
+    for (let i = 0; i < this.equationCount; i++) {
+      const eq = equations[i];
+      this.thickness[i] = eq.thickness;
+      const base = i * 4;
+      this.colors[base] = eq.color[0];
+      this.colors[base + 1] = eq.color[1];
+      this.colors[base + 2] = eq.color[2];
+      this.colors[base + 3] = eq.color[3];
+    }
+
+    return true;
   }
 
   static create(gl: WebGLRenderingContext): ImplicitEquationPipeline | null {
-    const equations = HARDCODED_IMPLICIT_EQUATIONS.slice(0, MAX_EQUATIONS);
+    const equations: ImplicitEquation[] = [];
     const fragSrc = buildFragmentShader(
       equations.length,
       equations.map((eq) => eq.expr),
@@ -172,6 +235,7 @@ export class ImplicitEquationPipeline {
       gl.getUniformLocation(program, 'u_colors[0]')!,
       gl.getUniformLocation(program, 'u_thickness[0]')!,
       equations.length,
+      equations.map((eq) => eq.expr).join('\u0000'),
     );
 
     for (let i = 0; i < equations.length; i++) {
@@ -196,8 +260,14 @@ export class ImplicitEquationPipeline {
     zoom: number;
     offsetX: number;
     offsetY: number;
+    implicitEquations?: ImplicitEquation[];
   }): void {
-    const { gl, canvas, zoom, offsetX, offsetY } = params;
+    const { gl, canvas, zoom, offsetX, offsetY, implicitEquations } = params;
+
+    if (implicitEquations && !this.updateEquations(gl, implicitEquations)) {
+      return;
+    }
+
     if (this.equationCount <= 0) return;
 
     gl.useProgram(this.program);

@@ -5,6 +5,7 @@ import { CursorPipeline } from './rendering/pipelines/CursorPipeline';
 import { RectPipeline } from './rendering/pipelines/RectPipeline';
 import { assembleSceneBuffer } from './rendering/scene/SceneAssembler';
 import { ImplicitEquationPipeline } from './rendering/pipelines/ImplicitEquationPipeline';
+import type { ImplicitEquation } from './rendering/equations/hardcodedImplicitEquations';
 
 export class WebGLRenderer {
   private gl: WebGLRenderingContext | null = null;
@@ -93,6 +94,7 @@ export class WebGLRenderer {
       selectedIds: readonly string[];
     } | null = null,
     cursors: Point[],
+    implicitEquations: ImplicitEquation[],
   ): void {
     const gl = this.gl;
     const canvas = this.canvas;
@@ -108,6 +110,8 @@ export class WebGLRenderer {
     ) {
       return;
     }
+
+    console.log('implicitEquations', implicitEquations);
 
     this.resizeCanvas();
     this.cache.sync(objects);
@@ -143,6 +147,7 @@ export class WebGLRenderer {
       zoom,
       offsetX,
       offsetY,
+      implicitEquations,
     });
 
     if (selectionBox) {

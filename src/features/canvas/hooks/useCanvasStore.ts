@@ -3,6 +3,7 @@ import type { MutableRefObject, RefObject } from 'react';
 import type { WebGLRenderer } from '../WebGLRenderer';
 import type { Camera, DrawObject, Point, SelectionBox } from '../types/types';
 import { getVisibleObjects } from '../utils/objectUtils';
+import { HARDCODED_IMPLICIT_EQUATIONS } from '../rendering/equations/hardcodedImplicitEquations';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Canvas store – single source of truth for render + interaction state.
@@ -159,6 +160,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       selectedBoundingBox,
       selectionDrag,
       cursors,
+      [...HARDCODED_IMPLICIT_EQUATIONS],
     );
   },
 
