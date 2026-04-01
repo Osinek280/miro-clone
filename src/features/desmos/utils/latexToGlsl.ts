@@ -15,18 +15,49 @@ function preprocess(latex: string): string {
     .replace(/\s+/g, '');
 }
 
-export function latexExprToGlsl(latex: string): string | null {
+export type LatexToGlslResult =
+  | { ok: true; glsl: string }
+  | { ok: false; error: string };
+
+function mapParseError(e: unknown): string {
+  if (!(e instanceof Error)) return 'Expression syntax error';
+  const m = e.message;
+  if (m === 'expected') return 'Unexpected character or missing parenthesis';
+  if (m === 'unbalanced') return 'Unclosed brace';
+  if (m === ']') return 'Missing ] in root index';
+  if (m === 'cmd') return 'Invalid LaTeX command syntax';
+  if (m === 'sqrt idx') return 'Invalid root index';
+  if (m.startsWith('unknown \\'))
+    return `Unknown LaTeX command: \\${m.slice(8)}`;
+  if (m.startsWith('var ')) {
+    const name = m.slice(4);
+    return `Variable "${name}" is not allowed (only x and y are allowed)`;
+  }
+  if (m === 'primary') return 'Unexpected character in expression';
+  if (m === 'eof') return 'Incomplete expression';
+  if (m === 'num') return 'Invalid number';
+  return 'Expression syntax error';
+}
+
+export function latexExprToGlslWithError(latex: string): LatexToGlslResult {
   const raw = latex.trim();
-  if (!raw) return null;
+  if (!raw) return { ok: false, error: 'Empty expression' };
   try {
     const p = new LatexParser(preprocess(raw));
     const out = p.parseExpression();
     p.skipSpace();
-    if (p.i < p.s.length) return null;
-    return out;
-  } catch {
-    return null;
+    if (p.i < p.s.length) {
+      return { ok: false, error: 'Unexpected character after expression' };
+    }
+    return { ok: true, glsl: out };
+  } catch (e) {
+    return { ok: false, error: mapParseError(e) };
   }
+}
+
+export function latexExprToGlsl(latex: string): string | null {
+  const r = latexExprToGlslWithError(latex);
+  return r.ok ? r.glsl : null;
 }
 
 class LatexParser {

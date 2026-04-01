@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { addStyles, EditableMathField } from 'react-mathquill';
 import { useEquationStore } from '../store/useEquationStore';
+import { getEquationGlslError } from '../utils/equationImplicit';
 import { newEquationId } from '../utils/equationMath';
 
 export default function EquationList() {
@@ -66,7 +67,9 @@ export default function EquationList() {
   return (
     <div className="flex flex-col gap-3">
       <ul className="flex list-none flex-col gap-2 p-0">
-        {equations.map((row, index) => (
+        {equations.map((row, index) => {
+          const glslError = getEquationGlslError(row);
+          return (
           <li
             key={row.id}
             className="flex items-start gap-2 border border-gray-100 bg-gray-50/80"
@@ -92,6 +95,14 @@ export default function EquationList() {
                 }}
                 onBlur={() => setEquationInputFocused(false)}
               />
+              {glslError ? (
+                <p
+                  className="mt-1 px-0.5 text-xs leading-snug text-red-600"
+                  role="alert"
+                >
+                  {glslError}
+                </p>
+              ) : null}
             </div>
             <button
               type="button"
@@ -103,7 +114,8 @@ export default function EquationList() {
               <Trash2 className="size-4" aria-hidden />
             </button>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <button
