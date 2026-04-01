@@ -15,7 +15,7 @@ function getTimestamp(): number {
 /** Ensure op has opId and timestamp; mutate clone. */
 // export function stampOp<T extends HistoryOperation>(op: T): T {
 //   const o = structuredClone(op) as T;
-//   if (o.opId == null) (o as { opId: string }).opId = crypto.randomUUID();
+//   if (o.opId == null) (o as { opId: string }).opId = newId();
 //   if (o.timestamp == null)
 //     (o as { timestamp: number }).timestamp = getTimestamp();
 //   return o;

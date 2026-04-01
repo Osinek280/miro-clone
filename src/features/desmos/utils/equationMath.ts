@@ -1,6 +1,7 @@
 /** Parsing / validation helpers for MathQuill latex in the equation list. */
 
 import type { EquationRow } from '../types/types';
+import { newId } from './id';
 
 const RESERVED_WORDS =
   /\b(sin|cos|tan|cot|sec|csc|ln|log|lim|max|min|sqrt|frac|sum|int|pi|infty)\b/gi;
@@ -146,10 +147,6 @@ export function validateMathEquationLatex(latex: string): EquationValidation {
   return { valid: true };
 }
 
-export function newEquationId(): string {
-  return crypto.randomUUID();
-}
-
 /**
  * Ensures each free variable has a line `name=10` once, if no LHS assignment for that name exists yet.
  */
@@ -163,7 +160,7 @@ export function reconcileEquationRows(rows: EquationRow[]): EquationRow[] {
     const free = getFreeVariables(row.latex, defined);
     for (const v of free) {
       if (defined.has(v) || lhsDefined.has(v)) continue;
-      out.push({ id: newEquationId(), latex: `${v}=10` });
+      out.push({ id: newId(), latex: `${v}=10` });
       defined.add(v);
       lhsDefined.add(v);
     }

@@ -16,6 +16,7 @@ import { useBoardSync } from './hooks/useBoardSync';
 import EquationSidebar from '../desmos/components/EquationSidebar';
 import { MathKeyboardOverlay } from '../desmos/components/MathKeyboardOverlay';
 import { useEquationStore } from '../desmos/store/useEquationStore';
+import { newId } from '../desmos/utils/id';
 
 export default function Whiteboard({
   boardId,
@@ -101,7 +102,7 @@ export default function Whiteboard({
       const y = Math.random() * 5000 - 2500;
 
       arr.push({
-        id: crypto.randomUUID(),
+        id: newId(),
         points: [
           { x, y },
           { x: x + Math.random() * 50, y: y + Math.random() * 50 },
@@ -115,18 +116,18 @@ export default function Whiteboard({
     }
 
     pushSyncedOperation({
-      opId: crypto.randomUUID(),
+      opId: newId(),
       timestamp: Date.now(),
       type: 'batch',
       operations: [
         {
-          opId: crypto.randomUUID(),
+          opId: newId(),
           timestamp: Date.now(),
           type: 'remove',
           ids: prev.map((o) => o.id),
         },
         {
-          opId: crypto.randomUUID(),
+          opId: newId(),
           timestamp: Date.now(),
           type: 'add',
           objects: arr,
@@ -217,7 +218,7 @@ export default function Whiteboard({
         const toRemove = objects.filter((o) => selectedIds.includes(o.id));
         if (toRemove.length > 0) {
           pushSyncedOperation({
-            opId: crypto.randomUUID(),
+            opId: newId(),
             timestamp: Date.now(),
             type: 'remove',
             ids: toRemove.map((o) => o.id),

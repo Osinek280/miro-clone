@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { MathField } from 'react-mathquill';
 import type { EquationRow } from '../types/types';
-import { newEquationId } from '../utils/equationMath';
+import { newId } from '../utils/id';
 import { buildImplicitEquations } from '../utils/equationImplicit';
 
 const mathFields = new Map<string, MathField>();
@@ -29,7 +29,7 @@ interface EquationStoreState {
 }
 
 export const useEquationStore = create<EquationStoreState>((set, get) => ({
-  equations: [{ id: newEquationId(), latex: '' }],
+  equations: [{ id: newId(), latex: '' }],
   equationInputFocused: false,
   activeEquationId: null,
 

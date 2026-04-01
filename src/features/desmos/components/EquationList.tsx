@@ -3,7 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { addStyles, EditableMathField } from 'react-mathquill';
 import { useEquationStore } from '../store/useEquationStore';
 import { getEquationGlslError } from '../utils/equationImplicit';
-import { newEquationId } from '../utils/equationMath';
+import { newId } from '../utils/id';
 
 export default function EquationList() {
   const equations = useEquationStore((s) => s.equations);
@@ -36,7 +36,7 @@ export default function EquationList() {
     } = useEquationStore.getState();
     const last = rows[rows.length - 1];
     if (!last || last.latex.trim() === '') return;
-    const id = newEquationId();
+    const id = newId();
     add({ id, latex: '' });
     requestAnimationFrame(() => {
       setActiveEquationId(id);

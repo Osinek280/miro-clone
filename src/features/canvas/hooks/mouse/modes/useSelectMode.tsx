@@ -7,6 +7,7 @@ import {
   findObjectAtPoint,
   getVisibleObjects,
 } from '../../../utils/objectUtils';
+import { newId } from '../../../../desmos/utils/id';
 
 export function useSelectMode(
   cameraRef: React.RefObject<Camera>,
@@ -87,7 +88,7 @@ export function useSelectMode(
       if (dx !== 0 || dy !== 0) {
         const ts = Date.now();
         pushSyncedOperation({
-          opId: crypto.randomUUID(),
+          opId: newId(),
           timestamp: ts,
           type: 'translate',
           ids: [...selectedIds],
