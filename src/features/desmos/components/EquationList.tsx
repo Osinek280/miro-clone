@@ -4,8 +4,16 @@ import { addStyles, EditableMathField } from 'react-mathquill';
 import { useEquationStore } from '../store/useEquationStore';
 import { getEquationGlslError } from '../utils/equationImplicit';
 import { newId } from '../utils/id';
+import type { EquationRow } from '../types/types';
 
-export default function EquationList() {
+export default function EquationList({
+  pushSyncedEquation,
+}: {
+  pushSyncedEquation: (
+    equation: EquationRow,
+    action: 'upsert' | 'remove',
+  ) => void;
+}) {
   const equations = useEquationStore((s) => s.equations);
   const updateEquation = useEquationStore((s) => s.updateEquation);
   const setEquationInputFocused = useEquationStore(
@@ -45,24 +53,28 @@ export default function EquationList() {
     });
   }, []);
 
-  const removeRow = useCallback((id: string) => {
-    const {
-      equations: rows,
-      removeEquation: remove,
-      registerMathField,
-      activeEquationId,
-      setActiveEquationId,
-    } = useEquationStore.getState();
-    if (rows.length <= 1) return;
-    const row = rows.find((r) => r.id === id);
-    if (!row) return;
-    remove(row);
-    registerMathField(id, null);
-    if (activeEquationId === id) {
-      const next = rows.filter((r) => r.id !== id);
-      setActiveEquationId(next[0]?.id ?? null);
-    }
-  }, []);
+  const removeRow = useCallback(
+    (id: string) => {
+      const {
+        equations: rows,
+        removeEquation: remove,
+        registerMathField,
+        activeEquationId,
+        setActiveEquationId,
+      } = useEquationStore.getState();
+      if (rows.length <= 1) return;
+      const row = rows.find((r) => r.id === id);
+      if (!row) return;
+      remove(row);
+      pushSyncedEquation(row, 'remove');
+      registerMathField(id, null);
+      if (activeEquationId === id) {
+        const next = rows.filter((r) => r.id !== id);
+        setActiveEquationId(next[0]?.id ?? null);
+      }
+    },
+    [pushSyncedEquation],
+  );
 
   return (
     <div className="flex flex-col gap-3">
@@ -93,7 +105,17 @@ export default function EquationList() {
                     useEquationStore.getState().setActiveEquationId(row.id);
                     setEquationInputFocused(true);
                   }}
-                  onBlur={() => setEquationInputFocused(false)}
+                  onBlur={() => {
+                    setEquationInputFocused(false);
+
+                    const equation = useEquationStore
+                      .getState()
+                      .equations.find((e) => e.id === row.id);
+
+                    if (equation) {
+                      pushSyncedEquation(equation, 'upsert');
+                    }
+                  }}
                 />
                 {glslError ? (
                   <p

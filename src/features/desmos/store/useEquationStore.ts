@@ -16,6 +16,10 @@ interface EquationStoreState {
   addEquation: (equation: EquationRow) => void;
   removeEquation: (equation: EquationRow) => void;
   updateEquation: (equation: EquationRow) => void;
+  syncRemoteEquation: (
+    equation: EquationRow,
+    action: 'upsert' | 'remove',
+  ) => void;
 
   setEquationInputFocused: (v: boolean) => void;
   setActiveEquationId: (id: string | null) => void;
@@ -59,6 +63,40 @@ export const useEquationStore = create<EquationStoreState>((set, get) => ({
       return {
         equations,
         implicitEquations,
+      };
+    }),
+
+  syncRemoteEquation: (equation: EquationRow, action: 'upsert' | 'remove') =>
+    set((state) => {
+      if (action === 'remove') {
+        const equations = state.equations.filter((e) => e.id !== equation.id);
+        return {
+          equations,
+          implicitEquations: buildImplicitEquations(equations),
+        };
+      }
+
+      // upsert
+      const exists = state.equations.some((e) => e.id === equation.id);
+      if (exists) {
+        const equations = state.equations.map((e) =>
+          e.id === equation.id ? equation : e,
+        );
+        return {
+          equations,
+          implicitEquations: buildImplicitEquations(equations),
+        };
+      }
+
+      const trimmed =
+        state.equations.at(-1)?.latex.trim() === ''
+          ? state.equations.slice(0, -1)
+          : state.equations;
+
+      const equations = [...trimmed, equation];
+      return {
+        equations,
+        implicitEquations: buildImplicitEquations(equations),
       };
     }),
 

@@ -13,3 +13,8 @@ export type ImplicitEquation = {
    */
   thickness: number;
 };
+
+export type EquationSyncMessage = {
+  userId: string;
+  action: 'upsert' | 'remove';
+} & EquationRow;

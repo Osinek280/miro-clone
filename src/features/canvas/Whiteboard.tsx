@@ -79,6 +79,7 @@ export default function Whiteboard({
     publishOperation,
     boardReady,
     replayInitialCamera,
+    pushSyncedEquation,
   } = useBoardSync(boardId, setCenterAtPoint, canvasRef, onSnapshotError);
 
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
@@ -348,6 +349,7 @@ export default function Whiteboard({
         title="Equations"
         open={equationSidebarOpen}
         onOpenChange={setEquationSidebarOpen}
+        pushSyncedEquation={pushSyncedEquation}
       />
     </div>
   );

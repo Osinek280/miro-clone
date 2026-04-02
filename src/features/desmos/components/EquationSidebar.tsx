@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import EquationList from './EquationList';
+import type { EquationRow } from '../types/types';
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 560;
@@ -14,6 +15,10 @@ type EquationSidebarProps = {
   defaultWidth?: number;
   side?: 'left' | 'right';
   className?: string;
+  pushSyncedEquation: (
+    equation: EquationRow,
+    action: 'upsert' | 'remove',
+  ) => void;
 };
 
 function EquationSidebar({
@@ -23,6 +28,7 @@ function EquationSidebar({
   defaultWidth = DEFAULT_WIDTH,
   side = 'right',
   className = '',
+  pushSyncedEquation,
 }: EquationSidebarProps) {
   const [width, setWidth] = useState(() =>
     Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, defaultWidth)),
@@ -110,7 +116,7 @@ function EquationSidebar({
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-auto text-sm text-gray-700">
-          <EquationList />
+          <EquationList pushSyncedEquation={pushSyncedEquation} />
         </div>
       </div>
 

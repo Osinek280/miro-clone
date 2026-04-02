@@ -22,6 +22,12 @@ import { fromWireOperation, toWireOperation } from '../utils/wireCodec';
 import throttle from 'lodash.throttle';
 import { tokenStorage } from '../../auth/utils/TokenStorage';
 import { useAuthStore } from '../../auth/store/auth.store';
+import type {
+  EquationRow,
+  EquationSyncMessage,
+  ImplicitEquation,
+} from '../../desmos/types/types';
+import { useEquationStore } from '../../desmos/store/useEquationStore';
 
 /**
  * When true, serializes the non-wire op for size comparison (extra CPU on send).
@@ -133,8 +139,15 @@ export function useBoardSync(
         client.subscribe(`/topic/cursor/${boardId}`, (msg) => {
           const data = JSON.parse(decoder.decode(msg.binaryBody));
           if (data.userId === userId) return;
-          console.log(data);
           setCursors([data.cursor]);
+        });
+
+        client.subscribe(`/topic/equation/${boardId}`, (msg) => {
+          const data = JSON.parse(
+            decoder.decode(msg.binaryBody),
+          ) as EquationSyncMessage;
+          if (data.userId === userId) return;
+          useEquationStore.getState().syncRemoteEquation(data, data.action);
         });
       },
 
@@ -205,48 +218,65 @@ export function useBoardSync(
   const publishOperation = useCallback(
     (op: HistoryOperation) => {
       const client = stompClientRef.current;
-      if (client?.connected) {
-        const t0 = performance.now();
-        const wireOp = toWireOperation({
-          ...op,
-          userId: userId,
-        });
-        const t1 = performance.now();
-        const encoder = new TextEncoder();
-        const wireString = JSON.stringify(wireOp);
-        const t2 = performance.now();
-        const wirePayload = encoder.encode(wireString);
-        const t3 = performance.now();
+      if (!client?.connected) return;
+      const t0 = performance.now();
+      const wireOp = toWireOperation({
+        ...op,
+        userId: userId,
+      });
+      const t1 = performance.now();
+      const encoder = new TextEncoder();
+      const wireString = JSON.stringify(wireOp);
+      const t2 = performance.now();
+      const wirePayload = encoder.encode(wireString);
+      const t3 = performance.now();
 
-        if (WS_LOG_WIRE_VS_NORMAL_PAYLOAD) {
-          const normalString = JSON.stringify(op);
-          const t4 = performance.now();
-          const normalPayload = encoder.encode(normalString);
-          const t5 = performance.now();
-          const savedBytes = normalPayload.byteLength - wirePayload.byteLength;
-          const savedPercent =
-            normalPayload.byteLength > 0
-              ? (savedBytes / normalPayload.byteLength) * 100
-              : 0;
+      if (WS_LOG_WIRE_VS_NORMAL_PAYLOAD) {
+        const normalString = JSON.stringify(op);
+        const t4 = performance.now();
+        const normalPayload = encoder.encode(normalString);
+        const t5 = performance.now();
+        const savedBytes = normalPayload.byteLength - wirePayload.byteLength;
+        const savedPercent =
+          normalPayload.byteLength > 0
+            ? (savedBytes / normalPayload.byteLength) * 100
+            : 0;
 
-          console.log(
-            `[ws][draw][tx] opType=${op.type} wire=${wirePayload.byteLength}B normal=${normalPayload.byteLength}B saved=${savedBytes}B (${savedPercent.toFixed(
-              1,
-            )}%) total=${(t5 - t0).toFixed(2)}ms toWire=${(t1 - t0).toFixed(
-              2,
-            )}ms stringifyWire=${(t2 - t1).toFixed(2)}ms encodeWire=${(
-              t3 - t2
-            ).toFixed(2)}ms stringifyNormal=${(t4 - t3).toFixed(
-              2,
-            )}ms encodeNormal=${(t5 - t4).toFixed(2)}ms`,
-          );
-        }
-
-        client.publish({
-          destination: `/app/draw/${boardId}`,
-          binaryBody: wirePayload,
-        });
+        console.log(
+          `[ws][draw][tx] opType=${op.type} wire=${wirePayload.byteLength}B normal=${normalPayload.byteLength}B saved=${savedBytes}B (${savedPercent.toFixed(
+            1,
+          )}%) total=${(t5 - t0).toFixed(2)}ms toWire=${(t1 - t0).toFixed(
+            2,
+          )}ms stringifyWire=${(t2 - t1).toFixed(2)}ms encodeWire=${(
+            t3 - t2
+          ).toFixed(2)}ms stringifyNormal=${(t4 - t3).toFixed(
+            2,
+          )}ms encodeNormal=${(t5 - t4).toFixed(2)}ms`,
+        );
       }
+
+      client.publish({
+        destination: `/app/draw/${boardId}`,
+        binaryBody: wirePayload,
+      });
+    },
+    [boardId],
+  );
+
+  const publishEquation = useCallback(
+    (equation: EquationRow, action: 'upsert' | 'remove') => {
+      const client = stompClientRef.current;
+      if (!client?.connected) return;
+      client.publish({
+        destination: `/app/equation/${boardId}`,
+        binaryBody: new TextEncoder().encode(
+          JSON.stringify({
+            userId,
+            action,
+            ...equation,
+          }),
+        ),
+      });
     },
     [boardId],
   );
@@ -276,6 +306,13 @@ export function useBoardSync(
     [boardId],
   );
 
+  const pushSyncedEquation = useCallback(
+    (equation: EquationRow, action: 'upsert' | 'remove') => {
+      publishEquation(equation, action);
+    },
+    [boardId],
+  );
+
   const pushSyncedCursorThrottled = useMemo(
     () => throttle(pushSyncedCursor, 50), // 50ms = max 20 fps
     [pushSyncedCursor],
@@ -287,5 +324,6 @@ export function useBoardSync(
     pushSyncedCursorThrottled,
     boardReady,
     replayInitialCamera,
+    pushSyncedEquation,
   };
 }

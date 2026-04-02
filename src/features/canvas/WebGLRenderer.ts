@@ -116,8 +116,6 @@ export class WebGLRenderer {
       return;
     }
 
-    console.log('implicitEquations', implicitEquations);
-
     this.resizeCanvas();
     this.cache.sync(objects);
 
