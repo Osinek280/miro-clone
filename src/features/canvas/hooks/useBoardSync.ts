@@ -25,7 +25,6 @@ import { useAuthStore } from '../../auth/store/auth.store';
 import type {
   EquationRow,
   EquationSyncMessage,
-  ImplicitEquation,
 } from '../../desmos/types/types';
 import { useEquationStore } from '../../desmos/store/useEquationStore';
 
