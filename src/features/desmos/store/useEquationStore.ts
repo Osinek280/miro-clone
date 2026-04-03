@@ -21,6 +21,7 @@ interface EquationStoreState {
     action: 'upsert' | 'remove',
   ) => void;
 
+  setEquations: (equations: EquationRow[]) => void;
   setEquationInputFocused: (v: boolean) => void;
   setActiveEquationId: (id: string | null) => void;
   registerMathField: (id: string, mf: MathField | null) => void;
@@ -65,6 +66,8 @@ export const useEquationStore = create<EquationStoreState>((set, get) => ({
         implicitEquations,
       };
     }),
+
+  setEquations: (equations: EquationRow[]) => set({ equations }),
 
   syncRemoteEquation: (equation: EquationRow, action: 'upsert' | 'remove') =>
     set((state) => {

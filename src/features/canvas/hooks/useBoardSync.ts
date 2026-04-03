@@ -68,6 +68,10 @@ export function useBoardSync(
         const { data } = await canvasApi.getSnapshot(boardId);
         if (cancelled) return;
 
+        console.log(data);
+
+        useEquationStore.getState().setEquations(data.equations);
+
         lastSnapshotCameraRef.current = {
           point: {
             x: data.camera.offsetX,
