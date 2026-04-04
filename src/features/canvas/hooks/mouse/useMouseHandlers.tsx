@@ -112,4 +112,3 @@ export function useMouseHandlers(
     selectedBoundingBox: select.selectedBoundingBox,
   };
 }
-

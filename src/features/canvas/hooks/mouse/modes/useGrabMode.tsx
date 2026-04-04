@@ -17,4 +17,3 @@ export function useGrabMode(
 
   return { onMouseMove };
 }
-

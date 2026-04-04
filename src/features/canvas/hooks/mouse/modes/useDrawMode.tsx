@@ -144,4 +144,3 @@ export function useDrawMode(
 
   return { onMouseDown, onMouseMove, onMouseUp };
 }
-
