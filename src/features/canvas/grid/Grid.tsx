@@ -2,16 +2,13 @@ import { useEffect, useRef } from 'react';
 import type { Camera } from '../types/types';
 import { useGrid } from './useGrid';
 
-export type GridStyle = 'grid' | 'dots' | 'axes'; // for future use
-
 interface GridProps {
   cameraRef: React.RefObject<Camera>;
-  style?: GridStyle;
 }
 
-export function Grid({ cameraRef, style = 'grid' }: GridProps) {
+export function Grid({ cameraRef }: GridProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { drawGrid } = useGrid(canvasRef, cameraRef, style);
+  const { drawGrid } = useGrid(canvasRef, cameraRef);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -33,3 +30,4 @@ export function Grid({ cameraRef, style = 'grid' }: GridProps) {
     />
   );
 }
+

@@ -279,7 +279,7 @@ export default function Whiteboard({
         setSize={setSize}
       />
 
-      {boardReady && <Grid cameraRef={cameraRef} style="grid" />}
+      {boardReady && <Grid cameraRef={cameraRef} />}
 
       {!boardReady && (
         <div
@@ -327,3 +327,4 @@ export default function Whiteboard({
     </div>
   );
 }
+
