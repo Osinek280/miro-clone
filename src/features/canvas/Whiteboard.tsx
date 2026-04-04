@@ -75,8 +75,6 @@ export default function Whiteboard({
     replayInitialCamera,
   } = useBoardSync(boardId, setCenterAtPoint, canvasRef, onSnapshotError);
 
-  const [rendererReady, setRendererReady] = useState(false);
-
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
     cameraRef,
@@ -144,7 +142,6 @@ export default function Whiteboard({
 
     rendererRef.current = renderer;
     useCanvasStore.getState().setRefs(rendererRef, cameraRef);
-    setRendererReady(true);
 
     // Set up resize handler
     const resizeCanvas = () => {
@@ -156,16 +153,15 @@ export default function Whiteboard({
     window.addEventListener('resize', resizeCanvas);
 
     return () => {
-      setRendererReady(false);
       window.removeEventListener('resize', resizeCanvas);
       renderer.cleanup();
     };
   }, []);
 
   useEffect(() => {
-    if (!rendererReady || !boardReady) return;
+    if (!rendererRef.current || !boardReady) return;
     replayInitialCamera();
-  }, [rendererReady, boardReady, replayInitialCamera]);
+  }, [rendererRef, boardReady, replayInitialCamera]);
 
   const animateCamera = useCallback(() => {
     if (animateCameraRef.current) {
@@ -287,7 +283,7 @@ export default function Whiteboard({
 
       {!boardReady && (
         <div
-          className="absolute inset-0 z-[11] flex items-center justify-center bg-gray-100/85 backdrop-blur-[2px] pointer-events-none"
+          className="absolute inset-0 z-11 flex items-center justify-center bg-gray-100/85 backdrop-blur-[2px] pointer-events-none"
           aria-busy="true"
           aria-live="polite"
         >
