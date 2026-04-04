@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { WebGLRenderer } from './WebGLRenderer';
 import { DrawModeEnum, type DrawObject, type Point } from './types/types';
-import { useCanvasStore } from './hooks/useCanvasStore';
 import { useCamera } from './hooks/useCamera';
 import { useMouseHandlers } from './hooks/mouse/useMouseHandlers';
 import Palette from './components/Palette';
@@ -9,8 +8,9 @@ import { getCursor } from './utils/cursorUtils';
 import Toolbar from './components/Toolbar';
 import { Zoom } from './components/Zoom';
 import { Grid } from './grid/Grid';
-import { useHistoryStore } from './hooks/useHistoryStore';
 import { useBoardSync } from './hooks/useBoardSync';
+import { useHistoryStore } from './store/useHistoryStore';
+import { useCanvasStore } from './store/useCanvasStore';
 
 export default function Whiteboard({
   boardId,
@@ -327,3 +327,4 @@ export default function Whiteboard({
     </div>
   );
 }
+

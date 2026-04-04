@@ -1,12 +1,12 @@
 import { useLayoutEffect, useRef } from 'react';
 import type { Camera, HistoryOperation, Point } from '../../../types/types';
-import { useCanvasStore } from '../../useCanvasStore';
 import { roundPoint } from '../../../utils/cameraUtils';
 import {
   calcBoundingBox,
   findObjectAtPoint,
   getVisibleObjects,
 } from '../../../utils/objectUtils';
+import { useCanvasStore } from '../../../store/useCanvasStore';
 
 export function useSelectMode(
   cameraRef: React.RefObject<Camera>,
@@ -150,3 +150,4 @@ export function useSelectMode(
     onMouseUp,
   };
 }
+

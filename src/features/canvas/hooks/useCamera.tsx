@@ -11,7 +11,7 @@ import {
   ZOOM_CHANGE_EPSILON,
   ZOOM_DISPLAY_PRECISION,
 } from '../constants/cameraConstants';
-import { useCanvasStore } from './useCanvasStore';
+import { useCanvasStore } from '../store/useCanvasStore';
 
 export function useCamera(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -167,3 +167,4 @@ export function useCamera(
     setDisplayZoom,
   };
 }
+

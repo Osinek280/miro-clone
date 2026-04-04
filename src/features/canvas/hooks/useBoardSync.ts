@@ -13,9 +13,7 @@ import type {
   Point,
   WireHistoryOperation,
 } from '../types/types';
-import { useCanvasStore } from './useCanvasStore';
 import { Client } from '@stomp/stompjs';
-import { useHistoryStore } from './useHistoryStore';
 import { applyOperation } from '../utils/operations';
 import { cameraCanvasToPersistedCamera } from '../utils/cameraUtils';
 import { fromWireOperation, toWireOperation } from '../utils/wireCodec';
@@ -23,6 +21,8 @@ import throttle from 'lodash.throttle';
 import { tokenStorage } from '../../auth/utils/TokenStorage';
 import { useAuthStore } from '../../auth/store/auth.store';
 import { env } from '../../../utils/env';
+import { useCanvasStore } from '../store/useCanvasStore';
+import { useHistoryStore } from '../store/useHistoryStore';
 
 /**
  * When true, serializes the non-wire op for size comparison (extra CPU on send).
@@ -290,3 +290,4 @@ export function useBoardSync(
     replayInitialCamera,
   };
 }
+

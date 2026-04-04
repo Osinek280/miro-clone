@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import type { DrawObject, HistoryOperation, Point } from '../../../types/types';
 import { roundPoint } from '../../../utils/cameraUtils';
-import { useCanvasStore } from '../../useCanvasStore';
+import { useCanvasStore } from '../../../store/useCanvasStore';
 
 export function useDrawMode(
   setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>,
@@ -144,3 +144,4 @@ export function useDrawMode(
 
   return { onMouseDown, onMouseMove, onMouseUp };
 }
+
