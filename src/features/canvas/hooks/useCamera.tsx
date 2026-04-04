@@ -92,7 +92,7 @@ export function useCamera(
         animationFrameRef.current = requestAnimationFrame(animateCamera);
       }
     },
-    [animateCamera, canvasRef],
+    [animateCamera, canvasRef, targetCameraRef, animationFrameRef, cameraRef],
   );
 
   useEffect(() => {
