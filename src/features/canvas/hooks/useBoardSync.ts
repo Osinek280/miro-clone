@@ -22,6 +22,7 @@ import { fromWireOperation, toWireOperation } from '../utils/wireCodec';
 import throttle from 'lodash.throttle';
 import { tokenStorage } from '../../auth/utils/TokenStorage';
 import { useAuthStore } from '../../auth/store/auth.store';
+import { env } from '../../../utils/env';
 
 /**
  * When true, serializes the non-wire op for size comparison (extra CPU on send).
@@ -87,7 +88,7 @@ export function useBoardSync(
 
   useEffect(() => {
     const client = new Client({
-      brokerURL: 'ws://localhost:8080/ws',
+      brokerURL: env.VITE_BROKER_URL,
       reconnectDelay: 3000,
       // debug: (str) => {
       //   console.log('STOMP:', str);

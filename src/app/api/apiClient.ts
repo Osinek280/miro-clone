@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { env } from '../../utils/env';
 
 export const apiClient = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: env.VITE_BASE_URL,
   withCredentials: true, // 👈 needed for refresh cookie
 });
