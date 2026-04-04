@@ -116,6 +116,7 @@ export function useCamera(
 
     canvas.addEventListener('wheel', onWheel, { passive: false });
     return () => canvas.removeEventListener('wheel', onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvasRef, zoomTowardPoint]);
 
   const handleZoomIn = () => {
