@@ -159,10 +159,8 @@ export function rotateHandleWorldPositionsForQuad(
   corners: readonly [Point, Point, Point, Point],
   zoom: number,
 ): Record<BoxCorner, Point> {
-  const bcx =
-    (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4;
-  const bcy =
-    (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4;
+  const bcx = (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4;
+  const bcy = (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4;
   const off = ROT_HANDLE_OFFSET_PX / zoom;
 
   const bump = (cornerX: number, cornerY: number): Point => {

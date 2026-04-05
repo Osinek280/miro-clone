@@ -194,12 +194,7 @@ export function drawObjectIntersectsSelectionRect(
 ): boolean {
   if (obj.type === 'IMAGE') {
     const b = imageRotatedAxisBounds(obj);
-    return !(
-      maxX < b.minX ||
-      minX > b.maxX ||
-      maxY < b.minY ||
-      minY > b.maxY
-    );
+    return !(maxX < b.minX || minX > b.maxX || maxY < b.minY || minY > b.maxY);
   }
   return obj.points.some(
     (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY,

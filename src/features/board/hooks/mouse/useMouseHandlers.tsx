@@ -80,9 +80,7 @@ export function useMouseHandlers(
     ) {
       const drag = st.selectionDragOffsetRef?.current;
       const quadForHit =
-        st.selectedOrientedQuad &&
-        drag &&
-        (drag.x !== 0 || drag.y !== 0)
+        st.selectedOrientedQuad && drag && (drag.x !== 0 || drag.y !== 0)
           ? offsetSelectionQuad(st.selectedOrientedQuad, drag.x, drag.y)
           : st.selectedOrientedQuad;
       if (

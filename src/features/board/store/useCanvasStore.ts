@@ -188,9 +188,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         : null;
 
     const resizeSession =
-      !rotateSession &&
-      isResizing &&
-      selectionResizeSessionRef?.current
+      !rotateSession && isResizing && selectionResizeSessionRef?.current
         ? selectionResizeSessionRef.current
         : null;
     const previewBounds =
@@ -208,9 +206,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       rotateSession != null ? rotateSession.accumulatedRadians : 0;
 
     const selectionResize =
-      rotateSession == null &&
-      resizeSession != null &&
-      previewBounds != null
+      rotateSession == null && resizeSession != null && previewBounds != null
         ? {
             selectedIds,
             oldBounds: resizeSession.initialBounds,

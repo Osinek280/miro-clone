@@ -4,7 +4,10 @@ import type {
   ImageDrawObject,
   Point,
 } from '../../types/types';
-import { rotateImageSnapshot, rotatePathPointsInPlace } from '../../utils/rotateUtils';
+import {
+  rotateImageSnapshot,
+  rotatePathPointsInPlace,
+} from '../../utils/rotateUtils';
 import type { GeometryCache } from '../cache/GeometryCache';
 import {
   buildStrokeGeometry,
@@ -167,9 +170,7 @@ export function buildSceneDrawPasses(params: {
       : null;
 
   const resizeSet =
-    !rotatePreview &&
-    selectionResize &&
-    selectionResize.selectedIds.length > 0
+    !rotatePreview && selectionResize && selectionResize.selectedIds.length > 0
       ? new Set(selectionResize.selectedIds)
       : null;
   const boundsRemap =

@@ -116,7 +116,13 @@ export class WebGLRenderer {
       pathSnapshots: Record<string, Point[]>;
       imageSnapshots: Record<
         string,
-        { x: number; y: number; width: number; height: number; rotation: number }
+        {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          rotation: number;
+        }
       >;
     } | null = null,
     cursors: Point[],

@@ -44,7 +44,9 @@ export function angleDelta(a: number, b: number): number {
 }
 
 /** Corners in order: nw, ne, se, sw (same winding as selection `drawRect`). */
-export function cornersOfAxisBounds(b: BoundsRect): [Point, Point, Point, Point] {
+export function cornersOfAxisBounds(
+  b: BoundsRect,
+): [Point, Point, Point, Point] {
   return [
     { x: b.minX, y: b.minY },
     { x: b.maxX, y: b.minY },
