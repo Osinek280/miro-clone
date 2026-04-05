@@ -124,7 +124,7 @@ export function useDrawMode(
     if (path.length === 0) return;
     const object: DrawObject = {
       id: crypto.randomUUID(),
-      type: 'path',
+      type: 'PATH',
       points: path.map(roundPoint),
       color: currentColor,
       size: currentSize,

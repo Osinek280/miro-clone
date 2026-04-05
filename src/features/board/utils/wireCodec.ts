@@ -78,10 +78,10 @@ function base64ToBytes(base64: string): Uint8Array {
 }
 
 function toWireObject(object: DrawObject): DrawObjectWire {
-  if (object.type === 'image') {
+  if (object.type === 'IMAGE') {
     return {
       id: object.id,
-      type: 'image',
+      type: 'IMAGE',
       x: object.x,
       y: object.y,
       width: object.width,
@@ -93,7 +93,7 @@ function toWireObject(object: DrawObject): DrawObjectWire {
   }
   return {
     id: object.id,
-    type: 'path',
+    type: 'PATH',
     pointsEncoded: bytesToBase64(encodePoints(object.points)),
     color: object.color,
     size: object.size,
@@ -106,7 +106,7 @@ function fromWireObject(object: DrawObjectWire): DrawObject {
   if (isImageWireObject(object)) {
     return {
       id: object.id,
-      type: 'image',
+      type: 'IMAGE',
       x: object.x,
       y: object.y,
       width: object.width,
@@ -118,7 +118,7 @@ function fromWireObject(object: DrawObjectWire): DrawObject {
   }
   return {
     id: object.id,
-    type: 'path',
+    type: 'PATH',
     points: decodePoints(
       base64ToBytes(normalizeWirePointsEncoded(object.pointsEncoded)),
     ),

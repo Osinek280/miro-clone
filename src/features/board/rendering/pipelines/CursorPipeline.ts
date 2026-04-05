@@ -39,6 +39,8 @@ export class CursorPipeline {
   private program: WebGLProgram;
   private cursorBuf: WebGLBuffer;
   private cursorTexture: WebGLTexture;
+  /** Async SVG decode may finish after dispose() (Strict Mode / route change). */
+  private disposed = false;
   private aPos: number;
   private uResolution: WebGLUniformLocation;
   private uOffset: WebGLUniformLocation;
@@ -130,6 +132,7 @@ export class CursorPipeline {
 
     const img = new Image();
     img.onload = () => {
+      if (this.disposed || !gl.isTexture(this.cursorTexture)) return;
       gl.bindTexture(gl.TEXTURE_2D, this.cursorTexture);
       const prevPremult = gl.getParameter(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0);
@@ -149,7 +152,7 @@ export class CursorPipeline {
     offsetY: number;
   }): void {
     const { gl, canvas, cursors, color, zoom, offsetX, offsetY } = params;
-    if (cursors.length === 0) return;
+    if (this.disposed || cursors.length === 0) return;
 
     const [r, g, b, a] = hexToRgba(color);
 
@@ -175,6 +178,7 @@ export class CursorPipeline {
   }
 
   dispose(gl: WebGLRenderingContext): void {
+    this.disposed = true;
     gl.deleteBuffer(this.cursorBuf);
     gl.deleteTexture(this.cursorTexture);
     gl.deleteProgram(this.program);

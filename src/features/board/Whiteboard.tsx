@@ -100,7 +100,7 @@ export default function Whiteboard({
           { x, y },
           { x: x + Math.random() * 50, y: y + Math.random() * 50 },
         ],
-        type: 'path',
+        type: 'PATH',
         color: '#0d0d0d',
         tombstone: false,
         positionTimestamp: Date.now(),

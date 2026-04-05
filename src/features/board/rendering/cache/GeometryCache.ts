@@ -25,7 +25,7 @@ export class GeometryCache {
     }
 
     for (const obj of objects) {
-      if (obj.type !== 'path') continue;
+      if (obj.type !== 'PATH') continue;
 
       const key = this.stateKey(obj);
       if (this.keys.get(obj.id) === key) continue;

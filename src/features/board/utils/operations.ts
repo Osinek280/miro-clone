@@ -10,7 +10,7 @@ import { roundPoint } from './cameraUtils';
 
 function cloneAddedObject(o: DrawObject): DrawObject {
   const ts = o.positionTimestamp ?? 0;
-  if (o.type === 'path') {
+  if (o.type === 'PATH') {
     return {
       ...o,
       points: o.points.slice(),
@@ -109,7 +109,7 @@ function applyTranslate(children: DrawObject[], op: TranslateOp): DrawObject[] {
     if (!idSet.has(c.id)) return c;
     const objTs = c.positionTimestamp ?? 0;
     if (opTs < objTs) return c;
-    if (c.type === 'path') {
+    if (c.type === 'PATH') {
       return {
         ...c,
         points: c.points.map((p) =>

@@ -12,7 +12,7 @@ export const calcBoundingBox = (objs: DrawObject[]) => {
     maxY = -Infinity;
 
   for (const obj of objs) {
-    if (obj.type === 'image') {
+    if (obj.type === 'IMAGE') {
       if (obj.x < minX) minX = obj.x;
       if (obj.y < minY) minY = obj.y;
       if (obj.x + obj.width > maxX) maxX = obj.x + obj.width;
@@ -79,7 +79,7 @@ export function findObjectAtPoint(
   for (let i = visible.length - 1; i >= 0; i--) {
     const obj = visible[i];
 
-    if (obj.type === 'image') {
+    if (obj.type === 'IMAGE') {
       const margin = BASE_HIT_PX / zoom;
       if (
         point.x >= obj.x - margin &&
@@ -115,7 +115,7 @@ export function drawObjectIntersectsSelectionRect(
   minY: number,
   maxY: number,
 ): boolean {
-  if (obj.type === 'image') {
+  if (obj.type === 'IMAGE') {
     return !(
       maxX < obj.x ||
       minX > obj.x + obj.width ||

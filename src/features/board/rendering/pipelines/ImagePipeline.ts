@@ -22,7 +22,7 @@ varying vec2 v_uv;
 
 void main() {
   vec4 c = texture2D(u_tex, v_uv);
-  if (c.a < 0.004) discard;
+  // Blend handles alpha=0; avoid discard so depth-less quads don’t interact oddly with drivers.
   gl_FragColor = c;
 }
 `;

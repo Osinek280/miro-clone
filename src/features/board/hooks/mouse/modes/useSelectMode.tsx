@@ -75,13 +75,19 @@ export function useSelectMode(
   };
 
   const onMouseUp = () => {
-    if (selectionBox) {
-      const { start, end } = selectionBox;
+    const state = useCanvasStore.getState();
+    const box = state.selectionBox;
+    const moving = state.isMoving;
+    const ids = state.selectedIds;
+    const objs = state.objects;
+
+    if (box) {
+      const { start, end } = box;
       const minX = Math.min(start.x, end.x);
       const maxX = Math.max(start.x, end.x);
       const minY = Math.min(start.y, end.y);
       const maxY = Math.max(start.y, end.y);
-      const visible = getVisibleObjects(objects);
+      const visible = getVisibleObjects(objs);
       const selected = visible.filter((obj) =>
         drawObjectIntersectsSelectionRect(obj, minX, maxX, minY, maxY),
       );
@@ -90,7 +96,7 @@ export function useSelectMode(
         selected.length > 0 ? calcBoundingBox(selected) : null,
       );
       setSelectionBox(null);
-    } else if (isMoving && selectedIds.length > 0) {
+    } else if (moving && ids.length > 0) {
       const dx = dragOffsetRef.current.x;
       const dy = dragOffsetRef.current.y;
       if (dx !== 0 || dy !== 0) {
@@ -99,14 +105,14 @@ export function useSelectMode(
           opId: crypto.randomUUID(),
           timestamp: ts,
           type: 'translate',
-          ids: [...selectedIds],
+          ids: [...ids],
           dx,
           dy,
         });
         setObjects((prev) =>
           prev.map((o) => {
-            if (!selectedIds.includes(o.id)) return o;
-            if (o.type === 'image') {
+            if (!ids.includes(o.id)) return o;
+            if (o.type === 'IMAGE') {
               const p = roundPoint({ x: o.x + dx, y: o.y + dy });
               return { ...o, x: p.x, y: p.y, positionTimestamp: ts };
             }

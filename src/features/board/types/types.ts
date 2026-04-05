@@ -3,10 +3,14 @@ export interface Point {
   y: number;
 }
 
+/** Backend + wire use uppercase discriminators (e.g. Java enum name). */
+export type DrawObjectTypePath = 'PATH';
+export type DrawObjectTypeImage = 'IMAGE';
+
 /** Stroke / freehand path drawn with the brush. */
 export interface PathDrawObject {
   id: string;
-  type: 'path';
+  type: DrawObjectTypePath;
   points: Point[];
   color: string;
   size: number;
@@ -19,7 +23,7 @@ export interface PathDrawObject {
 /** Raster image placed on the board (e.g. pasted from clipboard). */
 export interface ImageDrawObject {
   id: string;
-  type: 'image';
+  type: DrawObjectTypeImage;
   x: number;
   y: number;
   width: number;
@@ -122,7 +126,7 @@ export type HistoryOperation =
 
 export interface PathDrawObjectWire {
   id: string;
-  type: 'path';
+  type: DrawObjectTypePath;
   pointsEncoded: string; // base64 of Int32 delta pairs in POINT_SCALE space
   color: string;
   size: number;
@@ -132,7 +136,7 @@ export interface PathDrawObjectWire {
 
 export interface ImageDrawObjectWire {
   id: string;
-  type: 'image';
+  type: DrawObjectTypeImage;
   x: number;
   y: number;
   width: number;
@@ -145,11 +149,11 @@ export interface ImageDrawObjectWire {
 export type DrawObjectWire = PathDrawObjectWire | ImageDrawObjectWire;
 
 export function isPathWireObject(o: DrawObjectWire): o is PathDrawObjectWire {
-  return o.type === 'path';
+  return String(o.type).toUpperCase() === 'PATH';
 }
 
 export function isImageWireObject(o: DrawObjectWire): o is ImageDrawObjectWire {
-  return o.type === 'image';
+  return String(o.type).toUpperCase() === 'IMAGE';
 }
 
 export interface AddObjectsWireOp extends OpMeta {

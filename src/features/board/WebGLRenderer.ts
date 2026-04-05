@@ -1,24 +1,4 @@
-import type {
-  DrawObject,
-  ImageDrawObject,
-  Point,
-  SelectionBox,
-} from './types/types';
-
-/** DEBUG: stały obraz do sprawdzenia pipeline’u — usuń po wdrożeniu wklejania. */
-const DEBUG_HARDCODED_BOARD_IMAGE: ImageDrawObject = {
-  id: '__debug_board_image__',
-  type: 'image',
-  x: 0,
-  y: 0,
-  width: 160,
-  height: 100,
-  src: `data:image/svg+xml,${encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100"><rect fill="#2563eb" width="160" height="100" rx="8"/><text x="24" y="58" fill="white" font-family="system-ui,sans-serif" font-size="16">Test img</text></svg>',
-  )}`,
-  tombstone: false,
-  positionTimestamp: 0,
-};
+import type { DrawObject, Point, SelectionBox } from './types/types';
 import { GeometryCache } from './rendering/cache/GeometryCache';
 import { ImageTextureCache } from './rendering/cache/ImageTextureCache';
 import { BrushPipeline } from './rendering/pipelines/BrushPipeline';
@@ -87,6 +67,10 @@ export class WebGLRenderer {
     return true;
   }
 
+  /**
+   * Match backing store to CSS size and refresh viewport. Call every frame so
+   * viewport stays correct after context quirks; skip when layout not ready (0×0).
+   */
   resizeCanvas(): void {
     if (!this.canvas || !this.gl) return;
     const w = this.canvas.clientWidth;
@@ -95,13 +79,9 @@ export class WebGLRenderer {
     if (this.canvas.width !== w || this.canvas.height !== h) {
       this.canvas.width = w;
       this.canvas.height = h;
-      this.gl.viewport(
-        0,
-        0,
-        this.gl.drawingBufferWidth,
-        this.gl.drawingBufferHeight,
-      );
     }
+    const gl = this.gl;
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
   }
 
   render(
@@ -137,15 +117,13 @@ export class WebGLRenderer {
 
     this.resizeCanvas();
 
-    const objectsForRender: DrawObject[] = [
-      ...objects,
-      DEBUG_HARDCODED_BOARD_IMAGE,
-    ];
-    this.cache.sync(objectsForRender);
-    this.imageTextures.sync(gl, objectsForRender);
+    this.cache.sync(objects);
+    this.imageTextures.sync(gl, objects);
+
+    console.log('objects', objects);
 
     const passes = buildSceneDrawPasses({
-      objects: objectsForRender,
+      objects,
       cache: this.cache,
       currentPath,
       currentColor,

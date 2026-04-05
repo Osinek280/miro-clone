@@ -32,7 +32,7 @@ function appendPathRunToPasses(
 ): void {
   let totalPoints = 0;
   for (const obj of pathRun) {
-    if (obj.type !== 'path') continue;
+    if (obj.type !== 'PATH') continue;
     const g = cache.get(obj.id);
     if (g) totalPoints += g.pointCount;
   }
@@ -42,7 +42,7 @@ function appendPathRunToPasses(
   let offset = 0;
 
   for (const obj of pathRun) {
-    if (obj.type !== 'path') continue;
+    if (obj.type !== 'PATH') continue;
     const g = cache.get(obj.id);
     if (!g) continue;
     if (dragSet?.has(obj.id)) {
@@ -96,7 +96,7 @@ export function buildSceneDrawPasses(params: {
   };
 
   for (const obj of objects) {
-    if (obj.type === 'image') {
+    if (obj.type === 'IMAGE') {
       flushPaths();
       const dx = dragSet?.has(obj.id) ? ox : 0;
       const dy = dragSet?.has(obj.id) ? oy : 0;
