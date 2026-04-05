@@ -31,15 +31,6 @@ function getTimestamp(): number {
   return Date.now();
 }
 
-/** Ensure op has opId and timestamp; mutate clone. */
-// export function stampOp<T extends HistoryOperation>(op: T): T {
-//   const o = structuredClone(op) as T;
-//   if (o.opId == null) (o as { opId: string }).opId = crypto.randomUUID();
-//   if (o.timestamp == null)
-//     (o as { timestamp: number }).timestamp = getTimestamp();
-//   return o;
-// }
-
 /** Flatten batch into single ops with timestamps, sorted by timestamp (for deterministic merge). */
 export function flattenBatch(batch: BatchOp): HistoryOperation[] {
   const baseTs = batch.timestamp ?? getTimestamp();
