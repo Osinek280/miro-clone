@@ -7,8 +7,9 @@ import Palette from './components/Palette';
 import { getCursor } from './utils/cursorUtils';
 import Toolbar from './components/Toolbar';
 import { Zoom } from './components/Zoom';
-import { Grid } from './grid/Grid';
+// import { Grid } from './grid/Grid';
 import { useBoardSync } from './hooks/useBoardSync';
+import { usePasteImage } from './hooks/usePasteImage';
 import { useHistoryStore } from './store/useHistoryStore';
 import { useCanvasStore } from './store/useCanvasStore';
 
@@ -74,6 +75,8 @@ export default function Whiteboard({
     boardReady,
     replayInitialCamera,
   } = useBoardSync(boardId, setCenterAtPoint, canvasRef, onSnapshotError);
+
+  usePasteImage(canvasRef, cameraRef, boardReady, pushSyncedOperation);
 
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
@@ -279,7 +282,7 @@ export default function Whiteboard({
         setSize={setSize}
       />
 
-      {boardReady && <Grid cameraRef={cameraRef} />}
+      {/* {boardReady && <Grid cameraRef={cameraRef} />} */}
 
       {!boardReady && (
         <div
@@ -301,7 +304,8 @@ export default function Whiteboard({
 
       <canvas
         ref={canvasRef}
-        className="w-full h-full"
+        tabIndex={boardReady ? 0 : -1}
+        className="w-full h-full outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2"
         style={{
           position: 'absolute',
           inset: 0,
@@ -311,6 +315,7 @@ export default function Whiteboard({
           pointerEvents: boardReady ? 'auto' : 'none',
         }}
         onPointerDown={(e) => {
+          e.currentTarget.focus({ preventScroll: true });
           e.currentTarget.setPointerCapture(e.pointerId);
           handleMouseDown(e as unknown as React.MouseEvent<HTMLCanvasElement>);
         }}

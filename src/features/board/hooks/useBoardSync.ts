@@ -10,7 +10,6 @@ import { canvasApi } from '../api/canvas.api';
 import type {
   Camera,
   HistoryOperation,
-  ImageDrawObject,
   Point,
   WireHistoryOperation,
 } from '../types/types';
@@ -24,20 +23,6 @@ import { useAuthStore } from '../../auth/store/auth.store';
 import { env } from '../../../utils/env';
 import { useCanvasStore } from '../store/useCanvasStore';
 import { useHistoryStore } from '../store/useHistoryStore';
-
-const DEBUG_HARDCODED_BOARD_IMAGE: ImageDrawObject = {
-  id: crypto.randomUUID(),
-  type: 'IMAGE',
-  x: 0,
-  y: 0,
-  width: 160,
-  height: 100,
-  src: `data:image/svg+xml,${encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100"><rect fill="#2563eb" width="160" height="100" rx="8"/><text x="24" y="58" fill="white" font-family="system-ui,sans-serif" font-size="16">Test img</text></svg>',
-  )}`,
-  tombstone: false,
-  positionTimestamp: 0,
-};
 
 /**
  * When true, serializes the non-wire op for size comparison (extra CPU on send).
@@ -87,9 +72,7 @@ export function useBoardSync(
           zoom: data.camera.zoom,
         };
 
-        useCanvasStore
-          .getState()
-          .setObjects([...data.objects, DEBUG_HARDCODED_BOARD_IMAGE]);
+        useCanvasStore.getState().setObjects(data.objects);
         setBoardReady(true);
       } catch {
         if (cancelled) return;

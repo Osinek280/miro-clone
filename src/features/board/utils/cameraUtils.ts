@@ -9,9 +9,10 @@ export function roundPoint(p: Point): Point {
   };
 }
 
-function screenToWorld(
-  screenX: number,
-  screenY: number,
+/** Client (viewport) coordinates → world space using the same mapping as pointer drawing. */
+export function clientToWorldPoint(
+  clientX: number,
+  clientY: number,
   canvasRef: RefObject<HTMLCanvasElement | null>,
   camera: Camera,
 ): Point {
@@ -19,8 +20,8 @@ function screenToWorld(
   if (!canvas) return { x: 0, y: 0 };
   const rect = canvas.getBoundingClientRect();
   return roundPoint({
-    x: (screenX - rect.left - camera.offsetX) / camera.zoom,
-    y: (screenY - rect.top - camera.offsetY) / camera.zoom,
+    x: (clientX - rect.left - camera.offsetX) / camera.zoom,
+    y: (clientY - rect.top - camera.offsetY) / camera.zoom,
   });
 }
 
@@ -44,7 +45,7 @@ export function getCanvasPoint(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   camera: Camera,
 ): Point {
-  return screenToWorld(e.clientX, e.clientY, canvasRef, camera);
+  return clientToWorldPoint(e.clientX, e.clientY, canvasRef, camera);
 }
 
 /**
