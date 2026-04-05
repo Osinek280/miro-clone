@@ -5,7 +5,9 @@ import {
   type HistoryOperation,
   type Point,
 } from '../../types/types';
+import { getCursor } from '../../utils/cursorUtils';
 import { getCanvasPoint } from '../../utils/cameraUtils';
+import { hitTestBoxEdge } from '../../utils/scaleBoundsUtils';
 import { useDrawMode } from './modes/useDrawMode';
 import { useSelectMode } from './modes/useSelectMode';
 import { useGrabMode } from './modes/useGrabMode';
@@ -42,6 +44,44 @@ export function useMouseHandlers(
   const select = useSelectMode(cameraRef, pushSyncedOperation);
   const grab = useGrabMode(cameraRef, targetCameraRef);
 
+  const applySelectHoverCursor = (worldPoint: Point) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const st = useCanvasStore.getState();
+    const zoom = cameraRef.current.zoom;
+
+    if (st.isResizing && st.selectionResizeSessionRef?.current) {
+      const edge = st.selectionResizeSessionRef.current.edge;
+      canvas.style.cursor =
+        edge === 'n' || edge === 's' ? 'ns-resize' : 'ew-resize';
+      return;
+    }
+
+    if (st.isMoving) {
+      canvas.style.cursor = getCursor(DrawModeEnum.Select);
+      return;
+    }
+
+    if (
+      st.selectedBoundingBox &&
+      st.selectedIds.length > 0 &&
+      !st.selectionBox
+    ) {
+      const edge = hitTestBoxEdge(
+        worldPoint,
+        st.selectedBoundingBox,
+        zoom,
+      );
+      if (edge) {
+        canvas.style.cursor =
+          edge === 'n' || edge === 's' ? 'ns-resize' : 'ew-resize';
+        return;
+      }
+    }
+
+    canvas.style.cursor = getCursor(DrawModeEnum.Select);
+  };
+
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!boardReady) return;
     if (e.button === 1 || mode === DrawModeEnum.Grab) {
@@ -70,6 +110,7 @@ export function useMouseHandlers(
     const point = getCanvasPoint(e, canvasRef, cameraRef.current);
     if (mode === DrawModeEnum.Select) {
       select.onMouseMove(point);
+      applySelectHoverCursor(point);
     } else if (
       mode === DrawModeEnum.Draw &&
       useCanvasStore.getState().isDrawing

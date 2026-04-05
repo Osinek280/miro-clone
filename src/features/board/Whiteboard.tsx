@@ -166,6 +166,12 @@ export default function Whiteboard({
     replayInitialCamera();
   }, [rendererRef, boardReady, replayInitialCamera]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.style.cursor = boardReady ? getCursor(mode) : 'wait';
+  }, [mode, boardReady]);
+
   const animateCamera = useCallback(() => {
     if (animateCameraRef.current) {
       animateCameraRef.current();
@@ -310,7 +316,6 @@ export default function Whiteboard({
           position: 'absolute',
           inset: 0,
           zIndex: 10,
-          cursor: boardReady ? getCursor(mode) : 'wait',
           touchAction: 'none',
           pointerEvents: boardReady ? 'auto' : 'none',
         }}
@@ -325,9 +330,12 @@ export default function Whiteboard({
         onPointerUp={(e) =>
           handleMouseUp(e as unknown as React.MouseEvent<HTMLCanvasElement>)
         }
-        onPointerLeave={(e) =>
-          handleMouseUp(e as unknown as React.MouseEvent<HTMLCanvasElement>)
-        }
+        onPointerLeave={(e) => {
+          if (canvasRef.current && boardReady) {
+            canvasRef.current.style.cursor = getCursor(mode);
+          }
+          handleMouseUp(e as unknown as React.MouseEvent<HTMLCanvasElement>);
+        }}
       />
     </div>
   );
