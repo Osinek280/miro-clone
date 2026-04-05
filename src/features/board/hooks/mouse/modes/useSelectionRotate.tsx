@@ -9,6 +9,7 @@ import { calcBoundingBox } from '../../../utils/objectUtils';
 import {
   applyRotateDeltaToObjects,
   cornersOfAxisBounds,
+  quadTopEdgeRotationRad,
   rotateOutlineCorners,
   rotationDeltaFromPointers,
   rotateSnapWithHysteresis,
@@ -91,7 +92,6 @@ export function useSelectionRotate(
       rotateSnapLockedK: null,
       accumulatedRadians: 0,
       prevPointerForRotate: { x: point.x, y: point.y },
-      lastPoint: point,
       pathSnapshots,
       imageSnapshots,
     };
@@ -115,17 +115,18 @@ export function useSelectionRotate(
       point,
       minRadiusWorld,
     );
+    const baseRad = quadTopEdgeRotationRad(sess.initialRotateCorners);
+    const totalRaw = baseRad + sess.rawAccumulatedRadians;
     const snap = rotateSnapWithHysteresis(
-      sess.rawAccumulatedRadians,
+      totalRaw,
       sess.rotateSnapLockedK,
       ROTATE_SNAP_ENTER_RAD,
       ROTATE_SNAP_EXIT_RAD,
     );
-    sess.rawAccumulatedRadians = snap.rawAfter;
+    sess.rawAccumulatedRadians = snap.rawAfter - baseRad;
     sess.rotateSnapLockedK = snap.lockedK;
-    sess.accumulatedRadians = snap.displayRadians;
+    sess.accumulatedRadians = snap.displayRadians - baseRad;
     sess.prevPointerForRotate = { x: point.x, y: point.y };
-    sess.lastPoint = point;
     state.scheduleRedraw();
     return true;
   };

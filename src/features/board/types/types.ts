@@ -91,17 +91,19 @@ export type BoxRotateCorner = BoxCorner;
 /** Live rotate session: group rotation around selection bounds center. */
 export interface SelectionRotateSession {
   center: Point;
-  /** Frame at rotate start (axis-aligned rect or persisted oriented quad). */
+  /**
+   * Frame at rotate start. Cardinal snap uses world angle
+   * `quadTopEdgeRotationRad(this) + delta` (see rotate utils).
+   */
   initialRotateCorners: [Point, Point, Point, Point];
-  /** Pointer-integrated angle since mousedown (before cardinal snap / hysteresis). */
+  /** Pointer-integrated delta since mousedown before snap / hysteresis. */
   rawAccumulatedRadians: number;
   /** Locked cardinal index (×90°) while cursor stays within exit tolerance. */
   rotateSnapLockedK: number | null;
-  /** Total rotation since mousedown (incremental; stable when cursor passes near pivot). */
+  /** Delta since mousedown applied to preview and commit (after snap). */
   accumulatedRadians: number;
-  /** Previous pointer sample for incremental angle (paired with `lastPoint` updates). */
+  /** Previous pointer sample for incremental angle. */
   prevPointerForRotate: Point;
-  lastPoint: Point;
   /** Path id → point array copy at drag start. */
   pathSnapshots: Record<string, Point[]>;
   /** Image id → pose at drag start. */

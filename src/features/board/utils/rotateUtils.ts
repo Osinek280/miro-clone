@@ -91,6 +91,18 @@ export function rotateSnapWithHysteresis(
   return { displayRadians: raw, rawAfter: raw, lockedK: null };
 }
 
+/** World-space rotation of the quad’s top edge (nw → ne), radians. */
+export function quadTopEdgeRotationRad(
+  quad: readonly [Point, Point, Point, Point],
+): number {
+  const nw = quad[0];
+  const ne = quad[1];
+  const dx = ne.x - nw.x;
+  const dy = ne.y - nw.y;
+  if (Math.abs(dx) < 1e-12 && Math.abs(dy) < 1e-12) return 0;
+  return Math.atan2(dy, dx);
+}
+
 /** Corners in order: nw, ne, se, sw (same winding as selection `drawRect`). */
 export function cornersOfAxisBounds(
   b: BoundsRect,
