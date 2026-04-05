@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import Whiteboard from '../features/canvas/Whiteboard';
 import { useCallback, useEffect } from 'react';
+import Whiteboard from '../features/board/Whiteboard';
 
 export default function CanvasPage() {
   const { boardId } = useParams<{ boardId: string }>();
