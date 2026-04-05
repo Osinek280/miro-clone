@@ -9,7 +9,7 @@ import Toolbar from './components/Toolbar';
 import { Zoom } from './components/Zoom';
 // import { Grid } from './grid/Grid';
 import { useBoardSync } from './hooks/useBoardSync';
-import { usePasteImage } from './hooks/usePasteImage';
+import { useCanvasClipboard } from './hooks/useCanvasClipboard';
 import { useHistoryStore } from './store/useHistoryStore';
 import { useCanvasStore } from './store/useCanvasStore';
 
@@ -76,7 +76,7 @@ export default function Whiteboard({
     replayInitialCamera,
   } = useBoardSync(boardId, setCenterAtPoint, canvasRef, onSnapshotError);
 
-  usePasteImage(canvasRef, cameraRef, boardReady, pushSyncedOperation);
+  useCanvasClipboard(canvasRef, cameraRef, boardReady, pushSyncedOperation);
 
   const { handleMouseDown, handleMouseMove, handleMouseUp } = useMouseHandlers(
     canvasRef,
