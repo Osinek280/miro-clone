@@ -1,4 +1,8 @@
-import type { DrawObject, ImageDrawObject, PathDrawObject } from '../types/types';
+import type {
+  DrawObject,
+  ImageDrawObject,
+  PathDrawObject,
+} from '../types/types';
 import { roundPoint } from './cameraUtils';
 import { calcBoundingBox } from './objectUtils';
 
@@ -22,7 +26,9 @@ function normalizePath(o: unknown): PathDrawObject | null {
   const x = o as Record<string, unknown>;
   if (x.type !== 'PATH') return null;
   if (!Array.isArray(x.points) || x.points.length === 0) return null;
-  const points = x.points.filter(isPointLike).map((p) => roundPoint({ x: p.x, y: p.y }));
+  const points = x.points
+    .filter(isPointLike)
+    .map((p) => roundPoint({ x: p.x, y: p.y }));
   if (points.length === 0) return null;
   if (typeof x.color !== 'string') return null;
   if (!isFiniteNum(x.size)) return null;
@@ -33,8 +39,9 @@ function normalizePath(o: unknown): PathDrawObject | null {
     color: x.color,
     size: x.size,
     tombstone: false,
-    positionTimestamp:
-      isFiniteNum(x.positionTimestamp) ? x.positionTimestamp : Date.now(),
+    positionTimestamp: isFiniteNum(x.positionTimestamp)
+      ? x.positionTimestamp
+      : Date.now(),
   };
 }
 
@@ -60,8 +67,9 @@ function normalizeImage(o: unknown): ImageDrawObject | null {
     height: Math.max(1, x.height),
     src: x.src,
     tombstone: false,
-    positionTimestamp:
-      isFiniteNum(x.positionTimestamp) ? x.positionTimestamp : Date.now(),
+    positionTimestamp: isFiniteNum(x.positionTimestamp)
+      ? x.positionTimestamp
+      : Date.now(),
   };
 }
 
@@ -133,9 +141,7 @@ export function translateDrawObjects(
     }
     return {
       ...o,
-      points: o.points.map((pt) =>
-        roundPoint({ x: pt.x + dx, y: pt.y + dy }),
-      ),
+      points: o.points.map((pt) => roundPoint({ x: pt.x + dx, y: pt.y + dy })),
     };
   });
 }
