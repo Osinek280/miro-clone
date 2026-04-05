@@ -4,6 +4,7 @@ import type {
   HistoryOperation,
   Point,
   SelectionResizeSession,
+  SelectionRotateSession,
 } from '../../../types/types';
 import { roundPoint } from '../../../utils/cameraUtils';
 import {
@@ -11,12 +12,21 @@ import {
   drawObjectIntersectsSelectionRect,
   findObjectAtPoint,
   getVisibleObjects,
+  selectionHasRotatedImage,
 } from '../../../utils/objectUtils';
+import {
+  applyRotateDeltaToObjects,
+  cornersOfAxisBounds,
+  offsetSelectionQuad,
+  rotateOutlineCorners,
+  rotationDeltaFromPointers,
+} from '../../../utils/rotateUtils';
 import {
   boundsChanged,
   boundsToSelectionBox,
   computeResizedBounds,
   hitTestBoxResizeHandle,
+  hitTestBoxRotateHandle,
   mapDrawObjectWithBounds,
   selectionBoxToBounds,
 } from '../../../utils/scaleBoundsUtils';
@@ -33,11 +43,13 @@ export function useSelectMode(
     setSelectionBox,
     selectedBoundingBox,
     setSelectedBoundingBox,
+    setSelectedOrientedQuad,
     selectedIds,
     setSelectedIds,
     isMoving,
     setIsMoving,
     setIsResizing,
+    setIsRotating,
     clearSelection,
   } = useCanvasStore();
 
@@ -45,6 +57,7 @@ export function useSelectMode(
   const dragStartRef = useRef<Point>({ x: 0, y: 0 });
   const dragOffsetRef = useRef<Point>({ x: 0, y: 0 });
   const selectionResizeSessionRef = useRef<SelectionResizeSession | null>(null);
+  const selectionRotateSessionRef = useRef<SelectionRotateSession | null>(null);
 
   useLayoutEffect(() => {
     useCanvasStore.getState().setSelectionDragOffsetRef(dragOffsetRef);
@@ -58,29 +71,94 @@ export function useSelectMode(
     return () => useCanvasStore.getState().setSelectionResizeSessionRef(null);
   }, []);
 
+  useLayoutEffect(() => {
+    useCanvasStore
+      .getState()
+      .setSelectionRotateSessionRef(selectionRotateSessionRef);
+    return () => useCanvasStore.getState().setSelectionRotateSessionRef(null);
+  }, []);
+
   const onMouseDown = (point: Point, shiftKey = false) => {
     dragOffsetRef.current.x = 0;
     dragOffsetRef.current.y = 0;
     const zoom = cameraRef.current.zoom;
     const st = useCanvasStore.getState();
     if (st.selectedBoundingBox && st.selectedIds.length > 0) {
-      const handle = hitTestBoxResizeHandle(
-        point,
-        st.selectedBoundingBox,
-        zoom,
-      );
-      if (handle) {
-        selectionResizeSessionRef.current = {
-          handle,
-          initialBounds: selectionBoxToBounds(st.selectedBoundingBox),
+      if (
+        hitTestBoxRotateHandle(
+          point,
+          st.selectedBoundingBox,
+          zoom,
+          st.selectedOrientedQuad,
+        ) != null
+      ) {
+        const b = selectionBoxToBounds(st.selectedBoundingBox);
+        const quad0: [Point, Point, Point, Point] = st.selectedOrientedQuad
+          ? [
+              { ...st.selectedOrientedQuad[0] },
+              { ...st.selectedOrientedQuad[1] },
+              { ...st.selectedOrientedQuad[2] },
+              { ...st.selectedOrientedQuad[3] },
+            ]
+          : cornersOfAxisBounds(b);
+        const cx =
+          (quad0[0].x + quad0[1].x + quad0[2].x + quad0[3].x) / 4;
+        const cy =
+          (quad0[0].y + quad0[1].y + quad0[2].y + quad0[3].y) / 4;
+        const center = { x: cx, y: cy };
+        const pathSnapshots: SelectionRotateSession['pathSnapshots'] = {};
+        const imageSnapshots: SelectionRotateSession['imageSnapshots'] = {};
+        for (const id of st.selectedIds) {
+          const o = st.objects.find((x) => x.id === id);
+          if (o?.type === 'PATH') {
+            pathSnapshots[id] = o.points.map((p) => ({ x: p.x, y: p.y }));
+          } else if (o?.type === 'IMAGE') {
+            imageSnapshots[id] = {
+              x: o.x,
+              y: o.y,
+              width: o.width,
+              height: o.height,
+              rotation: o.rotation ?? 0,
+            };
+          }
+        }
+        selectionRotateSessionRef.current = {
+          center,
+          initialRotateCorners: quad0,
+          accumulatedRadians: 0,
+          prevPointerForRotate: { x: point.x, y: point.y },
           lastPoint: point,
-          uniformScale: shiftKey,
+          pathSnapshots,
+          imageSnapshots,
         };
         const store = useCanvasStore.getState();
-        store.setIsResizing(true);
+        store.setIsRotating(true);
         store.scheduleRedraw();
         lastMousePosRef.current = point;
         return;
+      }
+      if (
+        !st.selectedOrientedQuad &&
+        !selectionHasRotatedImage(st.objects, st.selectedIds)
+      ) {
+        const handle = hitTestBoxResizeHandle(
+          point,
+          st.selectedBoundingBox,
+          zoom,
+        );
+        if (handle) {
+          selectionResizeSessionRef.current = {
+            handle,
+            initialBounds: selectionBoxToBounds(st.selectedBoundingBox),
+            lastPoint: point,
+            uniformScale: shiftKey,
+          };
+          const store = useCanvasStore.getState();
+          store.setIsResizing(true);
+          store.scheduleRedraw();
+          lastMousePosRef.current = point;
+          return;
+        }
       }
     }
 
@@ -92,6 +170,7 @@ export function useSelectMode(
       } else {
         setSelectedIds([obj.id]);
         setSelectedBoundingBox(calcBoundingBox([obj]));
+        setSelectedOrientedQuad(null);
         setIsMoving(true);
       }
       lastMousePosRef.current = point;
@@ -99,11 +178,27 @@ export function useSelectMode(
       setSelectionBox({ start: point, end: point });
       setSelectedIds([]);
       setSelectedBoundingBox(null);
+      setSelectedOrientedQuad(null);
     }
   };
 
   const onMouseMove = (point: Point, shiftKey = false) => {
     const state = useCanvasStore.getState();
+    if (state.isRotating && state.selectionRotateSessionRef?.current) {
+      const sess = state.selectionRotateSessionRef.current;
+      const zoom = cameraRef.current.zoom;
+      const minRadiusWorld = 6 / zoom;
+      sess.accumulatedRadians += rotationDeltaFromPointers(
+        sess.center,
+        sess.prevPointerForRotate,
+        point,
+        minRadiusWorld,
+      );
+      sess.prevPointerForRotate = { x: point.x, y: point.y };
+      sess.lastPoint = point;
+      state.scheduleRedraw();
+      return;
+    }
     if (state.isResizing && state.selectionResizeSessionRef?.current) {
       const sess = state.selectionResizeSessionRef.current;
       sess.lastPoint = point;
@@ -131,6 +226,7 @@ export function useSelectMode(
     const box = state.selectionBox;
     const moving = state.isMoving;
     const resizing = state.isResizing;
+    const rotating = state.isRotating;
     const ids = state.selectedIds;
     const objs = state.objects;
     const zoom = cameraRef.current.zoom;
@@ -149,7 +245,50 @@ export function useSelectMode(
       setSelectedBoundingBox(
         selected.length > 0 ? calcBoundingBox(selected) : null,
       );
+      setSelectedOrientedQuad(null);
       setSelectionBox(null);
+    } else if (
+      rotating &&
+      ids.length > 0 &&
+      state.selectionRotateSessionRef?.current
+    ) {
+      const sess = state.selectionRotateSessionRef.current;
+      if (sess) {
+        const delta = sess.accumulatedRadians;
+        if (Math.abs(delta) > 1e-6) {
+          const ts = Date.now();
+          pushSyncedOperation({
+            opId: crypto.randomUUID(),
+            timestamp: ts,
+            type: 'rotate',
+            ids: [...ids],
+            center: sess.center,
+            deltaRadians: delta,
+          });
+          setObjects((prev) =>
+            applyRotateDeltaToObjects(prev, ids, sess.center, delta, ts),
+          );
+          const nextObjs = applyRotateDeltaToObjects(
+            objs,
+            ids,
+            sess.center,
+            delta,
+            ts,
+          );
+          const selected = nextObjs.filter((o) => ids.includes(o.id));
+          setSelectedBoundingBox(
+            selected.length > 0 ? calcBoundingBox(selected) : null,
+          );
+          setSelectedOrientedQuad(
+            rotateOutlineCorners(
+              sess.initialRotateCorners,
+              sess.center,
+              delta,
+            ),
+          );
+        }
+      }
+      state.selectionRotateSessionRef.current = null;
     } else if (resizing && ids.length > 0 && state.selectionResizeSessionRef) {
       const sess = state.selectionResizeSessionRef.current;
       if (sess) {
@@ -184,6 +323,7 @@ export function useSelectMode(
             ),
           );
           setSelectedBoundingBox(boundsToSelectionBox(newBounds));
+          setSelectedOrientedQuad(null);
         }
       }
       state.selectionResizeSessionRef.current = null;
@@ -230,12 +370,16 @@ export function useSelectMode(
               }
             : null,
         );
+        setSelectedOrientedQuad((prev) =>
+          prev ? offsetSelectionQuad(prev, dx, dy) : null,
+        );
       }
       dragOffsetRef.current.x = 0;
       dragOffsetRef.current.y = 0;
     }
     setIsMoving(false);
     setIsResizing(false);
+    setIsRotating(false);
   };
 
   return {

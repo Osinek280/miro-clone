@@ -1,8 +1,62 @@
-import type { DrawObject, Point } from '../types/types';
+import type { DrawObject, ImageDrawObject, Point } from '../types/types';
 
 /** Exclude tombstoned (soft-deleted) objects for display and hit-test. */
 export function getVisibleObjects(objects: DrawObject[]): DrawObject[] {
   return objects.filter((o) => !o.tombstone);
+}
+
+/** Axis-aligned bounds containing a rotated image quad. */
+export function imageRotatedAxisBounds(obj: ImageDrawObject): {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+} {
+  const corners = imageRotatedCornerPoints(obj);
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (const p of corners) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+function imageRotatedCornerPoints(obj: ImageDrawObject): Point[] {
+  const w = obj.width;
+  const h = obj.height;
+  const rot = obj.rotation ?? 0;
+  const cx = obj.x + w / 2;
+  const cy = obj.y + h / 2;
+  const c = Math.cos(rot);
+  const s = Math.sin(rot);
+  const local: Point[] = [
+    { x: -w / 2, y: -h / 2 },
+    { x: w / 2, y: -h / 2 },
+    { x: w / 2, y: h / 2 },
+    { x: -w / 2, y: h / 2 },
+  ];
+  return local.map((p) => ({
+    x: cx + c * p.x - s * p.y,
+    y: cy + s * p.x + c * p.y,
+  }));
+}
+
+/** True if any selected image has non-zero rotation (resize uses axis-aligned remap only). */
+export function selectionHasRotatedImage(
+  objects: DrawObject[],
+  selectedIds: readonly string[],
+): boolean {
+  const idSet = new Set(selectedIds);
+  for (const o of objects) {
+    if (o.type !== 'IMAGE' || !idSet.has(o.id)) continue;
+    if (Math.abs(o.rotation ?? 0) > 1e-6) return true;
+  }
+  return false;
 }
 
 export const calcBoundingBox = (objs: DrawObject[]) => {
@@ -13,10 +67,11 @@ export const calcBoundingBox = (objs: DrawObject[]) => {
 
   for (const obj of objs) {
     if (obj.type === 'IMAGE') {
-      if (obj.x < minX) minX = obj.x;
-      if (obj.y < minY) minY = obj.y;
-      if (obj.x + obj.width > maxX) maxX = obj.x + obj.width;
-      if (obj.y + obj.height > maxY) maxY = obj.y + obj.height;
+      const b = imageRotatedAxisBounds(obj);
+      if (b.minX < minX) minX = b.minX;
+      if (b.minY < minY) minY = b.minY;
+      if (b.maxX > maxX) maxX = b.maxX;
+      if (b.maxY > maxY) maxY = b.maxY;
       continue;
     }
 
@@ -81,11 +136,33 @@ export function findObjectAtPoint(
 
     if (obj.type === 'IMAGE') {
       const margin = BASE_HIT_PX / zoom;
+      const rot = obj.rotation ?? 0;
+      if (Math.abs(rot) < 1e-9) {
+        if (
+          point.x >= obj.x - margin &&
+          point.x <= obj.x + obj.width + margin &&
+          point.y >= obj.y - margin &&
+          point.y <= obj.y + obj.height + margin
+        ) {
+          return obj;
+        }
+        continue;
+      }
+      const w = obj.width;
+      const h = obj.height;
+      const cx = obj.x + w / 2;
+      const cy = obj.y + h / 2;
+      const c = Math.cos(-rot);
+      const s = Math.sin(-rot);
+      const dx = point.x - cx;
+      const dy = point.y - cy;
+      const lx = c * dx - s * dy;
+      const ly = s * dx + c * dy;
       if (
-        point.x >= obj.x - margin &&
-        point.x <= obj.x + obj.width + margin &&
-        point.y >= obj.y - margin &&
-        point.y <= obj.y + obj.height + margin
+        lx >= -w / 2 - margin &&
+        lx <= w / 2 + margin &&
+        ly >= -h / 2 - margin &&
+        ly <= h / 2 + margin
       ) {
         return obj;
       }
@@ -116,11 +193,12 @@ export function drawObjectIntersectsSelectionRect(
   maxY: number,
 ): boolean {
   if (obj.type === 'IMAGE') {
+    const b = imageRotatedAxisBounds(obj);
     return !(
-      maxX < obj.x ||
-      minX > obj.x + obj.width ||
-      maxY < obj.y ||
-      minY > obj.y + obj.height
+      maxX < b.minX ||
+      minX > b.maxX ||
+      maxY < b.minY ||
+      minY > b.maxY
     );
   }
   return obj.points.some(

@@ -65,6 +65,7 @@ function normalizeImage(o: unknown): ImageDrawObject | null {
     y: x.y,
     width: Math.max(1, x.width),
     height: Math.max(1, x.height),
+    rotation: isFiniteNum(x.rotation) ? x.rotation : 0,
     src: x.src,
     tombstone: false,
     positionTimestamp: isFiniteNum(x.positionTimestamp)

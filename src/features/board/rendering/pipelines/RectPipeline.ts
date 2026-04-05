@@ -1,4 +1,8 @@
 import type { Point } from '../../types/types';
+import {
+  rotateHandleWorldPositions,
+  rotateHandleWorldPositionsForQuad,
+} from '../../utils/scaleBoundsUtils';
 import { compileShader, linkProgram } from '../gl/glProgram';
 
 const VERT_RECT = `
@@ -40,12 +44,15 @@ void main() {
 
 const FRAG_CORNER_DOTS = `
 precision mediump float;
+uniform float u_handleKind;
 
 void main() {
   float dist = length(gl_PointCoord - 0.5) * 2.0;
   if (dist > 1.0) discard;
   float edge = smoothstep(0.72, 0.88, dist);
-  vec3 borderRgb = vec3(0.55, 0.56, 0.58);
+  vec3 borderRgb = u_handleKind > 0.5
+    ? vec3(0.32, 0.45, 0.78)
+    : vec3(0.55, 0.56, 0.58);
   vec3 rgb = mix(vec3(1.0), borderRgb, edge);
   gl_FragColor = vec4(rgb, 1.0);
 }
@@ -73,6 +80,7 @@ export class RectPipeline {
   private cdUOffset: WebGLUniformLocation;
   private cdUZoom: WebGLUniformLocation;
   private cdUPointSize: WebGLUniformLocation;
+  private cdUHandleKind: WebGLUniformLocation;
 
   private constructor(
     program: WebGLProgram,
@@ -89,6 +97,7 @@ export class RectPipeline {
     cdUOffset: WebGLUniformLocation,
     cdUZoom: WebGLUniformLocation,
     cdUPointSize: WebGLUniformLocation,
+    cdUHandleKind: WebGLUniformLocation,
   ) {
     this.program = program;
     this.rectBuf = rectBuf;
@@ -104,6 +113,7 @@ export class RectPipeline {
     this.cdUOffset = cdUOffset;
     this.cdUZoom = cdUZoom;
     this.cdUPointSize = cdUPointSize;
+    this.cdUHandleKind = cdUHandleKind;
   }
 
   static create(gl: WebGLRenderingContext): RectPipeline | null {
@@ -144,6 +154,7 @@ export class RectPipeline {
       gl.getUniformLocation(cornerDotProgram, 'u_offset')!,
       gl.getUniformLocation(cornerDotProgram, 'u_zoom')!,
       gl.getUniformLocation(cornerDotProgram, 'u_pointSizePx')!,
+      gl.getUniformLocation(cornerDotProgram, 'u_handleKind')!,
     );
   }
 
@@ -167,6 +178,42 @@ export class RectPipeline {
     v[5] = e.y;
     v[6] = s.x;
     v[7] = e.y;
+
+    gl.useProgram(this.program);
+    gl.uniform2f(this.uResolution, canvas.width, canvas.height);
+    gl.uniform1f(this.uZoom, zoom);
+    gl.uniform2f(this.uOffset, offsetX, offsetY);
+    gl.uniform4fv(this.uRectColor, color);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.rectBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, v, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(this.aPos);
+    gl.vertexAttribPointer(this.aPos, 2, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.LINE_LOOP, 0, 4);
+  }
+
+  /**
+   * Selection outline for a rotated rectangle (corners in order nw, ne, se, sw).
+   */
+  drawQuadOutline(params: {
+    gl: WebGLRenderingContext;
+    canvas: HTMLCanvasElement;
+    corners: readonly [Point, Point, Point, Point];
+    color: [number, number, number, number];
+    zoom: number;
+    offsetX: number;
+    offsetY: number;
+  }): void {
+    const { gl, canvas, corners, color, zoom, offsetX, offsetY } = params;
+    const v = this.rectVerts;
+    v[0] = corners[0].x;
+    v[1] = corners[0].y;
+    v[2] = corners[1].x;
+    v[3] = corners[1].y;
+    v[4] = corners[2].x;
+    v[5] = corners[2].y;
+    v[6] = corners[3].x;
+    v[7] = corners[3].y;
 
     gl.useProgram(this.program);
     gl.uniform2f(this.uResolution, canvas.width, canvas.height);
@@ -209,6 +256,81 @@ export class RectPipeline {
     gl.uniform1f(this.cdUZoom, zoom);
     gl.uniform2f(this.cdUOffset, offsetX, offsetY);
     gl.uniform1f(this.cdUPointSize, CORNER_DOT_PX * 2);
+    gl.uniform1f(this.cdUHandleKind, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.cornerDotBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, v, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(this.cdAPos);
+    gl.vertexAttribPointer(this.cdAPos, 2, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.POINTS, 0, 4);
+  }
+
+  /**
+   * Rotation handles: four dots offset outside corners (see `rotateHandleWorldPositions`).
+   */
+  drawRotateHandleDots(params: {
+    gl: WebGLRenderingContext;
+    canvas: HTMLCanvasElement;
+    box: { start: Point; end: Point };
+    zoom: number;
+    offsetX: number;
+    offsetY: number;
+  }): void {
+    const { gl, canvas, box, zoom, offsetX, offsetY } = params;
+    const pos = rotateHandleWorldPositions(box, zoom);
+    const v = this.cornerDotVerts;
+    v[0] = pos.nw.x;
+    v[1] = pos.nw.y;
+    v[2] = pos.ne.x;
+    v[3] = pos.ne.y;
+    v[4] = pos.se.x;
+    v[5] = pos.se.y;
+    v[6] = pos.sw.x;
+    v[7] = pos.sw.y;
+
+    gl.useProgram(this.cornerDotProgram);
+    gl.uniform2f(this.cdUResolution, canvas.width, canvas.height);
+    gl.uniform1f(this.cdUZoom, zoom);
+    gl.uniform2f(this.cdUOffset, offsetX, offsetY);
+    gl.uniform1f(this.cdUPointSize, CORNER_DOT_PX * 2);
+    gl.uniform1f(this.cdUHandleKind, 1);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.cornerDotBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, v, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(this.cdAPos);
+    gl.vertexAttribPointer(this.cdAPos, 2, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.POINTS, 0, 4);
+  }
+
+  /**
+   * Rotation handles for an already-oriented quad (e.g. live rotate preview).
+   */
+  drawRotateHandleDotsForQuad(params: {
+    gl: WebGLRenderingContext;
+    canvas: HTMLCanvasElement;
+    corners: readonly [Point, Point, Point, Point];
+    zoom: number;
+    offsetX: number;
+    offsetY: number;
+  }): void {
+    const { gl, canvas, corners, zoom, offsetX, offsetY } = params;
+    const pos = rotateHandleWorldPositionsForQuad(corners, zoom);
+    const v = this.cornerDotVerts;
+    v[0] = pos.nw.x;
+    v[1] = pos.nw.y;
+    v[2] = pos.ne.x;
+    v[3] = pos.ne.y;
+    v[4] = pos.se.x;
+    v[5] = pos.se.y;
+    v[6] = pos.sw.x;
+    v[7] = pos.sw.y;
+
+    gl.useProgram(this.cornerDotProgram);
+    gl.uniform2f(this.cdUResolution, canvas.width, canvas.height);
+    gl.uniform1f(this.cdUZoom, zoom);
+    gl.uniform2f(this.cdUOffset, offsetX, offsetY);
+    gl.uniform1f(this.cdUPointSize, CORNER_DOT_PX * 2);
+    gl.uniform1f(this.cdUHandleKind, 1);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.cornerDotBuf);
     gl.bufferData(gl.ARRAY_BUFFER, v, gl.DYNAMIC_DRAW);

@@ -86,6 +86,7 @@ function toWireObject(object: DrawObject): DrawObjectWire {
       y: object.y,
       width: object.width,
       height: object.height,
+      rotation: object.rotation ?? 0,
       src: object.src,
       tombstone: object.tombstone,
       positionTimestamp: object.positionTimestamp,
@@ -111,7 +112,8 @@ function fromWireObject(object: DrawObjectWire): DrawObject {
       y: object.y,
       width: object.width,
       height: object.height,
-      src: typeof object.src === 'string' ? object.src : '',
+      rotation: object.rotation ?? 0,
+      src: object.src,
       tombstone: object.tombstone,
       positionTimestamp: object.positionTimestamp,
     };

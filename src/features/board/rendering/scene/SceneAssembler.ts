@@ -4,6 +4,7 @@ import type {
   ImageDrawObject,
   Point,
 } from '../../types/types';
+import { rotateImageSnapshot, rotatePathPointsInPlace } from '../../utils/rotateUtils';
 import type { GeometryCache } from '../cache/GeometryCache';
 import {
   buildStrokeGeometry,
@@ -30,6 +31,7 @@ export type ImageDrawPass = {
   drawY: number;
   drawWidth: number;
   drawHeight: number;
+  drawRotation: number;
 };
 
 export type SceneDrawPass = BrushDrawPass | ImageDrawPass;
@@ -42,13 +44,32 @@ function appendPathRunToPasses(
   ox: number,
   oy: number,
   boundsRemap: { oldB: BoundsRect; newB: BoundsRect; sizeScale: number } | null,
+  rotatePreview: {
+    center: Point;
+    delta: number;
+    pathSnapshots: Record<string, Point[]>;
+  } | null,
   passes: SceneDrawPass[],
 ): void {
   let totalPoints = 0;
   for (const obj of pathRun) {
     if (obj.type !== 'PATH') continue;
-    const g = cache.get(obj.id);
-    if (g) totalPoints += g.pointCount;
+    if (rotatePreview?.pathSnapshots[obj.id]) {
+      const pts = rotatePathPointsInPlace(
+        rotatePreview.pathSnapshots[obj.id],
+        rotatePreview.center,
+        rotatePreview.delta,
+      );
+      const live = buildStrokeGeometry(
+        pts,
+        hexToRgba(obj.color || '#000'),
+        obj.size || 15,
+      );
+      if (live) totalPoints += live.pointCount;
+    } else {
+      const g = cache.get(obj.id);
+      if (g) totalPoints += g.pointCount;
+    }
   }
   if (totalPoints === 0) return;
 
@@ -58,8 +79,24 @@ function appendPathRunToPasses(
   for (const obj of pathRun) {
     if (obj.type !== 'PATH') continue;
     const g = cache.get(obj.id);
+    if (rotatePreview?.pathSnapshots[obj.id]) {
+      const pts = rotatePathPointsInPlace(
+        rotatePreview.pathSnapshots[obj.id],
+        rotatePreview.center,
+        rotatePreview.delta,
+      );
+      const live = buildStrokeGeometry(
+        pts,
+        hexToRgba(obj.color || '#000'),
+        obj.size || 15,
+      );
+      if (live) {
+        all.set(live.buffer, offset);
+        offset += live.buffer.length;
+      }
+      continue;
+    }
     if (!g) continue;
-    // Live scale preview: dragSet is cleared while resizing, so use resizeSet.
     if (boundsRemap && resizeSet?.has(obj.id)) {
       writeGeometryWithBoundsRemap(
         g,
@@ -98,6 +135,16 @@ export function buildSceneDrawPasses(params: {
     oldBounds: BoundsRect;
     newBounds: BoundsRect;
   } | null;
+  selectionRotate: {
+    center: Point;
+    deltaRadians: number;
+    selectedIds: readonly string[];
+    pathSnapshots: Record<string, Point[]>;
+    imageSnapshots: Record<
+      string,
+      { x: number; y: number; width: number; height: number; rotation: number }
+    >;
+  } | null;
 }): SceneDrawPass[] {
   const {
     objects,
@@ -107,10 +154,22 @@ export function buildSceneDrawPasses(params: {
     currentSize,
     selectionDrag,
     selectionResize,
+    selectionRotate,
   } = params;
 
+  const rotatePreview =
+    selectionRotate && selectionRotate.selectedIds.length > 0
+      ? {
+          center: selectionRotate.center,
+          delta: selectionRotate.deltaRadians,
+          pathSnapshots: selectionRotate.pathSnapshots,
+        }
+      : null;
+
   const resizeSet =
-    selectionResize && selectionResize.selectedIds.length > 0
+    !rotatePreview &&
+    selectionResize &&
+    selectionResize.selectedIds.length > 0
       ? new Set(selectionResize.selectedIds)
       : null;
   const boundsRemap =
@@ -126,6 +185,7 @@ export function buildSceneDrawPasses(params: {
       : null;
 
   const dragSet =
+    !rotatePreview &&
     !boundsRemap &&
     selectionDrag &&
     selectionDrag.selectedIds.length > 0 &&
@@ -147,6 +207,7 @@ export function buildSceneDrawPasses(params: {
       ox,
       oy,
       boundsRemap,
+      rotatePreview,
       passes,
     );
     pathRun = [];
@@ -159,7 +220,21 @@ export function buildSceneDrawPasses(params: {
       let drawY = obj.y;
       let drawW = obj.width;
       let drawH = obj.height;
-      if (resizeSet?.has(obj.id) && selectionResize) {
+      let drawRotation = obj.rotation ?? 0;
+      if (
+        selectionRotate &&
+        selectionRotate.imageSnapshots[obj.id] &&
+        rotatePreview
+      ) {
+        const next = rotateImageSnapshot(
+          selectionRotate.imageSnapshots[obj.id],
+          selectionRotate.center,
+          rotatePreview.delta,
+        );
+        drawX = next.x;
+        drawY = next.y;
+        drawRotation = next.rotation;
+      } else if (resizeSet?.has(obj.id) && selectionResize) {
         const { oldBounds, newBounds } = selectionResize;
         const p = mapPointAcrossBounds(
           { x: obj.x, y: obj.y },
@@ -187,6 +262,7 @@ export function buildSceneDrawPasses(params: {
         drawY,
         drawWidth: drawW,
         drawHeight: drawH,
+        drawRotation,
       });
     } else {
       pathRun.push(obj);

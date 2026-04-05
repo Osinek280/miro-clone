@@ -91,6 +91,7 @@ export function useCanvasClipboard(
       store.setObjects((prev) => [...prev, ...newObjects]);
       store.setSelectedIds(newObjects.map((o) => o.id));
       store.setSelectedBoundingBox(calcBoundingBox(newObjects));
+      store.setSelectedOrientedQuad(null);
     };
 
     const onCopy = (e: ClipboardEvent) => {
@@ -221,6 +222,7 @@ export function useCanvasClipboard(
             y,
             width,
             height,
+            rotation: 0,
             src: dataUrl,
             tombstone: false,
             positionTimestamp: Date.now(),

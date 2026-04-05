@@ -1,6 +1,7 @@
 import { POINT_SCALE } from '../constants/pointPrecision';
 import type {
   BoundsRect,
+  BoxCorner,
   BoxEdge,
   BoxResizeHandle,
   DrawObject,
@@ -99,6 +100,116 @@ export function resizeHandleCursor(handle: BoxResizeHandle): string {
     default:
       return 'default';
   }
+}
+
+/**
+ * Distance from each selection corner (along outward diagonal) to the rotation handle
+ * (screen px). Larger than resize corner slop so the two targets stay distinct.
+ */
+export const ROT_HANDLE_OFFSET_PX = 22;
+
+/**
+ * World-space positions of the four rotation handles (offset outside corners).
+ */
+export function rotateHandleWorldPositions(
+  box: SelectionBox,
+  zoom: number,
+): Record<BoxCorner, Point> {
+  if (!box) {
+    return {
+      nw: { x: 0, y: 0 },
+      ne: { x: 0, y: 0 },
+      sw: { x: 0, y: 0 },
+      se: { x: 0, y: 0 },
+    };
+  }
+  const minX = Math.min(box.start.x, box.end.x);
+  const maxX = Math.max(box.start.x, box.end.x);
+  const minY = Math.min(box.start.y, box.end.y);
+  const maxY = Math.max(box.start.y, box.end.y);
+  const bcx = (minX + maxX) / 2;
+  const bcy = (minY + maxY) / 2;
+  const off = ROT_HANDLE_OFFSET_PX / zoom;
+
+  const bump = (cornerX: number, cornerY: number): Point => {
+    let vx = cornerX - bcx;
+    let vy = cornerY - bcy;
+    const len = Math.hypot(vx, vy);
+    if (len < 1e-9) return { x: cornerX, y: cornerY };
+    vx /= len;
+    vy /= len;
+    return {
+      x: cornerX + vx * off,
+      y: cornerY + vy * off,
+    };
+  };
+
+  return {
+    nw: bump(minX, minY),
+    ne: bump(maxX, minY),
+    sw: bump(minX, maxY),
+    se: bump(maxX, maxY),
+  };
+}
+
+/**
+ * Same as `rotateHandleWorldPositions` but for an arbitrary quad (corners: nw, ne, se, sw).
+ */
+export function rotateHandleWorldPositionsForQuad(
+  corners: readonly [Point, Point, Point, Point],
+  zoom: number,
+): Record<BoxCorner, Point> {
+  const bcx =
+    (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4;
+  const bcy =
+    (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4;
+  const off = ROT_HANDLE_OFFSET_PX / zoom;
+
+  const bump = (cornerX: number, cornerY: number): Point => {
+    let vx = cornerX - bcx;
+    let vy = cornerY - bcy;
+    const len = Math.hypot(vx, vy);
+    if (len < 1e-9) return { x: cornerX, y: cornerY };
+    vx /= len;
+    vy /= len;
+    return {
+      x: cornerX + vx * off,
+      y: cornerY + vy * off,
+    };
+  };
+
+  return {
+    nw: bump(corners[0].x, corners[0].y),
+    ne: bump(corners[1].x, corners[1].y),
+    se: bump(corners[2].x, corners[2].y),
+    sw: bump(corners[3].x, corners[3].y),
+  };
+}
+
+/**
+ * Hit-test rotation handle (circular target at offset corner). Returns corner id or null.
+ */
+export function hitTestBoxRotateHandle(
+  point: Point,
+  box: SelectionBox,
+  zoom: number,
+  /** When set (e.g. persisted frame after rotate), hit-test these handles instead of axis box. */
+  orientedQuad: readonly [Point, Point, Point, Point] | null = null,
+): BoxCorner | null {
+  const slop = 10 / zoom;
+  const pos: Record<BoxCorner, Point> | null =
+    orientedQuad != null
+      ? rotateHandleWorldPositionsForQuad(orientedQuad, zoom)
+      : box
+        ? rotateHandleWorldPositions(box, zoom)
+        : null;
+  if (!pos) return null;
+  const order: BoxCorner[] = ['nw', 'ne', 'sw', 'se'];
+  for (const c of order) {
+    const h = pos[c];
+    if (Math.hypot(point.x - h.x, point.y - h.y) <= slop) return c;
+  }
+  return null;
 }
 
 /**

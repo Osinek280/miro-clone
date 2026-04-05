@@ -4,6 +4,7 @@ import type {
   Point,
   SelectionBox,
 } from './types/types';
+import { selectionHasRotatedImage } from './utils/objectUtils';
 import { GeometryCache } from './rendering/cache/GeometryCache';
 import { ImageTextureCache } from './rendering/cache/ImageTextureCache';
 import { BrushPipeline } from './rendering/pipelines/BrushPipeline';
@@ -95,6 +96,10 @@ export class WebGLRenderer {
     currentSize: number,
     selectionBox: SelectionBox,
     selectedBoundingBox: SelectionBox,
+    /** During rotate drag: rigid outline (nw, ne, se, sw) — axis-aligned `selectedBoundingBox` is omitted. */
+    selectedBoundingQuad: readonly [Point, Point, Point, Point] | null,
+    /** Current selection (for overlay chrome, e.g. hide resize when image is rotated). */
+    overlaySelectedIds: readonly string[],
     selectionDrag: {
       offset: Point;
       selectedIds: readonly string[];
@@ -103,6 +108,16 @@ export class WebGLRenderer {
       selectedIds: readonly string[];
       oldBounds: BoundsRect;
       newBounds: BoundsRect;
+    } | null = null,
+    selectionRotate: {
+      center: Point;
+      deltaRadians: number;
+      selectedIds: readonly string[];
+      pathSnapshots: Record<string, Point[]>;
+      imageSnapshots: Record<
+        string,
+        { x: number; y: number; width: number; height: number; rotation: number }
+      >;
     } | null = null,
     cursors: Point[],
   ): void {
@@ -134,6 +149,7 @@ export class WebGLRenderer {
       currentSize,
       selectionDrag,
       selectionResize,
+      selectionRotate,
     });
 
     gl.clearColor(0, 0, 0, 0);
@@ -163,6 +179,7 @@ export class WebGLRenderer {
           y: pass.drawY,
           width: pass.drawWidth,
           height: pass.drawHeight,
+          rotation: pass.drawRotation,
           zoom,
           offsetX,
           offsetY,
@@ -182,7 +199,25 @@ export class WebGLRenderer {
       });
     }
 
-    if (selectedBoundingBox) {
+    if (selectedBoundingQuad) {
+      this.rectPipeline.drawQuadOutline({
+        gl,
+        canvas,
+        corners: selectedBoundingQuad,
+        color: [0.23, 0.51, 0.96, 1.0],
+        zoom,
+        offsetX,
+        offsetY,
+      });
+      this.rectPipeline.drawRotateHandleDotsForQuad({
+        gl,
+        canvas,
+        corners: selectedBoundingQuad,
+        zoom,
+        offsetX,
+        offsetY,
+      });
+    } else if (selectedBoundingBox) {
       let box = selectedBoundingBox;
       if (
         selectionDrag &&
@@ -210,7 +245,7 @@ export class WebGLRenderer {
         offsetX,
         offsetY,
       });
-      this.rectPipeline.drawCornerDots({
+      this.rectPipeline.drawRotateHandleDots({
         gl,
         canvas,
         box,
@@ -218,6 +253,20 @@ export class WebGLRenderer {
         offsetX,
         offsetY,
       });
+      const showResizeHandles = !selectionHasRotatedImage(
+        objects,
+        overlaySelectedIds,
+      );
+      if (showResizeHandles) {
+        this.rectPipeline.drawCornerDots({
+          gl,
+          canvas,
+          box,
+          zoom,
+          offsetX,
+          offsetY,
+        });
+      }
     }
 
     this.cursorPipeline.draw({

@@ -4,10 +4,12 @@ import type {
   DrawObject,
   HistoryOperation,
   RemoveObjectsOp,
+  RotateOp,
   ScaleBoundsOp,
   TranslateOp,
 } from '../types/types';
 import { roundPoint } from './cameraUtils';
+import { applyRotateDeltaToObjects } from './rotateUtils';
 import { mapDrawObjectWithBounds } from './scaleBoundsUtils';
 
 function cloneAddedObject(o: DrawObject): DrawObject {
@@ -132,6 +134,17 @@ function applyScaleBounds(
   );
 }
 
+function applyRotate(children: DrawObject[], op: RotateOp): DrawObject[] {
+  const opTs = op.timestamp ?? 0;
+  return applyRotateDeltaToObjects(
+    children,
+    op.ids,
+    op.center,
+    op.deltaRadians,
+    opTs,
+  );
+}
+
 export function applyOperation(
   children: DrawObject[],
   op: HistoryOperation,
@@ -145,6 +158,8 @@ export function applyOperation(
       return applyTranslate(children, op);
     case 'scaleBounds':
       return applyScaleBounds(children, op);
+    case 'rotate':
+      return applyRotate(children, op);
     case 'batch': {
       const flat = flattenBatch(op);
       return flat.reduce((acc, o) => applyOperation(acc, o), children);
@@ -189,6 +204,14 @@ export function getInverse(
         ids: [...op.ids],
         oldBounds: op.newBounds,
         newBounds: op.oldBounds,
+      };
+    case 'rotate':
+      return {
+        ...meta,
+        type: 'rotate',
+        ids: [...op.ids],
+        center: op.center,
+        deltaRadians: -op.deltaRadians,
       };
     case 'batch':
       return {

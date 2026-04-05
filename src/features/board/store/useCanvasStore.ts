@@ -6,8 +6,14 @@ import type {
   DrawObject,
   Point,
   SelectionBox,
+  SelectionOrientedQuad,
   SelectionResizeSession,
+  SelectionRotateSession,
 } from '../types/types';
+import {
+  offsetSelectionQuad,
+  rotateOutlineCorners,
+} from '../utils/rotateUtils';
 import {
   boundsToSelectionBox,
   computeResizedBounds,
@@ -49,6 +55,8 @@ export interface CanvasStoreState {
   selectionDragOffsetRef: MutableRefObject<Point> | null;
   /** Live edge-resize session (pointer + initial bounds). */
   selectionResizeSessionRef: MutableRefObject<SelectionResizeSession | null> | null;
+  /** Live rotate session (snapshots + pointer). */
+  selectionRotateSessionRef: MutableRefObject<SelectionRotateSession | null> | null;
 
   // Render state
   objects: DrawObject[];
@@ -57,6 +65,8 @@ export interface CanvasStoreState {
   size: number;
   selectionBox: SelectionBox;
   selectedBoundingBox: SelectionBox;
+  /** Non-null after a completed rotate; cleared when selection changes. */
+  selectedOrientedQuad: SelectionOrientedQuad | null;
   cursors: Point[];
 
   // Interaction / selection
@@ -64,6 +74,7 @@ export interface CanvasStoreState {
   isDrawing: boolean;
   isMoving: boolean;
   isResizing: boolean;
+  isRotating: boolean;
   isGrabbing: boolean;
 
   // Refs + render
@@ -76,6 +87,9 @@ export interface CanvasStoreState {
   setSelectionResizeSessionRef: (
     r: MutableRefObject<SelectionResizeSession | null> | null,
   ) => void;
+  setSelectionRotateSessionRef: (
+    r: MutableRefObject<SelectionRotateSession | null> | null,
+  ) => void;
   renderFrame: () => void;
   /** Coalesced redraw without mutating store slice (for ref-only preview updates). */
   scheduleRedraw: () => void;
@@ -87,12 +101,16 @@ export interface CanvasStoreState {
   setSize: (action: SetStateAction<number>) => void;
   setSelectionBox: (action: SetStateAction<SelectionBox>) => void;
   setSelectedBoundingBox: (action: SetStateAction<SelectionBox>) => void;
+  setSelectedOrientedQuad: (
+    action: SetStateAction<SelectionOrientedQuad | null>,
+  ) => void;
   setCursors: (action: SetStateAction<Point[]>) => void;
 
   setSelectedIds: (action: SetStateAction<string[]>) => void;
   setIsDrawing: (value: boolean) => void;
   setIsMoving: (value: boolean) => void;
   setIsResizing: (value: boolean) => void;
+  setIsRotating: (value: boolean) => void;
   setIsGrabbing: (value: boolean) => void;
 
   clearSelection: () => void;
@@ -104,6 +122,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   inProgressStrokeRef: null,
   selectionDragOffsetRef: null,
   selectionResizeSessionRef: null,
+  selectionRotateSessionRef: null,
 
   objects: [],
   currentPath: [],
@@ -111,12 +130,14 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   size: 10,
   selectionBox: null,
   selectedBoundingBox: null,
+  selectedOrientedQuad: null,
   cursors: [],
 
   selectedIds: [],
   isDrawing: false,
   isMoving: false,
   isResizing: false,
+  isRotating: false,
   isGrabbing: false,
 
   setRefs: (rendererRef, cameraRef) => {
@@ -127,6 +148,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   setInProgressStrokeRef: (r) => set({ inProgressStrokeRef: r }),
   setSelectionDragOffsetRef: (r) => set({ selectionDragOffsetRef: r }),
   setSelectionResizeSessionRef: (r) => set({ selectionResizeSessionRef: r }),
+  setSelectionRotateSessionRef: (r) => set({ selectionRotateSessionRef: r }),
   scheduleRedraw: () => scheduleRender(get),
 
   renderFrame: () => {
@@ -139,13 +161,16 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       size,
       selectionBox,
       selectedBoundingBox,
+      selectedOrientedQuad,
       isDrawing,
       inProgressStrokeRef,
       isMoving,
       isResizing,
+      isRotating,
       selectedIds,
       selectionDragOffsetRef,
       selectionResizeSessionRef,
+      selectionRotateSessionRef,
       cursors,
     } = get();
     const r = rendererRef?.current;
@@ -157,8 +182,15 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         ? inProgressStrokeRef.current
         : currentPath;
 
+    const rotateSession =
+      isRotating && selectionRotateSessionRef?.current
+        ? selectionRotateSessionRef.current
+        : null;
+
     const resizeSession =
-      isResizing && selectionResizeSessionRef?.current
+      !rotateSession &&
+      isResizing &&
+      selectionResizeSessionRef?.current
         ? selectionResizeSessionRef.current
         : null;
     const previewBounds =
@@ -172,13 +204,13 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           )
         : null;
 
-    const displaySelectedBox =
-      previewBounds != null
-        ? boundsToSelectionBox(previewBounds)
-        : selectedBoundingBox;
+    const rotateDelta =
+      rotateSession != null ? rotateSession.accumulatedRadians : 0;
 
     const selectionResize =
-      resizeSession != null && previewBounds != null
+      rotateSession == null &&
+      resizeSession != null &&
+      previewBounds != null
         ? {
             selectedIds,
             oldBounds: resizeSession.initialBounds,
@@ -186,8 +218,20 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           }
         : null;
 
+    const selectionRotate =
+      rotateSession != null
+        ? {
+            center: rotateSession.center,
+            deltaRadians: rotateSession.accumulatedRadians,
+            selectedIds,
+            pathSnapshots: rotateSession.pathSnapshots,
+            imageSnapshots: rotateSession.imageSnapshots,
+          }
+        : null;
+
     const selectionDrag =
       !selectionResize &&
+      !selectionRotate &&
       isMoving &&
       selectedIds.length > 0 &&
       selectionDragOffsetRef &&
@@ -199,6 +243,41 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
           }
         : null;
 
+    const liveRotateQuad =
+      rotateSession != null
+        ? rotateOutlineCorners(
+            rotateSession.initialRotateCorners,
+            rotateSession.center,
+            rotateDelta,
+          )
+        : null;
+
+    const orientedWithDrag =
+      !rotateSession &&
+      selectedOrientedQuad &&
+      selectionDrag &&
+      (selectionDrag.offset.x !== 0 || selectionDrag.offset.y !== 0)
+        ? offsetSelectionQuad(
+            selectedOrientedQuad,
+            selectionDrag.offset.x,
+            selectionDrag.offset.y,
+          )
+        : null;
+
+    const persistedQuad =
+      !rotateSession && selectedOrientedQuad
+        ? (orientedWithDrag ?? selectedOrientedQuad)
+        : null;
+
+    const selectedBoundingQuad = liveRotateQuad ?? persistedQuad ?? null;
+
+    const displaySelectedBox =
+      selectedBoundingQuad != null
+        ? null
+        : previewBounds != null
+          ? boundsToSelectionBox(previewBounds)
+          : selectedBoundingBox;
+
     r.render(
       getVisibleObjects(objects),
       liveStroke,
@@ -209,8 +288,11 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       size,
       selectionBox,
       displaySelectedBox,
+      selectedBoundingQuad,
+      selectedIds,
       selectionDrag,
       selectionResize,
+      selectionRotate,
       cursors,
     );
   },
@@ -247,11 +329,19 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     scheduleRender(get);
   },
 
+  setSelectedOrientedQuad: (action) => {
+    set((s) => ({
+      selectedOrientedQuad: resolveAction(action, s.selectedOrientedQuad),
+    }));
+    scheduleRender(get);
+  },
+
   setSelectedIds: (action) =>
     set((s) => ({ selectedIds: resolveAction(action, s.selectedIds) })),
   setIsDrawing: (value) => set({ isDrawing: value }),
   setIsMoving: (value) => set({ isMoving: value }),
   setIsResizing: (value) => set({ isResizing: value }),
+  setIsRotating: (value) => set({ isRotating: value }),
   setIsGrabbing: (value) => set({ isGrabbing: value }),
 
   setCursors: (action) => {
@@ -264,11 +354,15 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     if (dragRef) dragRef.current = { x: 0, y: 0 };
     const resizeRef = get().selectionResizeSessionRef;
     if (resizeRef) resizeRef.current = null;
+    const rotateRef = get().selectionRotateSessionRef;
+    if (rotateRef) rotateRef.current = null;
     set({
       selectedIds: [],
       selectionBox: null,
       selectedBoundingBox: null,
+      selectedOrientedQuad: null,
       isResizing: false,
+      isRotating: false,
     });
     scheduleRender(get);
   },

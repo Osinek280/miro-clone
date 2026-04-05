@@ -28,6 +28,8 @@ export interface ImageDrawObject {
   y: number;
   width: number;
   height: number;
+  /** Counter-clockwise rotation in radians around image center (x+w/2, y+h/2). */
+  rotation: number;
   /** Data URL or HTTP(S) URL of the image. */
   src: string;
   tombstone: boolean;
@@ -55,6 +57,9 @@ export type ToolState = {
 
 export type SelectionBox = { start: Point; end: Point } | null;
 
+/** Oriented selection outline (nw, ne, se, sw). Persists after rotate until selection changes. */
+export type SelectionOrientedQuad = readonly [Point, Point, Point, Point];
+
 /** Axis-aligned bounds in world space (selection / scale). */
 export interface BoundsRect {
   minX: number;
@@ -78,6 +83,28 @@ export interface SelectionResizeSession {
   lastPoint: Point;
   /** Shift = proportional scale (same factor on X and Y). */
   uniformScale: boolean;
+}
+
+/** Which corner’s rotation handle (offset outward from selection box). */
+export type BoxRotateCorner = BoxCorner;
+
+/** Live rotate session: group rotation around selection bounds center. */
+export interface SelectionRotateSession {
+  center: Point;
+  /** Frame at rotate start (axis-aligned rect or persisted oriented quad). */
+  initialRotateCorners: [Point, Point, Point, Point];
+  /** Total rotation since mousedown (incremental; stable when cursor passes near pivot). */
+  accumulatedRadians: number;
+  /** Previous pointer sample for incremental angle (paired with `lastPoint` updates). */
+  prevPointerForRotate: Point;
+  lastPoint: Point;
+  /** Path id → point array copy at drag start. */
+  pathSnapshots: Record<string, Point[]>;
+  /** Image id → pose at drag start. */
+  imageSnapshots: Record<
+    string,
+    { x: number; y: number; width: number; height: number; rotation: number }
+  >;
 }
 
 /** API of the state object returned by useRender (getters + setters). */
@@ -150,6 +177,14 @@ export interface ScaleBoundsOp extends OpMeta {
   newBounds: BoundsRect;
 }
 
+/** Rotate selection around `center` by `deltaRadians` (paths: transform points; images: x,y + rotation). */
+export interface RotateOp extends OpMeta {
+  type: 'rotate';
+  ids: string[];
+  center: Point;
+  deltaRadians: number;
+}
+
 /** Logical batch; stored stack flattens to single ops ordered by timestamp. */
 export interface BatchOp extends OpMeta {
   type: 'batch';
@@ -158,7 +193,12 @@ export interface BatchOp extends OpMeta {
 
 export type HistoryOperation =
   // | AddObjectOp
-  RemoveObjectsOp | AddObjectsOp | TranslateOp | ScaleBoundsOp | BatchOp;
+  | RemoveObjectsOp
+  | AddObjectsOp
+  | TranslateOp
+  | ScaleBoundsOp
+  | RotateOp
+  | BatchOp;
 
 export interface PathDrawObjectWire {
   id: string;
@@ -177,6 +217,7 @@ export interface ImageDrawObjectWire {
   y: number;
   width: number;
   height: number;
+  rotation: number;
   src: string;
   tombstone: boolean;
   positionTimestamp: number;
@@ -207,4 +248,5 @@ export type WireHistoryOperation =
   | AddObjectsWireOp
   | TranslateOp
   | ScaleBoundsOp
+  | RotateOp
   | BatchWireOp;

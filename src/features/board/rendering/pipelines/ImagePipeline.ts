@@ -5,10 +5,15 @@ attribute vec4 a_pos_uv;
 uniform vec2 u_resolution;
 uniform vec2 u_offset;
 uniform float u_zoom;
+uniform vec2 u_rotCenter;
+uniform float u_rotCos;
+uniform float u_rotSin;
 varying vec2 v_uv;
 
 void main() {
-  vec2 screen = a_pos_uv.xy * u_zoom + u_offset;
+  vec2 rel = a_pos_uv.xy - u_rotCenter;
+  vec2 w = vec2(u_rotCos * rel.x - u_rotSin * rel.y, u_rotSin * rel.x + u_rotCos * rel.y) + u_rotCenter;
+  vec2 screen = w * u_zoom + u_offset;
   vec2 ndc = screen / u_resolution * 2.0 - 1.0;
   gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
   v_uv = a_pos_uv.zw;
@@ -35,6 +40,9 @@ export class ImagePipeline {
   private uResolution: WebGLUniformLocation;
   private uOffset: WebGLUniformLocation;
   private uZoom: WebGLUniformLocation;
+  private uRotCenter: WebGLUniformLocation;
+  private uRotCos: WebGLUniformLocation;
+  private uRotSin: WebGLUniformLocation;
   private uTex: WebGLUniformLocation;
 
   private constructor(
@@ -44,6 +52,9 @@ export class ImagePipeline {
     uResolution: WebGLUniformLocation,
     uOffset: WebGLUniformLocation,
     uZoom: WebGLUniformLocation,
+    uRotCenter: WebGLUniformLocation,
+    uRotCos: WebGLUniformLocation,
+    uRotSin: WebGLUniformLocation,
     uTex: WebGLUniformLocation,
   ) {
     this.program = program;
@@ -52,6 +63,9 @@ export class ImagePipeline {
     this.uResolution = uResolution;
     this.uOffset = uOffset;
     this.uZoom = uZoom;
+    this.uRotCenter = uRotCenter;
+    this.uRotCos = uRotCos;
+    this.uRotSin = uRotSin;
     this.uTex = uTex;
   }
 
@@ -73,6 +87,9 @@ export class ImagePipeline {
       gl.getUniformLocation(program, 'u_resolution')!,
       gl.getUniformLocation(program, 'u_offset')!,
       gl.getUniformLocation(program, 'u_zoom')!,
+      gl.getUniformLocation(program, 'u_rotCenter')!,
+      gl.getUniformLocation(program, 'u_rotCos')!,
+      gl.getUniformLocation(program, 'u_rotSin')!,
       gl.getUniformLocation(program, 'u_tex')!,
     );
   }
@@ -85,12 +102,24 @@ export class ImagePipeline {
     y: number;
     width: number;
     height: number;
+    rotation?: number;
     zoom: number;
     offsetX: number;
     offsetY: number;
   }): void {
-    const { gl, canvas, texture, x, y, width, height, zoom, offsetX, offsetY } =
-      params;
+    const {
+      gl,
+      canvas,
+      texture,
+      x,
+      y,
+      width,
+      height,
+      rotation = 0,
+      zoom,
+      offsetX,
+      offsetY,
+    } = params;
 
     const q = this.quadScratch;
     const x1 = x;
@@ -125,10 +154,16 @@ export class ImagePipeline {
     q[22] = 0;
     q[23] = 0;
 
+    const rcx = x + width / 2;
+    const rcy = y + height / 2;
+
     gl.useProgram(this.program);
     gl.uniform2f(this.uResolution, canvas.width, canvas.height);
     gl.uniform1f(this.uZoom, zoom);
     gl.uniform2f(this.uOffset, offsetX, offsetY);
+    gl.uniform2f(this.uRotCenter, rcx, rcy);
+    gl.uniform1f(this.uRotCos, Math.cos(rotation));
+    gl.uniform1f(this.uRotSin, Math.sin(rotation));
     gl.uniform1i(this.uTex, 0);
 
     gl.activeTexture(gl.TEXTURE0);

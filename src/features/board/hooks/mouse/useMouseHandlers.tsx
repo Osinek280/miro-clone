@@ -7,8 +7,11 @@ import {
 } from '../../types/types';
 import { getCursor } from '../../utils/cursorUtils';
 import { getCanvasPoint } from '../../utils/cameraUtils';
+import { selectionHasRotatedImage } from '../../utils/objectUtils';
+import { offsetSelectionQuad } from '../../utils/rotateUtils';
 import {
   hitTestBoxResizeHandle,
+  hitTestBoxRotateHandle,
   resizeHandleCursor,
 } from '../../utils/scaleBoundsUtils';
 import { useDrawMode } from './modes/useDrawMode';
@@ -60,6 +63,11 @@ export function useMouseHandlers(
       return;
     }
 
+    if (st.isRotating) {
+      canvas.style.cursor = 'grab';
+      return;
+    }
+
     if (st.isMoving) {
       canvas.style.cursor = getCursor(DrawModeEnum.Select);
       return;
@@ -70,14 +78,37 @@ export function useMouseHandlers(
       st.selectedIds.length > 0 &&
       !st.selectionBox
     ) {
-      const handle = hitTestBoxResizeHandle(
-        worldPoint,
-        st.selectedBoundingBox,
-        zoom,
-      );
-      if (handle) {
-        canvas.style.cursor = resizeHandleCursor(handle);
+      const drag = st.selectionDragOffsetRef?.current;
+      const quadForHit =
+        st.selectedOrientedQuad &&
+        drag &&
+        (drag.x !== 0 || drag.y !== 0)
+          ? offsetSelectionQuad(st.selectedOrientedQuad, drag.x, drag.y)
+          : st.selectedOrientedQuad;
+      if (
+        hitTestBoxRotateHandle(
+          worldPoint,
+          st.selectedBoundingBox,
+          zoom,
+          quadForHit,
+        ) != null
+      ) {
+        canvas.style.cursor = 'grab';
         return;
+      }
+      if (
+        !quadForHit &&
+        !selectionHasRotatedImage(st.objects, st.selectedIds)
+      ) {
+        const handle = hitTestBoxResizeHandle(
+          worldPoint,
+          st.selectedBoundingBox,
+          zoom,
+        );
+        if (handle) {
+          canvas.style.cursor = resizeHandleCursor(handle);
+          return;
+        }
       }
     }
 
