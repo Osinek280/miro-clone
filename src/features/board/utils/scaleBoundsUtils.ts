@@ -250,36 +250,16 @@ function computeResizedBoundsUniform(
       s = Math.max(minSpan / oldH, (maxY - pointer.y) / oldH);
       break;
     case 'se':
-      s = cornerS(
-        pointer.x - minX,
-        pointer.y - minY,
-        oldW,
-        oldH,
-      );
+      s = cornerS(pointer.x - minX, pointer.y - minY, oldW, oldH);
       break;
     case 'nw':
-      s = cornerS(
-        pointer.x - maxX,
-        pointer.y - maxY,
-        -oldW,
-        -oldH,
-      );
+      s = cornerS(pointer.x - maxX, pointer.y - maxY, -oldW, -oldH);
       break;
     case 'ne':
-      s = cornerS(
-        pointer.x - minX,
-        pointer.y - maxY,
-        oldW,
-        -oldH,
-      );
+      s = cornerS(pointer.x - minX, pointer.y - maxY, oldW, -oldH);
       break;
     case 'sw':
-      s = cornerS(
-        pointer.x - maxX,
-        pointer.y - minY,
-        -oldW,
-        oldH,
-      );
+      s = cornerS(pointer.x - maxX, pointer.y - minY, -oldW, oldH);
       break;
     default:
       return initial;
