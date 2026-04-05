@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { MutableRefObject, RefObject } from 'react';
+import type { RefObject } from 'react';
 import type { WebGLRenderer } from '../WebGLRenderer';
 import type {
   Camera,
@@ -50,13 +50,13 @@ export interface CanvasStoreState {
   rendererRef: RefObject<WebGLRenderer | null> | null;
   cameraRef: RefObject<Camera> | null;
   /** Live stroke while drawing — authoritative path; avoids O(n) store updates each move. */
-  inProgressStrokeRef: MutableRefObject<Point[]> | null;
+  inProgressStrokeRef: RefObject<Point[]> | null;
   /** Cumulative world offset while dragging selection (render-only until mouseUp). */
-  selectionDragOffsetRef: MutableRefObject<Point> | null;
+  selectionDragOffsetRef: RefObject<Point> | null;
   /** Live edge-resize session (pointer + initial bounds). */
-  selectionResizeSessionRef: MutableRefObject<SelectionResizeSession | null> | null;
+  selectionResizeSessionRef: RefObject<SelectionResizeSession | null> | null;
   /** Live rotate session (snapshots + pointer). */
-  selectionRotateSessionRef: MutableRefObject<SelectionRotateSession | null> | null;
+  selectionRotateSessionRef: RefObject<SelectionRotateSession | null> | null;
 
   // Render state
   objects: DrawObject[];
@@ -82,13 +82,13 @@ export interface CanvasStoreState {
     rendererRef: RefObject<WebGLRenderer | null>,
     cameraRef: RefObject<Camera>,
   ) => void;
-  setInProgressStrokeRef: (r: MutableRefObject<Point[]> | null) => void;
-  setSelectionDragOffsetRef: (r: MutableRefObject<Point> | null) => void;
+  setInProgressStrokeRef: (r: RefObject<Point[]> | null) => void;
+  setSelectionDragOffsetRef: (r: RefObject<Point> | null) => void;
   setSelectionResizeSessionRef: (
-    r: MutableRefObject<SelectionResizeSession | null> | null,
+    r: RefObject<SelectionResizeSession | null> | null,
   ) => void;
   setSelectionRotateSessionRef: (
-    r: MutableRefObject<SelectionRotateSession | null> | null,
+    r: RefObject<SelectionRotateSession | null> | null,
   ) => void;
   renderFrame: () => void;
   /** Coalesced redraw without mutating store slice (for ref-only preview updates). */

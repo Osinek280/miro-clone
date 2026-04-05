@@ -28,7 +28,7 @@ const ROTATE_SNAP_EXIT_RAD = (6 * Math.PI) / 180;
 export function useSelectionRotate(
   cameraRef: React.RefObject<Camera>,
   pushSyncedOperation: (op: HistoryOperation) => void,
-  lastMousePosRef: React.MutableRefObject<Point>,
+  lastMousePosRef: React.RefObject<Point>,
 ) {
   const { setObjects, setSelectedBoundingBox, setSelectedOrientedQuad } =
     useCanvasStore();
