@@ -63,14 +63,21 @@ export interface BoundsRect {
   maxY: number;
 }
 
-/** Which edge of the selection box is being dragged for resize. */
+/** Edge of the selection box (one-axis resize). */
 export type BoxEdge = 'n' | 's' | 'e' | 'w';
+
+/** Corner of the selection box (two-axis resize). */
+export type BoxCorner = 'nw' | 'ne' | 'sw' | 'se';
+
+export type BoxResizeHandle = BoxEdge | BoxCorner;
 
 /** Live resize session (refs only during drag; not stored in React state). */
 export interface SelectionResizeSession {
-  edge: BoxEdge;
+  handle: BoxResizeHandle;
   initialBounds: BoundsRect;
   lastPoint: Point;
+  /** Shift = proportional scale (same factor on X and Y). */
+  uniformScale: boolean;
 }
 
 /** API of the state object returned by useRender (getters + setters). */

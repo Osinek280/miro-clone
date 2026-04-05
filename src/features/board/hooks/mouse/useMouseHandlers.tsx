@@ -7,7 +7,10 @@ import {
 } from '../../types/types';
 import { getCursor } from '../../utils/cursorUtils';
 import { getCanvasPoint } from '../../utils/cameraUtils';
-import { hitTestBoxEdge } from '../../utils/scaleBoundsUtils';
+import {
+  hitTestBoxResizeHandle,
+  resizeHandleCursor,
+} from '../../utils/scaleBoundsUtils';
 import { useDrawMode } from './modes/useDrawMode';
 import { useSelectMode } from './modes/useSelectMode';
 import { useGrabMode } from './modes/useGrabMode';
@@ -51,9 +54,9 @@ export function useMouseHandlers(
     const zoom = cameraRef.current.zoom;
 
     if (st.isResizing && st.selectionResizeSessionRef?.current) {
-      const edge = st.selectionResizeSessionRef.current.edge;
-      canvas.style.cursor =
-        edge === 'n' || edge === 's' ? 'ns-resize' : 'ew-resize';
+      canvas.style.cursor = resizeHandleCursor(
+        st.selectionResizeSessionRef.current.handle,
+      );
       return;
     }
 
@@ -67,14 +70,13 @@ export function useMouseHandlers(
       st.selectedIds.length > 0 &&
       !st.selectionBox
     ) {
-      const edge = hitTestBoxEdge(
+      const handle = hitTestBoxResizeHandle(
         worldPoint,
         st.selectedBoundingBox,
         zoom,
       );
-      if (edge) {
-        canvas.style.cursor =
-          edge === 'n' || edge === 's' ? 'ns-resize' : 'ew-resize';
+      if (handle) {
+        canvas.style.cursor = resizeHandleCursor(handle);
         return;
       }
     }
@@ -92,7 +94,7 @@ export function useMouseHandlers(
     }
     const point = getCanvasPoint(e, canvasRef, cameraRef.current);
     if (mode === DrawModeEnum.Select) {
-      select.onMouseDown(point);
+      select.onMouseDown(point, e.shiftKey);
     } else if (mode === DrawModeEnum.Draw) {
       setIsDrawing(true);
       draw.onMouseDown(point);
@@ -109,7 +111,7 @@ export function useMouseHandlers(
     }
     const point = getCanvasPoint(e, canvasRef, cameraRef.current);
     if (mode === DrawModeEnum.Select) {
-      select.onMouseMove(point);
+      select.onMouseMove(point, e.shiftKey);
       applySelectHoverCursor(point);
     } else if (
       mode === DrawModeEnum.Draw &&
@@ -127,7 +129,7 @@ export function useMouseHandlers(
       return;
     }
     if (mode === DrawModeEnum.Select) {
-      select.onMouseUp();
+      select.onMouseUp(e.shiftKey);
     } else if (mode === DrawModeEnum.Draw) {
       draw.onMouseUp();
       setIsDrawing(false);

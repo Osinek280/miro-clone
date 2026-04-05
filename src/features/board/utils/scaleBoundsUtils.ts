@@ -2,6 +2,7 @@ import { POINT_SCALE } from '../constants/pointPrecision';
 import type {
   BoundsRect,
   BoxEdge,
+  BoxResizeHandle,
   DrawObject,
   Point,
   SelectionBox,
@@ -79,20 +80,50 @@ export function boundsChanged(a: BoundsRect, b: BoundsRect): boolean {
 }
 
 /**
- * Hit-test which edge of the selection box is under the pointer (world space).
- * Corner overlap picks the edge with the smaller perpendicular distance.
+ * CSS cursor for a resize handle (edges + corners).
  */
-export function hitTestBoxEdge(
+export function resizeHandleCursor(handle: BoxResizeHandle): string {
+  switch (handle) {
+    case 'n':
+    case 's':
+      return 'ns-resize';
+    case 'e':
+    case 'w':
+      return 'ew-resize';
+    case 'nw':
+    case 'se':
+      return 'nwse-resize';
+    case 'ne':
+    case 'sw':
+      return 'nesw-resize';
+    default:
+      return 'default';
+  }
+}
+
+/**
+ * Hit-test resize handle: corners first (two-axis), then edges (one-axis).
+ */
+export function hitTestBoxResizeHandle(
   point: Point,
   box: SelectionBox,
   zoom: number,
-): BoxEdge | null {
+): BoxResizeHandle | null {
   if (!box) return null;
   const slop = 8 / zoom;
   const minX = Math.min(box.start.x, box.end.x);
   const maxX = Math.max(box.start.x, box.end.x);
   const minY = Math.min(box.start.y, box.end.y);
   const maxY = Math.max(box.start.y, box.end.y);
+
+  if (Math.abs(point.x - minX) <= slop && Math.abs(point.y - minY) <= slop)
+    return 'nw';
+  if (Math.abs(point.x - maxX) <= slop && Math.abs(point.y - minY) <= slop)
+    return 'ne';
+  if (Math.abs(point.x - minX) <= slop && Math.abs(point.y - maxY) <= slop)
+    return 'sw';
+  if (Math.abs(point.x - maxX) <= slop && Math.abs(point.y - maxY) <= slop)
+    return 'se';
 
   const nearN =
     point.x >= minX - slop &&
@@ -126,9 +157,11 @@ export function hitTestBoxEdge(
   return cands[0].edge;
 }
 
-/** New bounds after dragging one edge toward `pointer` (opposite edge fixed). */
-export function computeResizedBounds(
-  edge: BoxEdge,
+/**
+ * Axis-aligned resize (one or two edges without fixed aspect ratio).
+ */
+function computeResizedBoundsFree(
+  handle: BoxResizeHandle,
   initial: BoundsRect,
   pointer: Point,
   zoom: number,
@@ -136,7 +169,7 @@ export function computeResizedBounds(
   const minSpan = Math.max(1e-3, 8 / zoom);
   let { minX, maxX, minY, maxY } = initial;
 
-  switch (edge) {
+  switch (handle) {
     case 'e':
       maxX = Math.max(minX + minSpan, pointer.x);
       break;
@@ -149,11 +182,147 @@ export function computeResizedBounds(
     case 'n':
       minY = Math.min(maxY - minSpan, pointer.y);
       break;
+    case 'se':
+      maxX = Math.max(minX + minSpan, pointer.x);
+      maxY = Math.max(minY + minSpan, pointer.y);
+      break;
+    case 'nw':
+      minX = Math.min(maxX - minSpan, pointer.x);
+      minY = Math.min(maxY - minSpan, pointer.y);
+      break;
+    case 'ne':
+      maxX = Math.max(minX + minSpan, pointer.x);
+      minY = Math.min(maxY - minSpan, pointer.y);
+      break;
+    case 'sw':
+      minX = Math.min(maxX - minSpan, pointer.x);
+      maxY = Math.max(minY + minSpan, pointer.y);
+      break;
     default:
       break;
   }
 
   return { minX, minY, maxX, maxY };
+}
+
+/**
+ * Proportional resize: same scale factor on width and height from the fixed anchor
+ * (opposite corner / edge side). Shift-drag uses this.
+ */
+function computeResizedBoundsUniform(
+  handle: BoxResizeHandle,
+  initial: BoundsRect,
+  pointer: Point,
+  zoom: number,
+): BoundsRect {
+  const minSpan = Math.max(1e-3, 8 / zoom);
+  const { minX, maxX, minY, maxY } = initial;
+  const oldW = maxX - minX;
+  const oldH = maxY - minY;
+
+  if (oldW <= 1e-9 || oldH <= 1e-9) {
+    return computeResizedBoundsFree(handle, initial, pointer, zoom);
+  }
+
+  const minS = Math.max(minSpan / oldW, minSpan / oldH);
+
+  /** Scale along diagonal from anchor: projects pointer onto the fixed-aspect ray (corner stays near cursor). */
+  const cornerS = (dx: number, dy: number, vx: number, vy: number): number => {
+    const d = vx * vx + vy * vy;
+    if (d <= 1e-18) return minS;
+    let t = (dx * vx + dy * vy) / d;
+    if (t < minS) t = minS;
+    return t;
+  };
+
+  let s = 1;
+  switch (handle) {
+    case 'e':
+      s = Math.max(minSpan / oldW, (pointer.x - minX) / oldW);
+      break;
+    case 'w':
+      s = Math.max(minSpan / oldW, (maxX - pointer.x) / oldW);
+      break;
+    case 's':
+      s = Math.max(minSpan / oldH, (pointer.y - minY) / oldH);
+      break;
+    case 'n':
+      s = Math.max(minSpan / oldH, (maxY - pointer.y) / oldH);
+      break;
+    case 'se':
+      s = cornerS(
+        pointer.x - minX,
+        pointer.y - minY,
+        oldW,
+        oldH,
+      );
+      break;
+    case 'nw':
+      s = cornerS(
+        pointer.x - maxX,
+        pointer.y - maxY,
+        -oldW,
+        -oldH,
+      );
+      break;
+    case 'ne':
+      s = cornerS(
+        pointer.x - minX,
+        pointer.y - maxY,
+        oldW,
+        -oldH,
+      );
+      break;
+    case 'sw':
+      s = cornerS(
+        pointer.x - maxX,
+        pointer.y - minY,
+        -oldW,
+        oldH,
+      );
+      break;
+    default:
+      return initial;
+  }
+
+  const newW = oldW * s;
+  const newH = oldH * s;
+
+  switch (handle) {
+    case 'e':
+    case 's':
+    case 'se':
+      return { minX, minY, maxX: minX + newW, maxY: minY + newH };
+    case 'w':
+      return { minX: maxX - newW, minY, maxX, maxY: minY + newH };
+    case 'n':
+      return { minX, minY: maxY - newH, maxX: minX + newW, maxY };
+    case 'nw':
+      return { minX: maxX - newW, minY: maxY - newH, maxX, maxY };
+    case 'ne':
+      return { minX, minY: maxY - newH, maxX: minX + newW, maxY };
+    case 'sw':
+      return { minX: maxX - newW, minY, maxX, maxY: minY + newH };
+    default:
+      return { minX, minY, maxX: minX + newW, maxY: minY + newH };
+  }
+}
+
+/**
+ * New bounds after dragging a handle: opposite edge(s) fixed; `minSpan` enforced.
+ * With `uniform`, width and height scale by the same factor (Shift).
+ */
+export function computeResizedBounds(
+  handle: BoxResizeHandle,
+  initial: BoundsRect,
+  pointer: Point,
+  zoom: number,
+  uniform = false,
+): BoundsRect {
+  if (uniform) {
+    return computeResizedBoundsUniform(handle, initial, pointer, zoom);
+  }
+  return computeResizedBoundsFree(handle, initial, pointer, zoom);
 }
 
 /** Apply bounds remap to one object if its id is selected (used after commit). */

@@ -16,7 +16,7 @@ import {
   boundsChanged,
   boundsToSelectionBox,
   computeResizedBounds,
-  hitTestBoxEdge,
+  hitTestBoxResizeHandle,
   mapDrawObjectWithBounds,
   selectionBoxToBounds,
 } from '../../../utils/scaleBoundsUtils';
@@ -58,18 +58,23 @@ export function useSelectMode(
     return () => useCanvasStore.getState().setSelectionResizeSessionRef(null);
   }, []);
 
-  const onMouseDown = (point: Point) => {
+  const onMouseDown = (point: Point, shiftKey = false) => {
     dragOffsetRef.current.x = 0;
     dragOffsetRef.current.y = 0;
     const zoom = cameraRef.current.zoom;
     const st = useCanvasStore.getState();
     if (st.selectedBoundingBox && st.selectedIds.length > 0) {
-      const edge = hitTestBoxEdge(point, st.selectedBoundingBox, zoom);
-      if (edge) {
+      const handle = hitTestBoxResizeHandle(
+        point,
+        st.selectedBoundingBox,
+        zoom,
+      );
+      if (handle) {
         selectionResizeSessionRef.current = {
-          edge,
+          handle,
           initialBounds: selectionBoxToBounds(st.selectedBoundingBox),
           lastPoint: point,
+          uniformScale: shiftKey,
         };
         const store = useCanvasStore.getState();
         store.setIsResizing(true);
@@ -97,10 +102,12 @@ export function useSelectMode(
     }
   };
 
-  const onMouseMove = (point: Point) => {
+  const onMouseMove = (point: Point, shiftKey = false) => {
     const state = useCanvasStore.getState();
     if (state.isResizing && state.selectionResizeSessionRef?.current) {
-      state.selectionResizeSessionRef.current.lastPoint = point;
+      const sess = state.selectionResizeSessionRef.current;
+      sess.lastPoint = point;
+      sess.uniformScale = shiftKey;
       state.scheduleRedraw();
       return;
     }
@@ -119,7 +126,7 @@ export function useSelectMode(
     }
   };
 
-  const onMouseUp = () => {
+  const onMouseUp = (shiftKey = false) => {
     const state = useCanvasStore.getState();
     const box = state.selectionBox;
     const moving = state.isMoving;
@@ -146,11 +153,13 @@ export function useSelectMode(
     } else if (resizing && ids.length > 0 && state.selectionResizeSessionRef) {
       const sess = state.selectionResizeSessionRef.current;
       if (sess) {
+        const uniform = sess.uniformScale || shiftKey;
         const newBounds = computeResizedBounds(
-          sess.edge,
+          sess.handle,
           sess.initialBounds,
           sess.lastPoint,
           zoom,
+          uniform,
         );
         if (boundsChanged(sess.initialBounds, newBounds)) {
           const ts = Date.now();

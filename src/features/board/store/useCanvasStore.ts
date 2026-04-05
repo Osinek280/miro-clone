@@ -164,10 +164,11 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     const previewBounds =
       resizeSession != null
         ? computeResizedBounds(
-            resizeSession.edge,
+            resizeSession.handle,
             resizeSession.initialBounds,
             resizeSession.lastPoint,
             c.zoom,
+            resizeSession.uniformScale,
           )
         : null;
 
