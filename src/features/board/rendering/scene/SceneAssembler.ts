@@ -37,6 +37,7 @@ export type SceneDrawPass = BrushDrawPass | ImageDrawPass;
 function appendPathRunToPasses(
   pathRun: DrawObject[],
   cache: GeometryCache,
+  resizeSet: Set<string> | null,
   dragSet: Set<string> | null,
   ox: number,
   oy: number,
@@ -58,7 +59,8 @@ function appendPathRunToPasses(
     if (obj.type !== 'PATH') continue;
     const g = cache.get(obj.id);
     if (!g) continue;
-    if (dragSet?.has(obj.id) && boundsRemap) {
+    // Live scale preview: dragSet is cleared while resizing, so use resizeSet.
+    if (boundsRemap && resizeSet?.has(obj.id)) {
       writeGeometryWithBoundsRemap(
         g,
         all,
@@ -137,7 +139,16 @@ export function buildSceneDrawPasses(params: {
   let pathRun: DrawObject[] = [];
 
   const flushPaths = () => {
-    appendPathRunToPasses(pathRun, cache, dragSet, ox, oy, boundsRemap, passes);
+    appendPathRunToPasses(
+      pathRun,
+      cache,
+      resizeSet,
+      dragSet,
+      ox,
+      oy,
+      boundsRemap,
+      passes,
+    );
     pathRun = [];
   };
 
