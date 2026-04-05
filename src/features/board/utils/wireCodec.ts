@@ -1,9 +1,10 @@
-import type {
-  DrawObject,
-  DrawObjectWire,
-  HistoryOperation,
-  Point,
-  WireHistoryOperation,
+import {
+  isImageWireObject,
+  type DrawObject,
+  type DrawObjectWire,
+  type HistoryOperation,
+  type Point,
+  type WireHistoryOperation,
 } from '../types/types';
 import { POINT_SCALE } from '../constants/pointPrecision';
 
@@ -77,9 +78,22 @@ function base64ToBytes(base64: string): Uint8Array {
 }
 
 function toWireObject(object: DrawObject): DrawObjectWire {
+  if (object.type === 'image') {
+    return {
+      id: object.id,
+      type: 'image',
+      x: object.x,
+      y: object.y,
+      width: object.width,
+      height: object.height,
+      src: object.src,
+      tombstone: object.tombstone,
+      positionTimestamp: object.positionTimestamp,
+    };
+  }
   return {
     id: object.id,
-    type: object.type,
+    type: 'path',
     pointsEncoded: bytesToBase64(encodePoints(object.points)),
     color: object.color,
     size: object.size,
@@ -89,10 +103,25 @@ function toWireObject(object: DrawObject): DrawObjectWire {
 }
 
 function fromWireObject(object: DrawObjectWire): DrawObject {
+  if (isImageWireObject(object)) {
+    return {
+      id: object.id,
+      type: 'image',
+      x: object.x,
+      y: object.y,
+      width: object.width,
+      height: object.height,
+      src: typeof object.src === 'string' ? object.src : '',
+      tombstone: object.tombstone,
+      positionTimestamp: object.positionTimestamp,
+    };
+  }
   return {
     id: object.id,
-    type: object.type,
-    points: decodePoints(base64ToBytes(object.pointsEncoded)),
+    type: 'path',
+    points: decodePoints(
+      base64ToBytes(normalizeWirePointsEncoded(object.pointsEncoded)),
+    ),
     color: object.color,
     size: object.size,
     tombstone: object.tombstone,
@@ -140,12 +169,7 @@ export function fromWireOperation(op: WireHistoryOperation): HistoryOperation {
   if (op.type === 'add') {
     return {
       ...op,
-      objects: op.objects.map((object) =>
-        fromWireObject({
-          ...object,
-          pointsEncoded: normalizeWirePointsEncoded(object.pointsEncoded),
-        }),
-      ),
+      objects: op.objects.map((object) => fromWireObject(object)),
     };
   }
 

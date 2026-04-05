@@ -1,4 +1,4 @@
-import type { DrawObject } from '../../types/types';
+import type { DrawObject, PathDrawObject } from '../../types/types';
 import {
   buildStrokeGeometry,
   hexToRgba,
@@ -9,7 +9,7 @@ export class GeometryCache {
   private geometries = new Map<string, CachedGeometry | null>();
   private keys = new Map<string, string>();
 
-  private stateKey(obj: DrawObject): string {
+  private stateKey(obj: PathDrawObject): string {
     const first = obj.points[0];
     const last = obj.points[obj.points.length - 1];
     return `${obj.positionTimestamp}|${obj.color || '#000'}|${obj.size}|${obj.points.length}|${first?.x},${first?.y}|${last?.x},${last?.y}`;
@@ -25,6 +25,8 @@ export class GeometryCache {
     }
 
     for (const obj of objects) {
+      if (obj.type !== 'path') continue;
+
       const key = this.stateKey(obj);
       if (this.keys.get(obj.id) === key) continue;
 

@@ -3,7 +3,8 @@ export interface Point {
   y: number;
 }
 
-export interface DrawObject {
+/** Stroke / freehand path drawn with the brush. */
+export interface PathDrawObject {
   id: string;
   type: 'path';
   points: Point[];
@@ -14,6 +15,22 @@ export interface DrawObject {
   /** Timestamp of last position update (LWW register for move). */
   positionTimestamp: number;
 }
+
+/** Raster image placed on the board (e.g. pasted from clipboard). */
+export interface ImageDrawObject {
+  id: string;
+  type: 'image';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** Data URL or HTTP(S) URL of the image. */
+  src: string;
+  tombstone: boolean;
+  positionTimestamp: number;
+}
+
+export type DrawObject = PathDrawObject | ImageDrawObject;
 
 export interface Camera {
   zoom: number;
@@ -103,7 +120,7 @@ export type HistoryOperation =
   // | AddObjectOp
   RemoveObjectsOp | AddObjectsOp | TranslateOp | BatchOp;
 
-export interface DrawObjectWire {
+export interface PathDrawObjectWire {
   id: string;
   type: 'path';
   pointsEncoded: string; // base64 of Int32 delta pairs in POINT_SCALE space
@@ -111,6 +128,28 @@ export interface DrawObjectWire {
   size: number;
   tombstone: boolean;
   positionTimestamp: number;
+}
+
+export interface ImageDrawObjectWire {
+  id: string;
+  type: 'image';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  src: string;
+  tombstone: boolean;
+  positionTimestamp: number;
+}
+
+export type DrawObjectWire = PathDrawObjectWire | ImageDrawObjectWire;
+
+export function isPathWireObject(o: DrawObjectWire): o is PathDrawObjectWire {
+  return o.type === 'path';
+}
+
+export function isImageWireObject(o: DrawObjectWire): o is ImageDrawObjectWire {
+  return o.type === 'image';
 }
 
 export interface AddObjectsWireOp extends OpMeta {

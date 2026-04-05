@@ -3,6 +3,7 @@ import type { Camera, HistoryOperation, Point } from '../../../types/types';
 import { roundPoint } from '../../../utils/cameraUtils';
 import {
   calcBoundingBox,
+  drawObjectIntersectsSelectionRect,
   findObjectAtPoint,
   getVisibleObjects,
 } from '../../../utils/objectUtils';
@@ -82,9 +83,7 @@ export function useSelectMode(
       const maxY = Math.max(start.y, end.y);
       const visible = getVisibleObjects(objects);
       const selected = visible.filter((obj) =>
-        obj.points.some(
-          (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY,
-        ),
+        drawObjectIntersectsSelectionRect(obj, minX, maxX, minY, maxY),
       );
       setSelectedIds(selected.map((o) => o.id));
       setSelectedBoundingBox(
@@ -105,17 +104,20 @@ export function useSelectMode(
           dy,
         });
         setObjects((prev) =>
-          prev.map((o) =>
-            selectedIds.includes(o.id)
-              ? {
-                  ...o,
-                  points: o.points.map((p) =>
-                    roundPoint({ x: p.x + dx, y: p.y + dy }),
-                  ),
-                  positionTimestamp: ts,
-                }
-              : o,
-          ),
+          prev.map((o) => {
+            if (!selectedIds.includes(o.id)) return o;
+            if (o.type === 'image') {
+              const p = roundPoint({ x: o.x + dx, y: o.y + dy });
+              return { ...o, x: p.x, y: p.y, positionTimestamp: ts };
+            }
+            return {
+              ...o,
+              points: o.points.map((pt) =>
+                roundPoint({ x: pt.x + dx, y: pt.y + dy }),
+              ),
+              positionTimestamp: ts,
+            };
+          }),
         );
         setSelectedBoundingBox((prev) =>
           prev

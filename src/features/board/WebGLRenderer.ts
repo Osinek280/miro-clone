@@ -1,9 +1,31 @@
-import type { DrawObject, Point, SelectionBox } from './types/types';
+import type {
+  DrawObject,
+  ImageDrawObject,
+  Point,
+  SelectionBox,
+} from './types/types';
+
+/** DEBUG: stały obraz do sprawdzenia pipeline’u — usuń po wdrożeniu wklejania. */
+const DEBUG_HARDCODED_BOARD_IMAGE: ImageDrawObject = {
+  id: '__debug_board_image__',
+  type: 'image',
+  x: 0,
+  y: 0,
+  width: 160,
+  height: 100,
+  src: `data:image/svg+xml,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100"><rect fill="#2563eb" width="160" height="100" rx="8"/><text x="24" y="58" fill="white" font-family="system-ui,sans-serif" font-size="16">Test img</text></svg>',
+  )}`,
+  tombstone: false,
+  positionTimestamp: 0,
+};
 import { GeometryCache } from './rendering/cache/GeometryCache';
+import { ImageTextureCache } from './rendering/cache/ImageTextureCache';
 import { BrushPipeline } from './rendering/pipelines/BrushPipeline';
 import { CursorPipeline } from './rendering/pipelines/CursorPipeline';
+import { ImagePipeline } from './rendering/pipelines/ImagePipeline';
 import { RectPipeline } from './rendering/pipelines/RectPipeline';
-import { assembleSceneBuffer } from './rendering/scene/SceneAssembler';
+import { buildSceneDrawPasses } from './rendering/scene/SceneAssembler';
 
 export class WebGLRenderer {
   private gl: WebGLRenderingContext | null = null;
@@ -11,10 +33,16 @@ export class WebGLRenderer {
   private vertexBuffer: WebGLBuffer | null = null;
 
   private cache = new GeometryCache();
+  private imageTextures = new ImageTextureCache();
 
   private brushPipeline: BrushPipeline | null = null;
   private rectPipeline: RectPipeline | null = null;
   private cursorPipeline: CursorPipeline | null = null;
+  private imagePipeline: ImagePipeline | null = null;
+
+  setRequestRedraw(cb: () => void): void {
+    this.imageTextures.setRequestRedraw(cb);
+  }
 
   initialize(canvas: HTMLCanvasElement): boolean {
     this.canvas = canvas;
@@ -39,13 +67,15 @@ export class WebGLRenderer {
     this.brushPipeline = BrushPipeline.create(gl);
     this.rectPipeline = RectPipeline.create(gl);
     this.cursorPipeline = CursorPipeline.create(gl);
+    this.imagePipeline = ImagePipeline.create(gl);
 
     this.vertexBuffer = gl.createBuffer();
     if (
       !this.vertexBuffer ||
       !this.brushPipeline ||
       !this.rectPipeline ||
-      !this.cursorPipeline
+      !this.cursorPipeline ||
+      !this.imagePipeline
     ) {
       return false;
     }
@@ -99,16 +129,23 @@ export class WebGLRenderer {
       !vertexBuffer ||
       !this.brushPipeline ||
       !this.rectPipeline ||
-      !this.cursorPipeline
+      !this.cursorPipeline ||
+      !this.imagePipeline
     ) {
       return;
     }
 
     this.resizeCanvas();
-    this.cache.sync(objects);
 
-    const { vertices, pointCount } = assembleSceneBuffer({
-      objects,
+    const objectsForRender: DrawObject[] = [
+      ...objects,
+      DEBUG_HARDCODED_BOARD_IMAGE,
+    ];
+    this.cache.sync(objectsForRender);
+    this.imageTextures.sync(gl, objectsForRender);
+
+    const passes = buildSceneDrawPasses({
+      objects: objectsForRender,
       cache: this.cache,
       currentPath,
       currentColor,
@@ -116,21 +153,39 @@ export class WebGLRenderer {
       selectionDrag,
     });
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.DYNAMIC_DRAW);
-
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    this.brushPipeline.draw({
-      gl,
-      canvas,
-      vertexBuffer,
-      pointCount,
-      zoom,
-      offsetX,
-      offsetY,
-    });
+    for (const pass of passes) {
+      if (pass.kind === 'brush') {
+        if (pass.pointCount <= 0) continue;
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, pass.vertices, gl.DYNAMIC_DRAW);
+        this.brushPipeline.draw({
+          gl,
+          canvas,
+          vertexBuffer,
+          pointCount: pass.pointCount,
+          zoom,
+          offsetX,
+          offsetY,
+        });
+      } else {
+        const tex = this.imageTextures.ensure(gl, pass.obj);
+        this.imagePipeline.draw({
+          gl,
+          canvas,
+          texture: tex,
+          x: pass.drawX,
+          y: pass.drawY,
+          width: pass.obj.width,
+          height: pass.obj.height,
+          zoom,
+          offsetX,
+          offsetY,
+        });
+      }
+    }
 
     if (selectionBox) {
       this.rectPipeline.drawRect({
@@ -192,6 +247,8 @@ export class WebGLRenderer {
       this.brushPipeline?.dispose(gl);
       this.rectPipeline?.dispose(gl);
       this.cursorPipeline?.dispose(gl);
+      this.imagePipeline?.dispose(gl);
+      this.imageTextures.dispose(gl);
     }
 
     this.gl = null;
@@ -200,6 +257,7 @@ export class WebGLRenderer {
     this.brushPipeline = null;
     this.rectPipeline = null;
     this.cursorPipeline = null;
+    this.imagePipeline = null;
     this.cache.clear();
   }
 }

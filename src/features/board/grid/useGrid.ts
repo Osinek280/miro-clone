@@ -10,7 +10,7 @@ const MIN_PX_SPACING = 20;
 export function useGrid(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   cameraRef: React.RefObject<Camera>,
-  style: GridStyle = 'dots',
+  style: GridStyle = 'grid',
 ) {
   const prevCameraRef = useRef({ zoom: -1, offsetX: -1, offsetY: -1 });
   const rafRef = useRef<number | null>(null);

@@ -12,6 +12,14 @@ export const calcBoundingBox = (objs: DrawObject[]) => {
     maxY = -Infinity;
 
   for (const obj of objs) {
+    if (obj.type === 'image') {
+      if (obj.x < minX) minX = obj.x;
+      if (obj.y < minY) minY = obj.y;
+      if (obj.x + obj.width > maxX) maxX = obj.x + obj.width;
+      if (obj.y + obj.height > maxY) maxY = obj.y + obj.height;
+      continue;
+    }
+
     const r = (obj.size ?? 15) / 2;
     for (const p of obj.points) {
       if (p.x - r < minX) minX = p.x - r;
@@ -71,6 +79,19 @@ export function findObjectAtPoint(
   for (let i = visible.length - 1; i >= 0; i--) {
     const obj = visible[i];
 
+    if (obj.type === 'image') {
+      const margin = BASE_HIT_PX / zoom;
+      if (
+        point.x >= obj.x - margin &&
+        point.x <= obj.x + obj.width + margin &&
+        point.y >= obj.y - margin &&
+        point.y <= obj.y + obj.height + margin
+      ) {
+        return obj;
+      }
+      continue;
+    }
+
     // The visible stroke radius in world-space is (size / 2).
     // Add a small screen-space margin on top for comfortable clicking.
     const strokeRadius = (obj.size ?? 15) / 2;
@@ -81,4 +102,28 @@ export function findObjectAtPoint(
     }
   }
   return null;
+}
+
+/**
+ * World-space marquee: path is included if any vertex lies inside the rect;
+ * image if its axis-aligned bounds intersect the rect.
+ */
+export function drawObjectIntersectsSelectionRect(
+  obj: DrawObject,
+  minX: number,
+  maxX: number,
+  minY: number,
+  maxY: number,
+): boolean {
+  if (obj.type === 'image') {
+    return !(
+      maxX < obj.x ||
+      minX > obj.x + obj.width ||
+      maxY < obj.y ||
+      minY > obj.y + obj.height
+    );
+  }
+  return obj.points.some(
+    (p) => p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY,
+  );
 }

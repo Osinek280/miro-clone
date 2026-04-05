@@ -8,6 +8,23 @@ import type {
 } from '../types/types';
 import { roundPoint } from './cameraUtils';
 
+function cloneAddedObject(o: DrawObject): DrawObject {
+  const ts = o.positionTimestamp ?? 0;
+  if (o.type === 'path') {
+    return {
+      ...o,
+      points: o.points.slice(),
+      tombstone: false,
+      positionTimestamp: ts,
+    };
+  }
+  return {
+    ...o,
+    tombstone: false,
+    positionTimestamp: ts,
+  };
+}
+
 function getTimestamp(): number {
   return Date.now();
 }
@@ -70,12 +87,7 @@ function applyAddMany(children: DrawObject[], op: AddObjectsOp): DrawObject[] {
   }
 
   for (const o of op.objects) {
-    const obj: DrawObject = {
-      ...o,
-      points: o.points.slice(),
-      tombstone: false,
-      positionTimestamp: o.positionTimestamp ?? 0,
-    };
+    const obj = cloneAddedObject(o);
 
     const idx = idToIndex.get(obj.id);
     if (idx !== undefined) {
@@ -97,11 +109,20 @@ function applyTranslate(children: DrawObject[], op: TranslateOp): DrawObject[] {
     if (!idSet.has(c.id)) return c;
     const objTs = c.positionTimestamp ?? 0;
     if (opTs < objTs) return c;
+    if (c.type === 'path') {
+      return {
+        ...c,
+        points: c.points.map((p) =>
+          roundPoint({ x: p.x + op.dx, y: p.y + op.dy }),
+        ),
+        positionTimestamp: opTs,
+      };
+    }
+    const p = roundPoint({ x: c.x + op.dx, y: c.y + op.dy });
     return {
       ...c,
-      points: c.points.map((p) =>
-        roundPoint({ x: p.x + op.dx, y: p.y + op.dy }),
-      ),
+      x: p.x,
+      y: p.y,
       positionTimestamp: opTs,
     };
   });
