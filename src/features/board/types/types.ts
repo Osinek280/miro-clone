@@ -7,22 +7,23 @@ export interface Point {
 export type DrawObjectTypePath = 'PATH';
 export type DrawObjectTypeImage = 'IMAGE';
 
+interface BaseDrawObject {
+  id: string;
+  tombstone: boolean;
+  positionTimestamp: number;
+}
+
 /** Stroke / freehand path drawn with the brush. */
-export interface PathDrawObject {
+export interface PathDrawObject extends BaseDrawObject {
   id: string;
   type: DrawObjectTypePath;
   points: Point[];
   color: string;
   size: number;
-  /** Soft delete: when true, object is hidden and excluded from hit-test (LWW with remove op timestamp). */
-  tombstone: boolean;
-  /** Timestamp of last position update (LWW register for move). */
-  positionTimestamp: number;
 }
 
 /** Raster image placed on the board (e.g. pasted from clipboard). */
-export interface ImageDrawObject {
-  id: string;
+export interface ImageDrawObject extends BaseDrawObject {
   type: DrawObjectTypeImage;
   x: number;
   y: number;
@@ -32,8 +33,6 @@ export interface ImageDrawObject {
   rotation: number;
   /** Data URL or HTTP(S) URL of the image. */
   src: string;
-  tombstone: boolean;
-  positionTimestamp: number;
 }
 
 export type DrawObject = PathDrawObject | ImageDrawObject;
