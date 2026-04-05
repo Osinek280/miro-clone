@@ -20,10 +20,6 @@ export class WebGLRenderer {
   private cursorPipeline: CursorPipeline | null = null;
   private imagePipeline: ImagePipeline | null = null;
 
-  setRequestRedraw(cb: () => void): void {
-    this.imageTextures.setRequestRedraw(cb);
-  }
-
   initialize(canvas: HTMLCanvasElement): boolean {
     this.canvas = canvas;
 
