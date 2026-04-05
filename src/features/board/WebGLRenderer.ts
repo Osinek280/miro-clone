@@ -210,6 +210,14 @@ export class WebGLRenderer {
         offsetX,
         offsetY,
       });
+      this.rectPipeline.drawCornerDots({
+        gl,
+        canvas,
+        box,
+        zoom,
+        offsetX,
+        offsetY,
+      });
     }
 
     this.cursorPipeline.draw({
