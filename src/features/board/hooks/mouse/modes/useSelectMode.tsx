@@ -1,5 +1,10 @@
 import { useLayoutEffect, useRef } from 'react';
-import type { Camera, HistoryOperation, Point } from '../../../types/types';
+import type {
+  Camera,
+  HistoryOperation,
+  Point,
+  SelectionResizeSession,
+} from '../../../types/types';
 import { roundPoint } from '../../../utils/cameraUtils';
 import {
   calcBoundingBox,
@@ -7,6 +12,14 @@ import {
   findObjectAtPoint,
   getVisibleObjects,
 } from '../../../utils/objectUtils';
+import {
+  boundsChanged,
+  boundsToSelectionBox,
+  computeResizedBounds,
+  hitTestBoxEdge,
+  mapDrawObjectWithBounds,
+  selectionBoxToBounds,
+} from '../../../utils/scaleBoundsUtils';
 import { useCanvasStore } from '../../../store/useCanvasStore';
 
 export function useSelectMode(
@@ -24,22 +37,49 @@ export function useSelectMode(
     setSelectedIds,
     isMoving,
     setIsMoving,
+    setIsResizing,
     clearSelection,
   } = useCanvasStore();
 
   const lastMousePosRef = useRef<Point>({ x: 0, y: 0 });
   const dragStartRef = useRef<Point>({ x: 0, y: 0 });
   const dragOffsetRef = useRef<Point>({ x: 0, y: 0 });
+  const selectionResizeSessionRef = useRef<SelectionResizeSession | null>(null);
 
   useLayoutEffect(() => {
     useCanvasStore.getState().setSelectionDragOffsetRef(dragOffsetRef);
     return () => useCanvasStore.getState().setSelectionDragOffsetRef(null);
   }, []);
 
+  useLayoutEffect(() => {
+    useCanvasStore
+      .getState()
+      .setSelectionResizeSessionRef(selectionResizeSessionRef);
+    return () => useCanvasStore.getState().setSelectionResizeSessionRef(null);
+  }, []);
+
   const onMouseDown = (point: Point) => {
     dragOffsetRef.current.x = 0;
     dragOffsetRef.current.y = 0;
-    const obj = findObjectAtPoint(point, objects, cameraRef.current.zoom);
+    const zoom = cameraRef.current.zoom;
+    const st = useCanvasStore.getState();
+    if (st.selectedBoundingBox && st.selectedIds.length > 0) {
+      const edge = hitTestBoxEdge(point, st.selectedBoundingBox, zoom);
+      if (edge) {
+        selectionResizeSessionRef.current = {
+          edge,
+          initialBounds: selectionBoxToBounds(st.selectedBoundingBox),
+          lastPoint: point,
+        };
+        const store = useCanvasStore.getState();
+        store.setIsResizing(true);
+        store.scheduleRedraw();
+        lastMousePosRef.current = point;
+        return;
+      }
+    }
+
+    const obj = findObjectAtPoint(point, objects, zoom);
     if (obj) {
       dragStartRef.current = point;
       if (selectedIds.includes(obj.id)) {
@@ -59,6 +99,11 @@ export function useSelectMode(
 
   const onMouseMove = (point: Point) => {
     const state = useCanvasStore.getState();
+    if (state.isResizing && state.selectionResizeSessionRef?.current) {
+      state.selectionResizeSessionRef.current.lastPoint = point;
+      state.scheduleRedraw();
+      return;
+    }
     const currentSelectionBox = state.selectionBox;
     const currentIsMoving = state.isMoving;
 
@@ -78,8 +123,10 @@ export function useSelectMode(
     const state = useCanvasStore.getState();
     const box = state.selectionBox;
     const moving = state.isMoving;
+    const resizing = state.isResizing;
     const ids = state.selectedIds;
     const objs = state.objects;
+    const zoom = cameraRef.current.zoom;
 
     if (box) {
       const { start, end } = box;
@@ -96,6 +143,41 @@ export function useSelectMode(
         selected.length > 0 ? calcBoundingBox(selected) : null,
       );
       setSelectionBox(null);
+    } else if (resizing && ids.length > 0 && state.selectionResizeSessionRef) {
+      const sess = state.selectionResizeSessionRef.current;
+      if (sess) {
+        const newBounds = computeResizedBounds(
+          sess.edge,
+          sess.initialBounds,
+          sess.lastPoint,
+          zoom,
+        );
+        if (boundsChanged(sess.initialBounds, newBounds)) {
+          const ts = Date.now();
+          pushSyncedOperation({
+            opId: crypto.randomUUID(),
+            timestamp: ts,
+            type: 'scaleBounds',
+            ids: [...ids],
+            oldBounds: sess.initialBounds,
+            newBounds,
+          });
+          const idSet = new Set(ids);
+          setObjects((prev) =>
+            prev.map((o) =>
+              mapDrawObjectWithBounds(
+                o,
+                idSet,
+                sess.initialBounds,
+                newBounds,
+                ts,
+              ),
+            ),
+          );
+          setSelectedBoundingBox(boundsToSelectionBox(newBounds));
+        }
+      }
+      state.selectionResizeSessionRef.current = null;
     } else if (moving && ids.length > 0) {
       const dx = dragOffsetRef.current.x;
       const dy = dragOffsetRef.current.y;
@@ -144,6 +226,7 @@ export function useSelectMode(
       dragOffsetRef.current.y = 0;
     }
     setIsMoving(false);
+    setIsResizing(false);
   };
 
   return {

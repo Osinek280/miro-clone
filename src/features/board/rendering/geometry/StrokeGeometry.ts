@@ -1,4 +1,4 @@
-import type { Point } from '../../types/types';
+import type { BoundsRect, Point } from '../../types/types';
 
 // Minimum distance between stored points (world space).
 // mouseMove already interpolates every ~2px - this remains as a fallback.
@@ -115,6 +115,38 @@ export function writeGeometryWithOffset(
     all[w + 4] = buf[si + 4];
     all[w + 5] = buf[si + 5];
     all[w + 6] = buf[si + 6];
+    w += FPV;
+  }
+}
+
+/** Remap vertex x,y from oldBounds→newBounds and scale point size by `sizeScale`. */
+export function writeGeometryWithBoundsRemap(
+  geometry: CachedGeometry,
+  all: Float32Array,
+  floatOffset: number,
+  oldB: BoundsRect,
+  newB: BoundsRect,
+  sizeScale: number,
+): void {
+  const buf = geometry.buffer;
+  const pc = geometry.pointCount;
+  const ow = oldB.maxX - oldB.minX;
+  const oh = oldB.maxY - oldB.minY;
+  const sx = ow > 1e-9 ? (newB.maxX - newB.minX) / ow : 1;
+  const sy = oh > 1e-9 ? (newB.maxY - newB.minY) / oh : 1;
+
+  let w = floatOffset;
+  for (let i = 0; i < pc; i++) {
+    const si = i * FPV;
+    const x = buf[si];
+    const y = buf[si + 1];
+    all[w] = newB.minX + (x - oldB.minX) * sx;
+    all[w + 1] = newB.minY + (y - oldB.minY) * sy;
+    all[w + 2] = buf[si + 2];
+    all[w + 3] = buf[si + 3];
+    all[w + 4] = buf[si + 4];
+    all[w + 5] = buf[si + 5];
+    all[w + 6] = buf[si + 6] * sizeScale;
     w += FPV;
   }
 }

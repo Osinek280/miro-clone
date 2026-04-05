@@ -1,7 +1,17 @@
 import { create } from 'zustand';
 import type { MutableRefObject, RefObject } from 'react';
 import type { WebGLRenderer } from '../WebGLRenderer';
-import type { Camera, DrawObject, Point, SelectionBox } from '../types/types';
+import type {
+  Camera,
+  DrawObject,
+  Point,
+  SelectionBox,
+  SelectionResizeSession,
+} from '../types/types';
+import {
+  boundsToSelectionBox,
+  computeResizedBounds,
+} from '../utils/scaleBoundsUtils';
 import { getVisibleObjects } from '../utils/objectUtils';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -37,6 +47,8 @@ export interface CanvasStoreState {
   inProgressStrokeRef: MutableRefObject<Point[]> | null;
   /** Cumulative world offset while dragging selection (render-only until mouseUp). */
   selectionDragOffsetRef: MutableRefObject<Point> | null;
+  /** Live edge-resize session (pointer + initial bounds). */
+  selectionResizeSessionRef: MutableRefObject<SelectionResizeSession | null> | null;
 
   // Render state
   objects: DrawObject[];
@@ -51,6 +63,7 @@ export interface CanvasStoreState {
   selectedIds: string[];
   isDrawing: boolean;
   isMoving: boolean;
+  isResizing: boolean;
   isGrabbing: boolean;
 
   // Refs + render
@@ -60,6 +73,9 @@ export interface CanvasStoreState {
   ) => void;
   setInProgressStrokeRef: (r: MutableRefObject<Point[]> | null) => void;
   setSelectionDragOffsetRef: (r: MutableRefObject<Point> | null) => void;
+  setSelectionResizeSessionRef: (
+    r: MutableRefObject<SelectionResizeSession | null> | null,
+  ) => void;
   renderFrame: () => void;
   /** Coalesced redraw without mutating store slice (for ref-only preview updates). */
   scheduleRedraw: () => void;
@@ -76,6 +92,7 @@ export interface CanvasStoreState {
   setSelectedIds: (action: SetStateAction<string[]>) => void;
   setIsDrawing: (value: boolean) => void;
   setIsMoving: (value: boolean) => void;
+  setIsResizing: (value: boolean) => void;
   setIsGrabbing: (value: boolean) => void;
 
   clearSelection: () => void;
@@ -86,6 +103,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   cameraRef: null,
   inProgressStrokeRef: null,
   selectionDragOffsetRef: null,
+  selectionResizeSessionRef: null,
 
   objects: [],
   currentPath: [],
@@ -98,6 +116,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   selectedIds: [],
   isDrawing: false,
   isMoving: false,
+  isResizing: false,
   isGrabbing: false,
 
   setRefs: (rendererRef, cameraRef) => {
@@ -107,6 +126,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
 
   setInProgressStrokeRef: (r) => set({ inProgressStrokeRef: r }),
   setSelectionDragOffsetRef: (r) => set({ selectionDragOffsetRef: r }),
+  setSelectionResizeSessionRef: (r) => set({ selectionResizeSessionRef: r }),
   scheduleRedraw: () => scheduleRender(get),
 
   renderFrame: () => {
@@ -122,8 +142,10 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       isDrawing,
       inProgressStrokeRef,
       isMoving,
+      isResizing,
       selectedIds,
       selectionDragOffsetRef,
+      selectionResizeSessionRef,
       cursors,
     } = get();
     const r = rendererRef?.current;
@@ -135,7 +157,36 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
         ? inProgressStrokeRef.current
         : currentPath;
 
+    const resizeSession =
+      isResizing && selectionResizeSessionRef?.current
+        ? selectionResizeSessionRef.current
+        : null;
+    const previewBounds =
+      resizeSession != null
+        ? computeResizedBounds(
+            resizeSession.edge,
+            resizeSession.initialBounds,
+            resizeSession.lastPoint,
+            c.zoom,
+          )
+        : null;
+
+    const displaySelectedBox =
+      previewBounds != null
+        ? boundsToSelectionBox(previewBounds)
+        : selectedBoundingBox;
+
+    const selectionResize =
+      resizeSession != null && previewBounds != null
+        ? {
+            selectedIds,
+            oldBounds: resizeSession.initialBounds,
+            newBounds: previewBounds,
+          }
+        : null;
+
     const selectionDrag =
+      !selectionResize &&
       isMoving &&
       selectedIds.length > 0 &&
       selectionDragOffsetRef &&
@@ -156,8 +207,9 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
       color,
       size,
       selectionBox,
-      selectedBoundingBox,
+      displaySelectedBox,
       selectionDrag,
+      selectionResize,
       cursors,
     );
   },
@@ -198,6 +250,7 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
     set((s) => ({ selectedIds: resolveAction(action, s.selectedIds) })),
   setIsDrawing: (value) => set({ isDrawing: value }),
   setIsMoving: (value) => set({ isMoving: value }),
+  setIsResizing: (value) => set({ isResizing: value }),
   setIsGrabbing: (value) => set({ isGrabbing: value }),
 
   setCursors: (action) => {
@@ -208,10 +261,13 @@ export const useCanvasStore = create<CanvasStoreState>((set, get) => ({
   clearSelection: () => {
     const dragRef = get().selectionDragOffsetRef;
     if (dragRef) dragRef.current = { x: 0, y: 0 };
+    const resizeRef = get().selectionResizeSessionRef;
+    if (resizeRef) resizeRef.current = null;
     set({
       selectedIds: [],
       selectionBox: null,
       selectedBoundingBox: null,
+      isResizing: false,
     });
     scheduleRender(get);
   },

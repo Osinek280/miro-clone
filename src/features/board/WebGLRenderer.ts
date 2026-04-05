@@ -1,4 +1,9 @@
-import type { DrawObject, Point, SelectionBox } from './types/types';
+import type {
+  BoundsRect,
+  DrawObject,
+  Point,
+  SelectionBox,
+} from './types/types';
 import { GeometryCache } from './rendering/cache/GeometryCache';
 import { ImageTextureCache } from './rendering/cache/ImageTextureCache';
 import { BrushPipeline } from './rendering/pipelines/BrushPipeline';
@@ -94,6 +99,11 @@ export class WebGLRenderer {
       offset: Point;
       selectedIds: readonly string[];
     } | null = null,
+    selectionResize: {
+      selectedIds: readonly string[];
+      oldBounds: BoundsRect;
+      newBounds: BoundsRect;
+    } | null = null,
     cursors: Point[],
   ): void {
     const gl = this.gl;
@@ -116,8 +126,6 @@ export class WebGLRenderer {
     this.cache.sync(objects);
     this.imageTextures.sync(gl, objects);
 
-    console.log('objects', objects);
-
     const passes = buildSceneDrawPasses({
       objects,
       cache: this.cache,
@@ -125,6 +133,7 @@ export class WebGLRenderer {
       currentColor,
       currentSize,
       selectionDrag,
+      selectionResize,
     });
 
     gl.clearColor(0, 0, 0, 0);
@@ -152,8 +161,8 @@ export class WebGLRenderer {
           texture: tex,
           x: pass.drawX,
           y: pass.drawY,
-          width: pass.obj.width,
-          height: pass.obj.height,
+          width: pass.drawWidth,
+          height: pass.drawHeight,
           zoom,
           offsetX,
           offsetY,

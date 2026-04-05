@@ -1,11 +1,21 @@
-import type { DrawObject, ImageDrawObject, Point } from '../../types/types';
+import type {
+  BoundsRect,
+  DrawObject,
+  ImageDrawObject,
+  Point,
+} from '../../types/types';
 import type { GeometryCache } from '../cache/GeometryCache';
 import {
   buildStrokeGeometry,
   hexToRgba,
   FPV,
+  writeGeometryWithBoundsRemap,
   writeGeometryWithOffset,
 } from '../geometry/StrokeGeometry';
+import {
+  mapPointAcrossBounds,
+  strokeScaleFactor,
+} from '../../utils/scaleBoundsUtils';
 
 export type BrushDrawPass = {
   kind: 'brush';
@@ -18,6 +28,8 @@ export type ImageDrawPass = {
   obj: ImageDrawObject;
   drawX: number;
   drawY: number;
+  drawWidth: number;
+  drawHeight: number;
 };
 
 export type SceneDrawPass = BrushDrawPass | ImageDrawPass;
@@ -28,6 +40,7 @@ function appendPathRunToPasses(
   dragSet: Set<string> | null,
   ox: number,
   oy: number,
+  boundsRemap: { oldB: BoundsRect; newB: BoundsRect; sizeScale: number } | null,
   passes: SceneDrawPass[],
 ): void {
   let totalPoints = 0;
@@ -45,7 +58,17 @@ function appendPathRunToPasses(
     if (obj.type !== 'PATH') continue;
     const g = cache.get(obj.id);
     if (!g) continue;
-    if (dragSet?.has(obj.id)) {
+    if (dragSet?.has(obj.id) && boundsRemap) {
+      writeGeometryWithBoundsRemap(
+        g,
+        all,
+        offset,
+        boundsRemap.oldB,
+        boundsRemap.newB,
+        boundsRemap.sizeScale,
+      );
+      offset += g.buffer.length;
+    } else if (dragSet?.has(obj.id)) {
       writeGeometryWithOffset(g, all, offset, ox, oy);
       offset += g.buffer.length;
     } else {
@@ -68,6 +91,11 @@ export function buildSceneDrawPasses(params: {
   currentColor: string;
   currentSize: number;
   selectionDrag: { offset: Point; selectedIds: readonly string[] } | null;
+  selectionResize: {
+    selectedIds: readonly string[];
+    oldBounds: BoundsRect;
+    newBounds: BoundsRect;
+  } | null;
 }): SceneDrawPass[] {
   const {
     objects,
@@ -76,9 +104,27 @@ export function buildSceneDrawPasses(params: {
     currentColor,
     currentSize,
     selectionDrag,
+    selectionResize,
   } = params;
 
+  const resizeSet =
+    selectionResize && selectionResize.selectedIds.length > 0
+      ? new Set(selectionResize.selectedIds)
+      : null;
+  const boundsRemap =
+    resizeSet && selectionResize
+      ? {
+          oldB: selectionResize.oldBounds,
+          newB: selectionResize.newBounds,
+          sizeScale: strokeScaleFactor(
+            selectionResize.oldBounds,
+            selectionResize.newBounds,
+          ),
+        }
+      : null;
+
   const dragSet =
+    !boundsRemap &&
     selectionDrag &&
     selectionDrag.selectedIds.length > 0 &&
     (selectionDrag.offset.x !== 0 || selectionDrag.offset.y !== 0)
@@ -91,20 +137,45 @@ export function buildSceneDrawPasses(params: {
   let pathRun: DrawObject[] = [];
 
   const flushPaths = () => {
-    appendPathRunToPasses(pathRun, cache, dragSet, ox, oy, passes);
+    appendPathRunToPasses(pathRun, cache, dragSet, ox, oy, boundsRemap, passes);
     pathRun = [];
   };
 
   for (const obj of objects) {
     if (obj.type === 'IMAGE') {
       flushPaths();
-      const dx = dragSet?.has(obj.id) ? ox : 0;
-      const dy = dragSet?.has(obj.id) ? oy : 0;
+      let drawX = obj.x;
+      let drawY = obj.y;
+      let drawW = obj.width;
+      let drawH = obj.height;
+      if (resizeSet?.has(obj.id) && selectionResize) {
+        const { oldBounds, newBounds } = selectionResize;
+        const p = mapPointAcrossBounds(
+          { x: obj.x, y: obj.y },
+          oldBounds,
+          newBounds,
+        );
+        drawX = p.x;
+        drawY = p.y;
+        const ow = oldBounds.maxX - oldBounds.minX;
+        const oh = oldBounds.maxY - oldBounds.minY;
+        const sx = ow > 1e-9 ? (newBounds.maxX - newBounds.minX) / ow : 1;
+        const sy = oh > 1e-9 ? (newBounds.maxY - newBounds.minY) / oh : 1;
+        drawW = obj.width * sx;
+        drawH = obj.height * sy;
+      } else {
+        const dx = dragSet?.has(obj.id) ? ox : 0;
+        const dy = dragSet?.has(obj.id) ? oy : 0;
+        drawX = obj.x + dx;
+        drawY = obj.y + dy;
+      }
       passes.push({
         kind: 'image',
         obj,
-        drawX: obj.x + dx,
-        drawY: obj.y + dy,
+        drawX,
+        drawY,
+        drawWidth: drawW,
+        drawHeight: drawH,
       });
     } else {
       pathRun.push(obj);

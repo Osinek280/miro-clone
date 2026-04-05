@@ -4,9 +4,11 @@ import type {
   DrawObject,
   HistoryOperation,
   RemoveObjectsOp,
+  ScaleBoundsOp,
   TranslateOp,
 } from '../types/types';
 import { roundPoint } from './cameraUtils';
+import { mapDrawObjectWithBounds } from './scaleBoundsUtils';
 
 function cloneAddedObject(o: DrawObject): DrawObject {
   const ts = o.positionTimestamp ?? 0;
@@ -128,6 +130,17 @@ function applyTranslate(children: DrawObject[], op: TranslateOp): DrawObject[] {
   });
 }
 
+function applyScaleBounds(
+  children: DrawObject[],
+  op: ScaleBoundsOp,
+): DrawObject[] {
+  const idSet = new Set(op.ids);
+  const opTs = op.timestamp ?? 0;
+  return children.map((c) =>
+    mapDrawObjectWithBounds(c, idSet, op.oldBounds, op.newBounds, opTs),
+  );
+}
+
 export function applyOperation(
   children: DrawObject[],
   op: HistoryOperation,
@@ -139,6 +152,8 @@ export function applyOperation(
       return applyAddMany(children, op);
     case 'translate':
       return applyTranslate(children, op);
+    case 'scaleBounds':
+      return applyScaleBounds(children, op);
     case 'batch': {
       const flat = flattenBatch(op);
       return flat.reduce((acc, o) => applyOperation(acc, o), children);
@@ -175,6 +190,14 @@ export function getInverse(
         ids: [...op.ids],
         dx: -op.dx,
         dy: -op.dy,
+      };
+    case 'scaleBounds':
+      return {
+        ...meta,
+        type: 'scaleBounds',
+        ids: [...op.ids],
+        oldBounds: op.newBounds,
+        newBounds: op.oldBounds,
       };
     case 'batch':
       return {

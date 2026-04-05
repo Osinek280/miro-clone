@@ -55,6 +55,24 @@ export type ToolState = {
 
 export type SelectionBox = { start: Point; end: Point } | null;
 
+/** Axis-aligned bounds in world space (selection / scale). */
+export interface BoundsRect {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+/** Which edge of the selection box is being dragged for resize. */
+export type BoxEdge = 'n' | 's' | 'e' | 'w';
+
+/** Live resize session (refs only during drag; not stored in React state). */
+export interface SelectionResizeSession {
+  edge: BoxEdge;
+  initialBounds: BoundsRect;
+  lastPoint: Point;
+}
+
 /** API of the state object returned by useRender (getters + setters). */
 export interface RenderStateAPI {
   objects: DrawObject[];
@@ -114,6 +132,17 @@ export interface TranslateOp extends OpMeta {
   dy: number;
 }
 
+/**
+ * Scale selected objects so their combined bounds map from oldBounds → newBounds.
+ * LWW: same as translate via positionTimestamp.
+ */
+export interface ScaleBoundsOp extends OpMeta {
+  type: 'scaleBounds';
+  ids: string[];
+  oldBounds: BoundsRect;
+  newBounds: BoundsRect;
+}
+
 /** Logical batch; stored stack flattens to single ops ordered by timestamp. */
 export interface BatchOp extends OpMeta {
   type: 'batch';
@@ -122,7 +151,7 @@ export interface BatchOp extends OpMeta {
 
 export type HistoryOperation =
   // | AddObjectOp
-  RemoveObjectsOp | AddObjectsOp | TranslateOp | BatchOp;
+  RemoveObjectsOp | AddObjectsOp | TranslateOp | ScaleBoundsOp | BatchOp;
 
 export interface PathDrawObjectWire {
   id: string;
@@ -170,4 +199,5 @@ export type WireHistoryOperation =
   | RemoveObjectsOp
   | AddObjectsWireOp
   | TranslateOp
+  | ScaleBoundsOp
   | BatchWireOp;
