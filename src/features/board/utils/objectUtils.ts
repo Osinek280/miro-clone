@@ -46,6 +46,26 @@ function imageRotatedCornerPoints(obj: ImageDrawObject): Point[] {
   }));
 }
 
+/** Selection handles quad (nw, ne, se, sw) aligned with the image’s rotation. */
+export function imageOrientedSelectionQuad(
+  obj: ImageDrawObject,
+): [Point, Point, Point, Point] {
+  const pts = imageRotatedCornerPoints(obj);
+  return [pts[0]!, pts[1]!, pts[2]!, pts[3]!];
+}
+
+/** Single non-axis-aligned image selection → rotated chrome; otherwise axis-aligned only. */
+export function orientedSelectionQuadForIds(
+  objects: DrawObject[],
+  ids: readonly string[],
+): [Point, Point, Point, Point] | null {
+  if (ids.length !== 1) return null;
+  const o = objects.find((x) => x.id === ids[0]);
+  if (o?.type !== 'IMAGE') return null;
+  if (Math.abs(o.rotation ?? 0) <= 1e-6) return null;
+  return imageOrientedSelectionQuad(o);
+}
+
 /** True if any selected image has non-zero rotation (resize uses axis-aligned remap only). */
 export function selectionHasRotatedImage(
   objects: DrawObject[],

@@ -11,6 +11,7 @@ import {
   drawObjectIntersectsSelectionRect,
   findObjectAtPoint,
   getVisibleObjects,
+  orientedSelectionQuadForIds,
   selectionHasRotatedImage,
 } from '../../../utils/objectUtils';
 import { offsetSelectionQuad } from '../../../utils/rotateUtils';
@@ -106,7 +107,7 @@ export function useSelectMode(
       } else {
         setSelectedIds([obj.id]);
         setSelectedBoundingBox(calcBoundingBox([obj]));
-        setSelectedOrientedQuad(null);
+        setSelectedOrientedQuad(orientedSelectionQuadForIds(objects, [obj.id]));
         setIsMoving(true);
       }
       lastMousePosRef.current = point;
@@ -162,11 +163,14 @@ export function useSelectMode(
       const selected = visible.filter((obj) =>
         drawObjectIntersectsSelectionRect(obj, minX, maxX, minY, maxY),
       );
-      setSelectedIds(selected.map((o) => o.id));
+      const ids = selected.map((o) => o.id);
+      setSelectedIds(ids);
       setSelectedBoundingBox(
         selected.length > 0 ? calcBoundingBox(selected) : null,
       );
-      setSelectedOrientedQuad(null);
+      setSelectedOrientedQuad(
+        selected.length > 0 ? orientedSelectionQuadForIds(selected, ids) : null,
+      );
       setSelectionBox(null);
     } else if (!onMouseUpRotate()) {
       if (resizing && ids.length > 0 && state.selectionResizeSessionRef) {

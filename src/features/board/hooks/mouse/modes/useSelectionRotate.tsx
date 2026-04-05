@@ -11,12 +11,18 @@ import {
   cornersOfAxisBounds,
   rotateOutlineCorners,
   rotationDeltaFromPointers,
+  rotateSnapWithHysteresis,
 } from '../../../utils/rotateUtils';
 import {
   hitTestBoxRotateHandle,
   selectionBoxToBounds,
 } from '../../../utils/scaleBoundsUtils';
 import { useCanvasStore } from '../../../store/useCanvasStore';
+
+/** Within this angle of 0°/90°/… the handle magnetizes. */
+const ROTATE_SNAP_ENTER_RAD = (2 * Math.PI) / 180;
+/** Wider band so small jitter does not flip snap on/off (reduces “stiff” feel). */
+const ROTATE_SNAP_EXIT_RAD = (6 * Math.PI) / 180;
 
 export function useSelectionRotate(
   cameraRef: React.RefObject<Camera>,
@@ -81,6 +87,8 @@ export function useSelectionRotate(
     selectionRotateSessionRef.current = {
       center,
       initialRotateCorners: quad0,
+      rawAccumulatedRadians: 0,
+      rotateSnapLockedK: null,
       accumulatedRadians: 0,
       prevPointerForRotate: { x: point.x, y: point.y },
       lastPoint: point,
@@ -101,12 +109,21 @@ export function useSelectionRotate(
     const sess = state.selectionRotateSessionRef.current;
     const zoom = cameraRef.current.zoom;
     const minRadiusWorld = 6 / zoom;
-    sess.accumulatedRadians += rotationDeltaFromPointers(
+    sess.rawAccumulatedRadians += rotationDeltaFromPointers(
       sess.center,
       sess.prevPointerForRotate,
       point,
       minRadiusWorld,
     );
+    const snap = rotateSnapWithHysteresis(
+      sess.rawAccumulatedRadians,
+      sess.rotateSnapLockedK,
+      ROTATE_SNAP_ENTER_RAD,
+      ROTATE_SNAP_EXIT_RAD,
+    );
+    sess.rawAccumulatedRadians = snap.rawAfter;
+    sess.rotateSnapLockedK = snap.lockedK;
+    sess.accumulatedRadians = snap.displayRadians;
     sess.prevPointerForRotate = { x: point.x, y: point.y };
     sess.lastPoint = point;
     state.scheduleRedraw();

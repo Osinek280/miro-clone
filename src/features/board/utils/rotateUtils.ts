@@ -43,6 +43,54 @@ export function angleDelta(a: number, b: number): number {
   return d;
 }
 
+const CARDINAL_ROTATION_STEP = Math.PI / 2;
+
+/**
+ * When `radians` is within `toleranceRad` of a multiple of 90°, snap to that cardinal.
+ */
+export function snapRotationToCardinals(
+  radians: number,
+  toleranceRad: number,
+): number {
+  const k = Math.round(radians / CARDINAL_ROTATION_STEP);
+  const snapped = k * CARDINAL_ROTATION_STEP;
+  return Math.abs(radians - snapped) <= toleranceRad ? snapped : radians;
+}
+
+/**
+ * Cardinal snap with hysteresis: enter within `enterTol`, leave only beyond `exitTol`
+ * (exit > enter avoids flicker and stiff toggling at the boundary).
+ */
+export function rotateSnapWithHysteresis(
+  rawAccumulated: number,
+  lockedK: number | null,
+  enterTol: number,
+  exitTol: number,
+): { displayRadians: number; rawAfter: number; lockedK: number | null } {
+  const step = CARDINAL_ROTATION_STEP;
+  let k = lockedK;
+  const raw = rawAccumulated;
+
+  if (k !== null) {
+    const lockedAngle = k * step;
+    if (Math.abs(raw - lockedAngle) > exitTol) {
+      k = null;
+    }
+  }
+
+  if (k !== null) {
+    return { displayRadians: k * step, rawAfter: raw, lockedK: k };
+  }
+
+  const nearestK = Math.round(raw / step);
+  const snapped = nearestK * step;
+  if (Math.abs(raw - snapped) <= enterTol) {
+    return { displayRadians: snapped, rawAfter: snapped, lockedK: nearestK };
+  }
+
+  return { displayRadians: raw, rawAfter: raw, lockedK: null };
+}
+
 /** Corners in order: nw, ne, se, sw (same winding as selection `drawRect`). */
 export function cornersOfAxisBounds(
   b: BoundsRect,

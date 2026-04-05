@@ -6,7 +6,7 @@ import type {
   ImageDrawObject,
 } from '../types/types';
 import { clientToWorldPoint, roundPoint } from '../utils/cameraUtils';
-import { calcBoundingBox } from '../utils/objectUtils';
+import { calcBoundingBox, orientedSelectionQuadForIds } from '../utils/objectUtils';
 import { useCanvasStore } from '../store/useCanvasStore';
 import {
   cloneDrawObjectsForPaste,
@@ -89,9 +89,10 @@ export function useCanvasClipboard(
       });
       const store = useCanvasStore.getState();
       store.setObjects((prev) => [...prev, ...newObjects]);
-      store.setSelectedIds(newObjects.map((o) => o.id));
+      const ids = newObjects.map((o) => o.id);
+      store.setSelectedIds(ids);
       store.setSelectedBoundingBox(calcBoundingBox(newObjects));
-      store.setSelectedOrientedQuad(null);
+      store.setSelectedOrientedQuad(orientedSelectionQuadForIds(newObjects, ids));
     };
 
     const onCopy = (e: ClipboardEvent) => {

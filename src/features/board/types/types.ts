@@ -93,6 +93,10 @@ export interface SelectionRotateSession {
   center: Point;
   /** Frame at rotate start (axis-aligned rect or persisted oriented quad). */
   initialRotateCorners: [Point, Point, Point, Point];
+  /** Pointer-integrated angle since mousedown (before cardinal snap / hysteresis). */
+  rawAccumulatedRadians: number;
+  /** Locked cardinal index (×90°) while cursor stays within exit tolerance. */
+  rotateSnapLockedK: number | null;
   /** Total rotation since mousedown (incremental; stable when cursor passes near pivot). */
   accumulatedRadians: number;
   /** Previous pointer sample for incremental angle (paired with `lastPoint` updates). */
