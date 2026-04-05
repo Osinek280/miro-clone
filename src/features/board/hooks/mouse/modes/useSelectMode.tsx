@@ -48,7 +48,6 @@ export function useSelectMode(
   } = useCanvasStore();
 
   const lastMousePosRef = useRef<Point>({ x: 0, y: 0 });
-  const dragStartRef = useRef<Point>({ x: 0, y: 0 });
   const dragOffsetRef = useRef<Point>({ x: 0, y: 0 });
   const selectionResizeSessionRef = useRef<SelectionResizeSession | null>(null);
 
@@ -101,7 +100,6 @@ export function useSelectMode(
 
     const obj = findObjectAtPoint(point, objects, zoom);
     if (obj) {
-      dragStartRef.current = point;
       if (selectedIds.includes(obj.id)) {
         setIsMoving(true);
       } else {

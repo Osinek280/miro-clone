@@ -85,9 +85,6 @@ export interface SelectionResizeSession {
   uniformScale: boolean;
 }
 
-/** Which corner’s rotation handle (offset outward from selection box). */
-export type BoxRotateCorner = BoxCorner;
-
 /** Live rotate session: group rotation around selection bounds center. */
 export interface SelectionRotateSession {
   center: Point;
@@ -111,37 +108,6 @@ export interface SelectionRotateSession {
     string,
     { x: number; y: number; width: number; height: number; rotation: number }
   >;
-}
-
-/** API of the state object returned by useRender (getters + setters). */
-export interface RenderStateAPI {
-  objects: DrawObject[];
-  setObjects: React.Dispatch<React.SetStateAction<DrawObject[]>>;
-  currentPath: Point[];
-  setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>;
-  color: string;
-  setColor: React.Dispatch<React.SetStateAction<string>>;
-  size: number;
-  setSize: React.Dispatch<React.SetStateAction<number>>;
-  selectionBox: SelectionBox;
-  setSelectionBox: React.Dispatch<React.SetStateAction<SelectionBox>>;
-  selectedBoundingBox: SelectionBox;
-  setSelectedBoundingBox: React.Dispatch<React.SetStateAction<SelectionBox>>;
-}
-
-export interface RenderState {
-  objects: DrawObject[];
-  currentPath: Point[];
-  // camera
-  zoom: number;
-  offsetX: number;
-  offsetY: number;
-  // tool
-  color: string;
-  size: number;
-  // overlays
-  selectionBox: SelectionBox;
-  selectedBoundingBox: SelectionBox;
 }
 
 // ─── Operation-based history (CRDT-ready: opId + timestamp, LWW, tombstone) ─
