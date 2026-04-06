@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { WebGLRenderer } from './WebGLRenderer';
-import { DrawModeEnum, type DrawObject, type Point } from './types/types';
+import { DrawModeEnum, type Point } from './types/types';
 import { useCamera } from './hooks/useCamera';
 import { useMouseHandlers } from './hooks/mouse/useMouseHandlers';
 import Palette from './components/Palette';
 import { getCursor } from './utils/cursorUtils';
 import Toolbar from './components/Toolbar';
 import { Zoom } from './components/Zoom';
-// import { Grid } from './grid/Grid';
 import { useBoardSync } from './hooks/useBoardSync';
 import { useCanvasClipboard } from './hooks/useCanvasClipboard';
 import { useHistoryStore } from './store/useHistoryStore';
@@ -26,8 +25,7 @@ export default function Whiteboard({
   const targetCameraRef = useRef({ zoom: 1, offsetX: 0, offsetY: 0 });
   const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
 
-  const { objects, setObjects, color, size, setColor, setSize } =
-    useCanvasStore();
+  const { color, size, setColor, setSize } = useCanvasStore();
 
   const history = useHistoryStore();
 
@@ -88,50 +86,6 @@ export default function Whiteboard({
     pushSyncedCursorThrottled,
     boardReady,
   );
-
-  const generateObjects = () => {
-    const prev = objects;
-    const arr: DrawObject[] = [];
-
-    for (let i = 0; i < 10000; i++) {
-      const x = Math.random() * 5000 - 2500;
-      const y = Math.random() * 5000 - 2500;
-
-      arr.push({
-        id: crypto.randomUUID(),
-        points: [
-          { x, y },
-          { x: x + Math.random() * 50, y: y + Math.random() * 50 },
-        ],
-        type: 'PATH',
-        color: '#0d0d0d',
-        tombstone: false,
-        positionTimestamp: Date.now(),
-        size: 15,
-      });
-    }
-
-    pushSyncedOperation({
-      opId: crypto.randomUUID(),
-      timestamp: Date.now(),
-      type: 'batch',
-      operations: [
-        {
-          opId: crypto.randomUUID(),
-          timestamp: Date.now(),
-          type: 'remove',
-          ids: prev.map((o) => o.id),
-        },
-        {
-          opId: crypto.randomUUID(),
-          timestamp: Date.now(),
-          type: 'add',
-          objects: arr,
-        },
-      ],
-    });
-    setObjects(arr);
-  };
 
   // Initialize WebGL
   useEffect(() => {
@@ -281,17 +235,6 @@ export default function Whiteboard({
 
   return (
     <div className="w-full h-full relative bg-gray-100">
-      <div className="absolute top-4 left-4 flex gap-2 flex-wrap z-40">
-        <button
-          type="button"
-          disabled={!boardReady}
-          onClick={generateObjects}
-          className="px-4 py-2 rounded bg-amber-500 text-white cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
-        >
-          Generate 10k objects
-        </button>
-      </div>
-
       <Zoom
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}
