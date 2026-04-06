@@ -259,6 +259,26 @@ export default function Whiteboard({
     return () => window.removeEventListener('keydown', handler);
   }, [history, boardReady, publishOperation, pushSyncedOperation]);
 
+  const handleUndo = useCallback(() => {
+    if (!boardReady) return;
+    const store = useCanvasStore.getState();
+    const res = history.undo(store.objects);
+    if (res) {
+      useCanvasStore.getState().setObjects(res.nextChildren);
+      publishOperation(res.appliedOp);
+    }
+  }, [boardReady, history, publishOperation]);
+
+  const handleRedo = useCallback(() => {
+    if (!boardReady) return;
+    const store = useCanvasStore.getState();
+    const res = history.redo(store.objects);
+    if (res) {
+      useCanvasStore.getState().setObjects(res.nextChildren);
+      publishOperation(res.appliedOp);
+    }
+  }, [boardReady, history, publishOperation]);
+
   return (
     <div className="w-full h-full relative bg-gray-100">
       <div className="absolute top-4 left-4 flex gap-2 flex-wrap z-40">
@@ -279,7 +299,14 @@ export default function Whiteboard({
         displayZoom={displayZoom}
       />
 
-      <Toolbar mode={mode} setMode={setMode} />
+      <Toolbar
+        mode={mode}
+        setMode={setMode}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        undoDisabled={!boardReady || !history.canUndo()}
+        redoDisabled={!boardReady || !history.canRedo()}
+      />
 
       <Palette
         color={color}
