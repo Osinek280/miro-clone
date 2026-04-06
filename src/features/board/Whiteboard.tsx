@@ -71,6 +71,7 @@ export default function Whiteboard({
     pushSyncedCursorThrottled,
     publishOperation,
     boardReady,
+    boardName,
     replayInitialCamera,
   } = useBoardSync(boardId, setCenterAtPoint, canvasRef, onSnapshotError);
 
@@ -235,6 +236,12 @@ export default function Whiteboard({
 
   return (
     <div className="w-full h-full relative bg-gray-100">
+      <div className="absolute top-4 left-4 z-40">
+        <div className="px-3 py-1.5 rounded-md border border-black/10 bg-[#f9f6f0]/95 text-sm text-gray-700 shadow-sm backdrop-blur-xl">
+          Board: {boardName || '...'}
+        </div>
+      </div>
+
       <Zoom
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}

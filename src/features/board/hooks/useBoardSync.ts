@@ -46,6 +46,7 @@ export function useBoardSync(
   const userId = useAuthStore((s) => s.user?.id);
   const { setObjects, setCursors } = useCanvasStore.getState();
   const [boardReady, setBoardReady] = useState(false);
+  const [boardName, setBoardName] = useState<string>('');
 
   const replayInitialCamera = useCallback(() => {
     const cam = lastSnapshotCameraRef.current;
@@ -54,6 +55,7 @@ export function useBoardSync(
 
   useEffect(() => {
     setBoardReady(false);
+    setBoardName('');
     lastSnapshotCameraRef.current = null;
     useCanvasStore.getState().setObjects([]);
     useHistoryStore.getState().clear();
@@ -64,6 +66,8 @@ export function useBoardSync(
         const { data } = await canvasApi.getSnapshot(boardId);
         if (cancelled) return;
 
+        console.log(data);
+
         lastSnapshotCameraRef.current = {
           point: {
             x: data.camera.offsetX,
@@ -73,9 +77,11 @@ export function useBoardSync(
         };
 
         useCanvasStore.getState().setObjects(data.objects);
+        setBoardName(data.boardName);
         setBoardReady(true);
       } catch {
         if (cancelled) return;
+        setBoardName('');
         onSnapshotError();
       }
     }
@@ -287,6 +293,7 @@ export function useBoardSync(
     publishOperation,
     pushSyncedCursorThrottled,
     boardReady,
+    boardName,
     replayInitialCamera,
   };
 }
