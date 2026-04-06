@@ -116,8 +116,6 @@ export class WebGLRenderer {
     this.cache.sync(objects);
     this.imageTextures.sync(gl, objects);
 
-    console.log('objects', objects);
-
     const passes = buildSceneDrawPasses({
       objects,
       cache: this.cache,

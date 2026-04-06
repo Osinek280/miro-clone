@@ -7,7 +7,6 @@ import Palette from './components/Palette';
 import { getCursor } from './utils/cursorUtils';
 import Toolbar from './components/Toolbar';
 import { Zoom } from './components/Zoom';
-import { Grid } from './grid/Grid';
 import { useBoardSync } from './hooks/useBoardSync';
 import { useHistoryStore } from './store/useHistoryStore';
 import { useCanvasStore } from './store/useCanvasStore';
@@ -279,7 +278,7 @@ export default function Whiteboard({
         setSize={setSize}
       />
 
-      {boardReady && <Grid cameraRef={cameraRef} />}
+      {/* {boardReady && <Grid cameraRef={cameraRef} />} */}
 
       {!boardReady && (
         <div
