@@ -10,6 +10,8 @@ import { Zoom } from './components/Zoom';
 import { useBoardSync } from './hooks/useBoardSync';
 import { useHistoryStore } from './store/useHistoryStore';
 import { useCanvasStore } from './store/useCanvasStore';
+import EquationSidebar from './components/EquationSidebar';
+import { PanelRightOpen } from 'lucide-react';
 
 export default function Whiteboard({
   boardId,
@@ -23,6 +25,7 @@ export default function Whiteboard({
   const cameraRef = useRef({ zoom: 1, offsetX: 0, offsetY: 0 });
   const targetCameraRef = useRef({ zoom: 1, offsetX: 0, offsetY: 0 });
   const [mode, setMode] = useState<DrawModeEnum>(DrawModeEnum.Draw);
+  const [equationSidebarOpen, setEquationSidebarOpen] = useState(true);
 
   const { objects, setObjects, color, size, setColor, setSize } =
     useCanvasStore();
@@ -250,79 +253,103 @@ export default function Whiteboard({
   }, [history, boardReady, publishOperation, pushSyncedOperation]);
 
   return (
-    <div className="w-full h-full relative bg-gray-100">
-      <div className="absolute top-4 left-4 flex gap-2 flex-wrap z-40">
-        <button
-          type="button"
-          disabled={!boardReady}
-          onClick={generateObjects}
-          className="px-4 py-2 rounded bg-amber-500 text-white cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
-        >
-          Generate 10k objects
-        </button>
+    <div className="flex h-full w-full min-h-0 bg-gray-100">
+      <div className="relative min-h-0 min-w-0 flex-1">
+        <div className="relative h-full min-h-0 min-w-0 w-full">
+          <div className="absolute top-4 left-4 z-40 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={!boardReady}
+              onClick={generateObjects}
+              className="px-4 py-2 rounded bg-amber-500 text-white cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+            >
+              Generate 10k objects
+            </button>
+          </div>
+
+          <Zoom
+            handleZoomIn={handleZoomIn}
+            handleZoomOut={handleZoomOut}
+            handleZoomReset={handleZoomReset}
+            displayZoom={displayZoom}
+          />
+
+          <Toolbar mode={mode} setMode={setMode} />
+
+          <Palette
+            color={color}
+            size={size}
+            setColor={setColor}
+            setSize={setSize}
+          />
+
+          {/* {boardReady && <Grid cameraRef={cameraRef} style="axes" />} */}
+
+          {!boardReady && (
+            <div
+              className="absolute inset-0 z-11 flex items-center justify-center bg-gray-100/85 backdrop-blur-[2px] pointer-events-none"
+              aria-busy="true"
+              aria-live="polite"
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div
+                  className="h-11 w-11 rounded-full border-2 border-gray-300 border-t-indigo-500 animate-spin motion-reduce:animate-none"
+                  aria-hidden
+                />
+                <p className="text-sm font-medium text-gray-600 animate-pulse motion-reduce:animate-none">
+                  Loading board…
+                </p>
+              </div>
+            </div>
+          )}
+
+          <canvas
+            ref={canvasRef}
+            className="h-full w-full"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 10,
+              cursor: boardReady ? getCursor(mode) : 'wait',
+              touchAction: 'none',
+              pointerEvents: boardReady ? 'auto' : 'none',
+            }}
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              handleMouseDown(
+                e as unknown as React.MouseEvent<HTMLCanvasElement>,
+              );
+            }}
+            onPointerMove={(e) =>
+              handleMouseMove(
+                e as unknown as React.MouseEvent<HTMLCanvasElement>,
+              )
+            }
+            onPointerUp={(e) =>
+              handleMouseUp(e as unknown as React.MouseEvent<HTMLCanvasElement>)
+            }
+            onPointerLeave={(e) =>
+              handleMouseUp(e as unknown as React.MouseEvent<HTMLCanvasElement>)
+            }
+          />
+        </div>
+
+        {!equationSidebarOpen && (
+          <button
+            type="button"
+            onClick={() => setEquationSidebarOpen(true)}
+            className="absolute cursor-pointer top-1/2 right-0 z-40 flex h-24 w-9 -translate-y-1/2 items-center justify-center rounded-l-md border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            aria-expanded={false}
+            aria-label="Show Equations"
+          >
+            <PanelRightOpen className="size-5 shrink-0" aria-hidden />
+          </button>
+        )}
       </div>
 
-      <Zoom
-        handleZoomIn={handleZoomIn}
-        handleZoomOut={handleZoomOut}
-        handleZoomReset={handleZoomReset}
-        displayZoom={displayZoom}
-      />
-
-      <Toolbar mode={mode} setMode={setMode} />
-
-      <Palette
-        color={color}
-        size={size}
-        setColor={setColor}
-        setSize={setSize}
-      />
-
-      {/* {boardReady && <Grid cameraRef={cameraRef} />} */}
-
-      {!boardReady && (
-        <div
-          className="absolute inset-0 z-11 flex items-center justify-center bg-gray-100/85 backdrop-blur-[2px] pointer-events-none"
-          aria-busy="true"
-          aria-live="polite"
-        >
-          <div className="flex flex-col items-center gap-4">
-            <div
-              className="h-11 w-11 rounded-full border-2 border-gray-300 border-t-indigo-500 animate-spin motion-reduce:animate-none"
-              aria-hidden
-            />
-            <p className="text-sm font-medium text-gray-600 animate-pulse motion-reduce:animate-none">
-              Ładowanie planszy…
-            </p>
-          </div>
-        </div>
+      {equationSidebarOpen && (
+        <EquationSidebar onOpenChange={setEquationSidebarOpen} />
       )}
-
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 10,
-          cursor: boardReady ? getCursor(mode) : 'wait',
-          touchAction: 'none',
-          pointerEvents: boardReady ? 'auto' : 'none',
-        }}
-        onPointerDown={(e) => {
-          e.currentTarget.setPointerCapture(e.pointerId);
-          handleMouseDown(e as unknown as React.MouseEvent<HTMLCanvasElement>);
-        }}
-        onPointerMove={(e) =>
-          handleMouseMove(e as unknown as React.MouseEvent<HTMLCanvasElement>)
-        }
-        onPointerUp={(e) =>
-          handleMouseUp(e as unknown as React.MouseEvent<HTMLCanvasElement>)
-        }
-        onPointerLeave={(e) =>
-          handleMouseUp(e as unknown as React.MouseEvent<HTMLCanvasElement>)
-        }
-      />
     </div>
   );
 }
