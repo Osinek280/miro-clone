@@ -171,18 +171,14 @@ export type HistoryOperation =
   | RotateOp
   | BatchOp;
 
-export interface PathDrawObjectWire {
-  id: string;
+export interface PathDrawObjectWire extends BaseDrawObject {
   type: DrawObjectTypePath;
   pointsEncoded: string; // base64 of Int32 delta pairs in POINT_SCALE space
   color: string;
   size: number;
-  tombstone: boolean;
-  positionTimestamp: number;
 }
 
-export interface ImageDrawObjectWire {
-  id: string;
+export interface ImageDrawObjectWire extends BaseDrawObject {
   type: DrawObjectTypeImage;
   x: number;
   y: number;
@@ -190,8 +186,6 @@ export interface ImageDrawObjectWire {
   height: number;
   rotation: number;
   src: string;
-  tombstone: boolean;
-  positionTimestamp: number;
 }
 
 export type DrawObjectWire = PathDrawObjectWire | ImageDrawObjectWire;
