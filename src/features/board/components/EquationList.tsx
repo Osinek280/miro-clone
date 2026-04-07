@@ -8,24 +8,101 @@ type EquationItem = {
   color: string;
 };
 
+type EquationOpMeta = {
+  opId: string;
+  timestamp: number;
+  userId?: string;
+};
+
+type AddEquationOp = EquationOpMeta & {
+  type: 'add';
+  equation: EquationItem;
+};
+
+type UpdateEquationLatexOp = EquationOpMeta & {
+  type: 'update_latex';
+  id: string;
+  latex: string;
+};
+
+type UpdateEquationColorOp = EquationOpMeta & {
+  type: 'update_color';
+  id: string;
+  color: string;
+};
+
+type RemoveEquationOp = EquationOpMeta & {
+  type: 'remove';
+  id: string;
+};
+
+type BatchEquationOp = EquationOpMeta & {
+  type: 'batch';
+  operations: EquationOperation[];
+};
+
+type EquationOperation =
+  | AddEquationOp
+  | UpdateEquationLatexOp
+  | UpdateEquationColorOp
+  | RemoveEquationOp
+  | BatchEquationOp;
+
 const colorOptions = ['#c74440', '#2d70b3', '#388c46', '#6042a6', '#fa7e19'];
 
-const initialEquations: EquationItem[] = [
-  { id: 'eq-1', latex: 'a^2 + b^2 = c^2', color: '#c74440' },
-  {
-    id: 'eq-2',
-    latex: 'x = (-b ± √(b^2 - 4ac)) / 2a',
-    color: '#2d70b3',
-  },
-  { id: 'eq-3', latex: 'e^(iπ) + 1 = 0', color: '#388c46' },
-];
+const createOpMeta = (): EquationOpMeta => ({
+  opId: `op-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  timestamp: Date.now(),
+});
+
+const applyEquationOperation = (
+  current: EquationItem[],
+  operation: EquationOperation,
+): EquationItem[] => {
+  switch (operation.type) {
+    case 'add':
+      return [...current, operation.equation];
+    case 'update_latex':
+      return current.map((equation) =>
+        equation.id === operation.id
+          ? { ...equation, latex: operation.latex }
+          : equation,
+      );
+    case 'update_color':
+      return current.map((equation) =>
+        equation.id === operation.id
+          ? { ...equation, color: operation.color }
+          : equation,
+      );
+    case 'remove':
+      return current.filter((equation) => equation.id !== operation.id);
+    case 'batch':
+      return operation.operations.reduce(
+        (next, nestedOperation) =>
+          applyEquationOperation(next, nestedOperation),
+        current,
+      );
+    default:
+      return current;
+  }
+};
 
 export default function EquationList() {
-  const [equations, setEquations] = useState<EquationItem[]>(initialEquations);
+  const [equations, setEquations] = useState<EquationItem[]>([
+    { id: 'eq-1', latex: 'a^2 + b^2 = c^2', color: '#c74440' },
+    {
+      id: 'eq-2',
+      latex: 'x = (-b ± √(b^2 - 4ac)) / 2a',
+      color: '#2d70b3',
+    },
+  ]);
   const [openedColorPickerId, setOpenedColorPickerId] = useState<string | null>(
     null,
   );
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const equationFieldRefs = useRef<Record<string, any>>({});
+  const draftFieldRef = useRef<any>(null);
 
   useEffect(() => {
     addStyles();
@@ -48,13 +125,62 @@ export default function EquationList() {
     };
   }, [openedColorPickerId]);
 
-  if (equations.length === 0) {
-    return (
-      <div className="flex h-full flex-col gap-2 p-2">
-        <div className="text-sm text-gray-500">No equations yet.</div>
-      </div>
-    );
-  }
+  const dispatchEquationOperation = (operation: EquationOperation) => {
+    setEquations((current) => applyEquationOperation(current, operation));
+  };
+
+  const addEquationFromDraft = (latex: string) => {
+    const trimmedLatex = latex.trim();
+    if (!trimmedLatex) {
+      return;
+    }
+
+    const newEquationId = `eq-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    const addOperation: AddEquationOp = {
+      ...createOpMeta(),
+      type: 'add',
+      equation: {
+        id: newEquationId,
+        latex: trimmedLatex,
+        color: colorOptions[equations.length % colorOptions.length],
+      },
+    };
+    dispatchEquationOperation(addOperation);
+    setPendingFocusId(newEquationId);
+  };
+
+  const focusEquationByIndex = (targetIndex: number) => {
+    if (targetIndex < equations.length) {
+      const nextEquationId = equations[targetIndex]?.id;
+      if (!nextEquationId) {
+        return;
+      }
+
+      const nextEquationField = equationFieldRefs.current[nextEquationId];
+      nextEquationField?.focus?.();
+      nextEquationField?.moveToRightEnd?.();
+      return;
+    }
+
+    draftFieldRef.current?.focus?.();
+    draftFieldRef.current?.moveToRightEnd?.();
+  };
+
+  useEffect(() => {
+    if (!pendingFocusId) {
+      return;
+    }
+
+    const nextField = equationFieldRefs.current[pendingFocusId];
+    if (!nextField) {
+      return;
+    }
+
+    nextField.focus?.();
+    nextField.moveToRightEnd?.();
+    setPendingFocusId(null);
+  }, [equations, pendingFocusId]);
 
   return (
     <div
@@ -103,13 +229,13 @@ export default function EquationList() {
                         style={{ background: color }}
                         aria-label={`Ustaw kolor ${color}`}
                         onClick={() => {
-                          setEquations((current) =>
-                            current.map((equation) =>
-                              equation.id === row.id
-                                ? { ...equation, color }
-                                : equation,
-                            ),
-                          );
+                          const updateColorOperation: UpdateEquationColorOp = {
+                            ...createOpMeta(),
+                            type: 'update_color',
+                            id: row.id,
+                            color,
+                          };
+                          dispatchEquationOperation(updateColorOperation);
                           setOpenedColorPickerId(null);
                         }}
                       />
@@ -122,41 +248,74 @@ export default function EquationList() {
                   latex={row.latex}
                   className="m-0 block w-full rounded-none bg-white px-2 text-[15px]"
                   config={{ spaceBehavesLikeTab: true }}
-                  // onChange={(mf) => updateLatex(row.id, mf.latex())}
-                  // mathquillDidMount={(mf) => {
-                  //   useEquationStore.getState().registerMathField(row.id, mf);
-                  // }}
-                  // onFocus={() => {
-                  //   useEquationStore.getState().setActiveEquationId(row.id);
-                  //   setEquationInputFocused(true);
-                  // }}
-                  // onBlur={() => {
-                  //   setEquationInputFocused(false);
+                  mathquillDidMount={(mf) => {
+                    equationFieldRefs.current[row.id] = mf;
+                  }}
+                  onChange={(mf) => {
+                    const nextLatex = mf.latex();
+                    const updateLatexOperation: UpdateEquationLatexOp = {
+                      ...createOpMeta(),
+                      type: 'update_latex',
+                      id: row.id,
+                      latex: nextLatex,
+                    };
+                    dispatchEquationOperation(updateLatexOperation);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      focusEquationByIndex(index + 1);
+                      return;
+                    }
 
-                  //   const equation = useEquationStore
-                  //     .getState()
-                  //     .equations.find((e) => e.id === row.id);
+                    if (event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      focusEquationByIndex(Math.max(0, index - 1));
+                      return;
+                    }
 
-                  //   if (equation) {
-                  //     pushSyncedEquation(equation, 'upsert');
-                  //   }
-                  // }}
+                    if (event.key !== 'Enter') {
+                      return;
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+                    focusEquationByIndex(index + 1);
+                  }}
+                  onBlur={() => {
+                    if (row.latex.trim()) {
+                      return;
+                    }
+
+                    const removeOperation: RemoveEquationOp = {
+                      ...createOpMeta(),
+                      type: 'remove',
+                      id: row.id,
+                    };
+                    dispatchEquationOperation(removeOperation);
+                    setOpenedColorPickerId((current) =>
+                      current === row.id ? null : current,
+                    );
+                  }}
                 />
-                {/* {glslError ? (
-                  <p
-                    className="mt-1 px-0.5 text-xs leading-snug text-red-600"
-                    role="alert"
-                  >
-                    {glslError}
-                  </p>
-                ) : null} */}
               </div>
               <button
                 type="button"
-                // disabled={equations.length <= 1}
                 className="shrink-0 cursor-pointer rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 aria-label="Usuń równanie"
-                // onClick={() => removeRow(row.id)}
+                onClick={() => {
+                  const removeOperation: RemoveEquationOp = {
+                    ...createOpMeta(),
+                    type: 'remove',
+                    id: row.id,
+                  };
+                  dispatchEquationOperation(removeOperation);
+                  setOpenedColorPickerId((current) =>
+                    current === row.id ? null : current,
+                  );
+                }}
               >
                 <Trash2 className="size-4" aria-hidden />
               </button>
@@ -164,6 +323,7 @@ export default function EquationList() {
           );
         })}
         <li
+          key="equation-draft-row"
           className="flex min-h-10 items-stretch border-[#E0E0E0]"
           style={{ margin: 0, padding: 0 }}
         >
@@ -171,12 +331,6 @@ export default function EquationList() {
             className="relative cursor-pointer inline-flex w-10 shrink-0 items-center justify-center self-stretch"
             aria-hidden
           >
-            <div
-              className="h-5 w-5 rounded-full shadow-sm transition-transform duration-150"
-              style={{
-                background: colorOptions[0],
-              }}
-            />
             <span className="absolute -left-1 top-0 px-1 text-[10px] text-[#666]">
               {equations.length + 1}
             </span>
@@ -186,34 +340,34 @@ export default function EquationList() {
               latex=""
               className="m-0 block w-full rounded-none bg-white px-2 text-[15px]"
               config={{ spaceBehavesLikeTab: true }}
-              // onChange={(mf) => updateLatex(row.id, mf.latex())}
-              // mathquillDidMount={(mf) => {
-              //   useEquationStore.getState().registerMathField(row.id, mf);
-              // }}
-              // onFocus={() => {
-              //   useEquationStore.getState().setActiveEquationId(row.id);
-              //   setEquationInputFocused(true);
-              // }}
-              // onBlur={() => {
-              //   setEquationInputFocused(false);
+              mathquillDidMount={(mf) => {
+                draftFieldRef.current = mf;
+              }}
+              onChange={(mf) => {
+                const nextLatex = mf.latex();
+                if (!nextLatex.trim()) {
+                  return;
+                }
 
-              //   const equation = useEquationStore
-              //     .getState()
-              //     .equations.find((e) => e.id === row.id);
+                addEquationFromDraft(nextLatex);
+                mf.latex('');
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  focusEquationByIndex(Math.max(0, equations.length - 1));
+                  return;
+                }
 
-              //   if (equation) {
-              //     pushSyncedEquation(equation, 'upsert');
-              //   }
-              // }}
+                if (event.key === 'ArrowDown') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  draftFieldRef.current?.focus?.();
+                  draftFieldRef.current?.moveToRightEnd?.();
+                }
+              }}
             />
-            {/* {glslError ? (
-                  <p
-                    className="mt-1 px-0.5 text-xs leading-snug text-red-600"
-                    role="alert"
-                  >
-                    {glslError}
-                  </p>
-                ) : null} */}
           </div>
         </li>
       </ul>
