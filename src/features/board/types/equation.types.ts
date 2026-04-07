@@ -1,7 +1,7 @@
 export type EquationItem = {
   id: string;
   latex: string;
-  color: string;
+  colorIndex: number;
 };
 
 export type EquationOpMeta = {
@@ -24,7 +24,7 @@ export type UpdateEquationLatexOp = EquationOpMeta & {
 export type UpdateEquationColorOp = EquationOpMeta & {
   type: 'update_color';
   id: string;
-  color: string;
+  colorIndex: number;
 };
 
 export type RemoveEquationOp = EquationOpMeta & {

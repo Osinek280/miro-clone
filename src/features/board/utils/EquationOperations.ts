@@ -16,7 +16,7 @@ export const applyEquationOperation = (
     case 'update_color':
       return current.map((equation) =>
         equation.id === operation.id
-          ? { ...equation, color: operation.color }
+          ? { ...equation, colorIndex: operation.colorIndex }
           : equation,
       );
     case 'remove':

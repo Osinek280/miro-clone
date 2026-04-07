@@ -15,7 +15,9 @@ export class ImageTextureCache {
 
   sync(gl: WebGLRenderingContext, objects: DrawObject[]): void {
     const keep = new Set(
-      objects.filter((o): o is ImageDrawObject => o.type === 'IMAGE').map((o) => o.id),
+      objects
+        .filter((o): o is ImageDrawObject => o.type === 'IMAGE')
+        .map((o) => o.id),
     );
     for (const id of this.entries.keys()) {
       if (!keep.has(id)) {

@@ -10,22 +10,22 @@ import type {
   UpdateEquationColorOp,
   UpdateEquationLatexOp,
 } from '../types/equation.types';
+import { equationColorOptions } from '../constants/equationColors';
 import { applyEquationOperation } from '../utils/EquationOperations';
-
-const colorOptions = ['#c74440', '#2d70b3', '#388c46', '#6042a6', '#fa7e19'];
+import createUUID from '../../../utils/id';
 
 const createOpMeta = (): EquationOpMeta => ({
-  opId: `op-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  opId: createUUID(),
   timestamp: Date.now(),
 });
 
 export default function EquationList() {
   const [equations, setEquations] = useState<EquationItem[]>([
-    { id: 'eq-1', latex: 'a^2 + b^2 = c^2', color: '#c74440' },
+    { id: createUUID(), latex: 'a^2 + b^2 = c^2', colorIndex: 0 },
     {
-      id: 'eq-2',
+      id: createUUID(),
       latex: 'x = (-b ± √(b^2 - 4ac)) / 2a',
-      color: '#2d70b3',
+      colorIndex: 1,
     },
   ]);
   const [openedColorPickerId, setOpenedColorPickerId] = useState<string | null>(
@@ -75,7 +75,7 @@ export default function EquationList() {
       equation: {
         id: newEquationId,
         latex: trimmedLatex,
-        color: colorOptions[equations.length % colorOptions.length],
+        colorIndex: equations.length % equationColorOptions.length,
       },
     };
     dispatchEquationOperation(addOperation);
@@ -142,7 +142,9 @@ export default function EquationList() {
                 <div
                   className="h-5 w-5 rounded-full shadow-sm transition-transform duration-150"
                   style={{
-                    background: row.color,
+                    background:
+                      equationColorOptions[row.colorIndex] ??
+                      equationColorOptions[0],
                   }}
                 />
                 <span className="absolute -left-1 top-0 px-1 text-[10px] text-[#666]">
@@ -150,14 +152,14 @@ export default function EquationList() {
                 </span>
                 {openedColorPickerId === row.id ? (
                   <div
-                    className="absolute left-full top-1/2 z-10 ml-2 flex -translate-y-1/2 gap-1 rounded border border-[#E0E0E0] bg-white p-1 shadow"
+                    className="absolute cursor-default left-full top-1/2 z-10 ml-2 flex -translate-y-1/2 gap-1 rounded border border-[#E0E0E0] bg-white p-1 shadow"
                     onClick={(event) => event.stopPropagation()}
                   >
-                    {colorOptions.map((color) => (
+                    {equationColorOptions.map((color, colorIndex) => (
                       <button
-                        key={color}
+                        key={`${color}-${colorIndex}`}
                         type="button"
-                        className="h-4 w-4 rounded-full border border-[#D0D0D0] hover:scale-110"
+                        className="h-4 w-4 cursor-pointer rounded-full border border-[#D0D0D0] hover:scale-110"
                         style={{ background: color }}
                         aria-label={`Ustaw kolor ${color}`}
                         onClick={() => {
@@ -165,7 +167,7 @@ export default function EquationList() {
                             ...createOpMeta(),
                             type: 'update_color',
                             id: row.id,
-                            color,
+                            colorIndex,
                           };
                           dispatchEquationOperation(updateColorOperation);
                           setOpenedColorPickerId(null);
