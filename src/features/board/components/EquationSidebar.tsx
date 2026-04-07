@@ -1,5 +1,6 @@
 import { ChevronRight } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import EquationList from './EquationList';
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 560;
@@ -84,8 +85,8 @@ export default function EquationSidebar({
             <ChevronRight className="size-5" aria-hidden />
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-auto text-sm text-gray-700">
-          {/* <EquationList pushSyncedEquation={pushSyncedEquation} /> */}
+        <div className="">
+          <EquationList />
         </div>
       </div>
     </aside>

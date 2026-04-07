@@ -129,3 +129,10 @@ body,
     @apply bg-background text-foreground;
   }
 }
+
+.mq-editable-field,
+.mq-math-mode,
+.mq-root-block {
+  border: 0 !important;
+  box-shadow: none !important;
+}
