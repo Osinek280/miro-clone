@@ -1,3 +1,4 @@
+import createUUID from '../../../utils/id';
 import type {
   AddObjectsOp,
   BatchOp,
@@ -28,15 +29,6 @@ function cloneAddedObject(o: DrawObject): DrawObject {
 function getTimestamp(): number {
   return Date.now();
 }
-
-/** Ensure op has opId and timestamp; mutate clone. */
-// export function stampOp<T extends HistoryOperation>(op: T): T {
-//   const o = structuredClone(op) as T;
-//   if (o.opId == null) (o as { opId: string }).opId = crypto.randomUUID();
-//   if (o.timestamp == null)
-//     (o as { timestamp: number }).timestamp = getTimestamp();
-//   return o;
-// }
 
 /** Flatten batch into single ops with timestamps, sorted by timestamp (for deterministic merge). */
 export function flattenBatch(batch: BatchOp): HistoryOperation[] {
@@ -154,7 +146,7 @@ export function getInverse(
   op: HistoryOperation,
   children: DrawObject[] = [],
 ): HistoryOperation {
-  const meta = { opId: crypto.randomUUID(), timestamp: getTimestamp() };
+  const meta = { opId: createUUID(), timestamp: getTimestamp() };
   switch (op.type) {
     case 'remove': {
       const idSet = new Set(op.ids);

@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import type { DrawObject, HistoryOperation, Point } from '../../../types/types';
 import { roundPoint } from '../../../utils/cameraUtils';
 import { useCanvasStore } from '../../../store/useCanvasStore';
+import createUUID from '../../../../../utils/id';
 
 export function useDrawMode(
   setCurrentPath: React.Dispatch<React.SetStateAction<Point[]>>,
@@ -123,7 +124,7 @@ export function useDrawMode(
     strokePathRef.current = [];
     if (path.length === 0) return;
     const object: DrawObject = {
-      id: crypto.randomUUID(),
+      id: createUUID(),
       type: 'PATH',
       points: path.map(roundPoint),
       color: currentColor,
@@ -132,7 +133,7 @@ export function useDrawMode(
       positionTimestamp: Date.now(),
     };
     pushSyncedOperation({
-      opId: crypto.randomUUID(),
+      opId: createUUID(),
       timestamp: Date.now(),
       type: 'add',
       objects: [object],

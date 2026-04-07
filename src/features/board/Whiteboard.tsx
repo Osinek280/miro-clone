@@ -12,6 +12,7 @@ import { useHistoryStore } from './store/useHistoryStore';
 import { useCanvasStore } from './store/useCanvasStore';
 import EquationSidebar from './components/EquationSidebar';
 import { PanelRightOpen } from 'lucide-react';
+import createUUID from '../../utils/id';
 
 export default function Whiteboard({
   boardId,
@@ -97,7 +98,7 @@ export default function Whiteboard({
       const y = Math.random() * 5000 - 2500;
 
       arr.push({
-        id: crypto.randomUUID(),
+        id: createUUID(),
         points: [
           { x, y },
           { x: x + Math.random() * 50, y: y + Math.random() * 50 },
@@ -111,18 +112,18 @@ export default function Whiteboard({
     }
 
     pushSyncedOperation({
-      opId: crypto.randomUUID(),
+      opId: createUUID(),
       timestamp: Date.now(),
       type: 'batch',
       operations: [
         {
-          opId: crypto.randomUUID(),
+          opId: createUUID(),
           timestamp: Date.now(),
           type: 'remove',
           ids: prev.map((o) => o.id),
         },
         {
-          opId: crypto.randomUUID(),
+          opId: createUUID(),
           timestamp: Date.now(),
           type: 'add',
           objects: arr,
@@ -216,7 +217,7 @@ export default function Whiteboard({
         const toRemove = objects.filter((o) => selectedIds.includes(o.id));
         if (toRemove.length > 0) {
           pushSyncedOperation({
-            opId: crypto.randomUUID(),
+            opId: createUUID(),
             timestamp: Date.now(),
             type: 'remove',
             ids: toRemove.map((o) => o.id),
