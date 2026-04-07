@@ -1,52 +1,16 @@
 import { Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { addStyles, EditableMathField } from 'react-mathquill';
-
-type EquationItem = {
-  id: string;
-  latex: string;
-  color: string;
-};
-
-type EquationOpMeta = {
-  opId: string;
-  timestamp: number;
-  userId?: string;
-};
-
-type AddEquationOp = EquationOpMeta & {
-  type: 'add';
-  equation: EquationItem;
-};
-
-type UpdateEquationLatexOp = EquationOpMeta & {
-  type: 'update_latex';
-  id: string;
-  latex: string;
-};
-
-type UpdateEquationColorOp = EquationOpMeta & {
-  type: 'update_color';
-  id: string;
-  color: string;
-};
-
-type RemoveEquationOp = EquationOpMeta & {
-  type: 'remove';
-  id: string;
-};
-
-type BatchEquationOp = EquationOpMeta & {
-  type: 'batch';
-  operations: EquationOperation[];
-};
-
-type EquationOperation =
-  | AddEquationOp
-  | UpdateEquationLatexOp
-  | UpdateEquationColorOp
-  | RemoveEquationOp
-  | BatchEquationOp;
+import type {
+  AddEquationOp,
+  EquationItem,
+  EquationOperation,
+  EquationOpMeta,
+  RemoveEquationOp,
+  UpdateEquationColorOp,
+  UpdateEquationLatexOp,
+} from '../types/equation.types';
+import { applyEquationOperation } from '../utils/EquationOperations';
 
 const colorOptions = ['#c74440', '#2d70b3', '#388c46', '#6042a6', '#fa7e19'];
 
@@ -54,38 +18,6 @@ const createOpMeta = (): EquationOpMeta => ({
   opId: `op-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   timestamp: Date.now(),
 });
-
-const applyEquationOperation = (
-  current: EquationItem[],
-  operation: EquationOperation,
-): EquationItem[] => {
-  switch (operation.type) {
-    case 'add':
-      return [...current, operation.equation];
-    case 'update_latex':
-      return current.map((equation) =>
-        equation.id === operation.id
-          ? { ...equation, latex: operation.latex }
-          : equation,
-      );
-    case 'update_color':
-      return current.map((equation) =>
-        equation.id === operation.id
-          ? { ...equation, color: operation.color }
-          : equation,
-      );
-    case 'remove':
-      return current.filter((equation) => equation.id !== operation.id);
-    case 'batch':
-      return operation.operations.reduce(
-        (next, nestedOperation) =>
-          applyEquationOperation(next, nestedOperation),
-        current,
-      );
-    default:
-      return current;
-  }
-};
 
 export default function EquationList() {
   const [equations, setEquations] = useState<EquationItem[]>([
