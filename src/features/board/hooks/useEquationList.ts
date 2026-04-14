@@ -100,6 +100,10 @@ export function useEquationList() {
   };
 
   useEffect(() => {
+    console.log('equations: ', equations);
+  }, [equations]);
+
+  useEffect(() => {
     if (!pendingFocusId) {
       return;
     }

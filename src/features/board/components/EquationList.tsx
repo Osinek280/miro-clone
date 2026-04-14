@@ -7,6 +7,7 @@ import type {
 } from '../types/equation.types';
 import { equationColorOptions } from '../constants/equationColors';
 import { useEquationList } from '../hooks/useEquationList';
+import { parseEquation } from '../equation/parser';
 
 export default function EquationList() {
   const {
@@ -95,6 +96,8 @@ export default function EquationList() {
                   }}
                   onChange={(mf) => {
                     const nextLatex = mf.latex();
+                    console.log(nextLatex);
+                    parseEquation(nextLatex);
                     const updateLatexOperation: UpdateEquationLatexOp = {
                       ...createOpMeta(),
                       type: 'update_latex',
@@ -103,29 +106,29 @@ export default function EquationList() {
                     };
                     dispatchEquationOperation(updateLatexOperation);
                   }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'ArrowDown') {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      focusEquationByIndex(index + 1);
-                      return;
-                    }
+                  // onKeyDown={(event) => {
+                  //   if (event.key === 'ArrowDown') {
+                  //     event.preventDefault();
+                  //     event.stopPropagation();
+                  //     focusEquationByIndex(index + 1);
+                  //     return;
+                  //   }
 
-                    if (event.key === 'ArrowUp') {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      focusEquationByIndex(Math.max(0, index - 1));
-                      return;
-                    }
+                  //   if (event.key === 'ArrowUp') {
+                  //     event.preventDefault();
+                  //     event.stopPropagation();
+                  //     focusEquationByIndex(Math.max(0, index - 1));
+                  //     return;
+                  //   }
 
-                    if (event.key !== 'Enter') {
-                      return;
-                    }
+                  //   if (event.key !== 'Enter') {
+                  //     return;
+                  //   }
 
-                    event.preventDefault();
-                    event.stopPropagation();
-                    focusEquationByIndex(index + 1);
-                  }}
+                  //   event.preventDefault();
+                  //   event.stopPropagation();
+                  //   focusEquationByIndex(index + 1);
+                  // }}
                   onBlur={() => {
                     if (row.latex.trim()) {
                       return;
