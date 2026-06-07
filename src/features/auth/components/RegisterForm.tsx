@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useRegister } from '../hooks/useRegister';
+import { useAuthStore } from '../store/auth.store';
 
 export const RegisterForm = () => {
   const { register } = useRegister();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
+  const setAuth = useAuthStore((s) => s.setAuth);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -64,11 +66,9 @@ export const RegisterForm = () => {
       await register(name, email, password);
 
       // Redirect to login or dashboard after successful registration
-      navigate('/login', {
-        replace: true,
-        state: {
-          message: 'Registration successful. You can now log in.',
-        },
+      setAuth({
+        id: '',
+        email,
       });
     } catch (err: any) {
       setError(
