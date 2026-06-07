@@ -5,15 +5,9 @@ import { tokenStorage } from '../utils/TokenStorage';
 export const useRegister = () => {
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  const register = async (
-    firstname: string,
-    lastname: string,
-    email: string,
-    password: string,
-  ) => {
+  const register = async (name: string, email: string, password: string) => {
     const { data } = await authApi.register({
-      firstname,
-      lastname,
+      name,
       email,
       password,
     });

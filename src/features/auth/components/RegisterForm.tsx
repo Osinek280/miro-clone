@@ -8,8 +8,7 @@ export const RegisterForm = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    firstname: '',
-    lastname: '',
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -61,8 +60,8 @@ export const RegisterForm = () => {
 
     try {
       // Extract only the fields needed for backend
-      const { firstname, lastname, email, password } = formData;
-      await register(firstname, lastname, email, password);
+      const { name, email, password } = formData;
+      await register(name, email, password);
 
       // Redirect to login or dashboard after successful registration
       navigate('/login', {
@@ -103,26 +102,11 @@ export const RegisterForm = () => {
           </label>
           <input
             type="text"
-            name="firstname"
-            value={formData.firstname}
+            name="name"
+            value={formData.name}
             onChange={handleChange}
             required
             autoComplete="given-name"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            Last name *
-          </label>
-          <input
-            type="text"
-            name="lastname"
-            value={formData.lastname}
-            onChange={handleChange}
-            required
-            autoComplete="family-name"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
           />
         </div>
