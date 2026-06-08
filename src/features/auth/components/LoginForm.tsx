@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useLogin } from '../hooks/useLogin';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '../../../components/ui/button';
 
 export const LoginForm = () => {
   const { login } = useLogin();
@@ -79,6 +80,22 @@ export const LoginForm = () => {
       >
         {isLoading ? 'Logging in...' : 'Log in'}
       </button>
+      <Button
+        type="button"
+        onClick={() => {
+          window.location.href = `http://localhost:8080/oauth2/authorization/google`;
+        }}
+      >
+        login with google
+      </Button>
+      <Button
+        type="button"
+        onClick={() => {
+          window.location.href = `http://localhost:8080/oauth2/authorization/github`;
+        }}
+      >
+        login with github
+      </Button>
     </form>
   );
 };

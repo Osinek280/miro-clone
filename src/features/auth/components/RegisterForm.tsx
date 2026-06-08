@@ -1,13 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useRegister } from '../hooks/useRegister';
-import { useAuthStore } from '../store/auth.store';
 
 export const RegisterForm = () => {
   const { register } = useRegister();
-  // const navigate = useNavigate();
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -65,11 +63,8 @@ export const RegisterForm = () => {
       const { name, email, password } = formData;
       await register(name, email, password);
 
-      // Redirect to login or dashboard after successful registration
-      setAuth({
-        id: '',
-        email,
-      });
+      // Redirect to dashboard after successful registration
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       setError(
         err?.response?.data?.message ??

@@ -9,10 +9,9 @@ export type RegisterRequest = {
   password: string;
 };
 
-export type LoginResponse = {
-  accessToken: string;
-};
-
-export type RegisterResponse = {
-  accessToken: string;
+export type UserDto = {
+  id: string;
+  email: string;
+  name: string;
+  profileUrl: string | null;
 };

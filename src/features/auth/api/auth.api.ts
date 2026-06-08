@@ -1,19 +1,14 @@
 import { apiClient } from '../../../app/api/apiClient';
-import type {
-  LoginRequest,
-  LoginResponse,
-  RegisterRequest,
-  RegisterResponse,
-} from './auth.types';
+import type { LoginRequest, RegisterRequest, UserDto } from './auth.types';
 
 export const authApi = {
-  login: (data: LoginRequest) =>
-    apiClient.post<LoginResponse>('/auth/login', data),
+  login: (data: LoginRequest) => apiClient.post<void>('/auth/login', data),
 
   register: (data: RegisterRequest) =>
-    apiClient.post<RegisterResponse>('/auth/register', data),
+    apiClient.post<void>('/auth/register', data),
 
-  // logout: () => apiClient.post("/auth/logout"),
+  refresh: () => apiClient.post<void>('/auth/refresh'),
 
-  refresh: () => apiClient.post<{ accessToken: string }>('/auth/refresh'),
+  logout: () => apiClient.post<void>('/auth/logout'),
+  me: () => apiClient.get<UserDto>('/auth/me'),
 };

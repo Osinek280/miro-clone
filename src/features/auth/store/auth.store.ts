@@ -1,16 +1,12 @@
 // features/auth/store/auth.store.ts
 import { create } from 'zustand';
-
-type User = {
-  id: string;
-  email: string;
-};
+import type { UserDto } from '../api/auth.types';
 
 type AuthState = {
-  user: User | null;
+  user: UserDto | null;
   isAuthenticated: boolean;
   hasCheckedAuth: boolean;
-  setAuth: (user: User) => void;
+  setAuth: (user: UserDto) => void;
   clearAuth: () => void;
   setAuthChecked: () => void;
 };
