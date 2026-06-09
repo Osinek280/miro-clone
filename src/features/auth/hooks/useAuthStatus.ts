@@ -21,5 +21,5 @@ export const useAuthStatus = () => {
       .finally(() => {
         setAuthChecked();
       });
-  }, [setAuth, setAuthChecked]);
+  }, [hasCheckedAuth, setAuth, setAuthChecked]);
 };
